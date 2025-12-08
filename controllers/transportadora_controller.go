@@ -1,34 +1,30 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"donapresentes/controllers/config"
 	"donapresentes/models"
+	"donapresentes/repositories"
 
 	"github.com/gorilla/mux"
 )
 
+var transportadoraRepo *repositories.TransportadoraRepository
+
+func InitTransportadoraRepository() {
+	transportadoraRepo = repositories.NewTransportadoraRepository(config.DB)
+}
+
 // GetTransportadoras lists all transportadoras
 func GetTransportadoras(w http.ResponseWriter, r *http.Request) {
-	rows, err := config.DB.Query("SELECT id, nome_transportadora, tipo_transportadora, email, telefone_fixo, celular, endereco_completo, contato_principal_nome, contato_principal_telefone, site, created_at, updated_at FROM transportadoras")
+	items, err := transportadoraRepo.GetAll()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-	defer rows.Close()
-
-	var items []models.Transportadora
-	for rows.Next() {
-		var t models.Transportadora
-		err := rows.Scan(&t.ID, &t.NomeTransportadora, &t.TipoTransportadora, &t.Email, &t.TelefoneFixo, &t.Celular, &t.EnderecoCompleto, &t.ContatoPrincipalNome, &t.ContatoPrincipalTelefone, &t.Site, &t.CreatedAt, &t.UpdatedAt)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		items = append(items, t)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -44,10 +40,13 @@ func GetTransportadora(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var t models.Transportadora
-	err = config.DB.QueryRow("SELECT id, nome_transportadora, tipo_transportadora, email, telefone_fixo, celular, endereco_completo, contato_principal_nome, contato_principal_telefone, site, created_at, updated_at FROM transportadoras WHERE id=$1", id).Scan(&t.ID, &t.NomeTransportadora, &t.TipoTransportadora, &t.Email, &t.TelefoneFixo, &t.Celular, &t.EnderecoCompleto, &t.ContatoPrincipalNome, &t.ContatoPrincipalTelefone, &t.Site, &t.CreatedAt, &t.UpdatedAt)
+	t, err := transportadoraRepo.GetByID(id)
 	if err != nil {
-		http.Error(w, "not found", http.StatusNotFound)
+		if err == sql.ErrNoRows {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -63,11 +62,7 @@ func CreateTransportadora(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := config.DB.QueryRow(
-		"INSERT INTO transportadoras (nome_transportadora, tipo_transportadora, email, telefone_fixo, celular, endereco_completo, contato_principal_nome, contato_principal_telefone, site) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, created_at, updated_at",
-		t.NomeTransportadora, t.TipoTransportadora, t.Email, t.TelefoneFixo, t.Celular, t.EnderecoCompleto, t.ContatoPrincipalNome, t.ContatoPrincipalTelefone, t.Site,
-	).Scan(&t.ID, &t.CreatedAt, &t.UpdatedAt)
-
+	err := transportadoraRepo.Create(&t)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -93,10 +88,7 @@ func UpdateTransportadora(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = config.DB.Exec(
-		"UPDATE transportadoras SET nome_transportadora=$1, tipo_transportadora=$2, email=$3, telefone_fixo=$4, celular=$5, endereco_completo=$6, contato_principal_nome=$7, contato_principal_telefone=$8, site=$9, updated_at=NOW() WHERE id=$10",
-		t.NomeTransportadora, t.TipoTransportadora, t.Email, t.TelefoneFixo, t.Celular, t.EnderecoCompleto, t.ContatoPrincipalNome, t.ContatoPrincipalTelefone, t.Site, id,
-	)
+	err = transportadoraRepo.Update(id, &t)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -116,19 +108,13 @@ func DeleteTransportadora(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := config.DB.Exec("DELETE FROM transportadoras WHERE id=$1", id)
+	err = transportadoraRepo.Delete(id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "not found", http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if rows == 0 {
-		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 

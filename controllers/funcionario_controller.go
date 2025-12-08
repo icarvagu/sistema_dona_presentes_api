@@ -1,34 +1,30 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 	"strconv"
 
 	"donapresentes/controllers/config"
 	"donapresentes/models"
+	"donapresentes/repositories"
 
 	"github.com/gorilla/mux"
 )
 
+var funcionarioRepo *repositories.FuncionarioRepository
+
+func InitFuncionarioRepository() {
+	funcionarioRepo = repositories.NewFuncionarioRepository(config.DB)
+}
+
 // GetFuncionarios retrieves all funcionarios
 func GetFuncionarios(w http.ResponseWriter, r *http.Request) {
-	rows, err := config.DB.Query("SELECT id, nome_completo, cpf, rg, data_nascimento, sexo, situacao, email_contato, endereco_completo, telefones_contato, observacoes, criado_em FROM funcionarios")
+	funcionarios, err := funcionarioRepo.GetAll()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
-	defer rows.Close()
-
-	var funcionarios []models.Funcionario
-	for rows.Next() {
-		var f models.Funcionario
-		err := rows.Scan(&f.ID, &f.NomeCompleto, &f.CPF, &f.RG, &f.DataNascimento, &f.Sexo, &f.Situacao, &f.EmailContato, &f.EnderecoCompleto, &f.TelefonesContato, &f.Observacoes, &f.CriadoEm)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		funcionarios = append(funcionarios, f)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -44,10 +40,13 @@ func GetFuncionario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var f models.Funcionario
-	err = config.DB.QueryRow("SELECT id, nome_completo, cpf, rg, data_nascimento, sexo, situacao, email_contato, endereco_completo, telefones_contato, observacoes, criado_em FROM funcionarios WHERE id=$1", id).Scan(&f.ID, &f.NomeCompleto, &f.CPF, &f.RG, &f.DataNascimento, &f.Sexo, &f.Situacao, &f.EmailContato, &f.EnderecoCompleto, &f.TelefonesContato, &f.Observacoes, &f.CriadoEm)
+	f, err := funcionarioRepo.GetByID(id)
 	if err != nil {
-		http.Error(w, "Funcionário não encontrado", http.StatusNotFound)
+		if err == sql.ErrNoRows {
+			http.Error(w, "Funcionário não encontrado", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -64,10 +63,7 @@ func CreateFuncionario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = config.DB.QueryRow(
-		"INSERT INTO funcionarios (nome_completo, cpf, rg, data_nascimento, sexo, situacao, email_contato, endereco_completo, telefones_contato, observacoes) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, criado_em",
-		f.NomeCompleto, f.CPF, f.RG, f.DataNascimento, f.Sexo, f.Situacao, f.EmailContato, f.EnderecoCompleto, f.TelefonesContato, f.Observacoes).Scan(&f.ID, &f.CriadoEm)
-
+	err = funcionarioRepo.Create(&f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -94,9 +90,7 @@ func UpdateFuncionario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = config.DB.Exec(
-		"UPDATE funcionarios SET nome_completo=$1, cpf=$2, rg=$3, data_nascimento=$4, sexo=$5, situacao=$6, email_contato=$7, endereco_completo=$8, telefones_contato=$9, observacoes=$10 WHERE id=$11",
-		f.NomeCompleto, f.CPF, f.RG, f.DataNascimento, f.Sexo, f.Situacao, f.EmailContato, f.EnderecoCompleto, f.TelefonesContato, f.Observacoes, id)
+	err = funcionarioRepo.Update(id, &f)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -116,19 +110,13 @@ func DeleteFuncionario(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := config.DB.Exec("DELETE FROM funcionarios WHERE id=$1", id)
+	err = funcionarioRepo.Delete(id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Funcionário não encontrado", http.StatusNotFound)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	rows, err := res.RowsAffected()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if rows == 0 {
-		http.Error(w, "Funcionário não encontrado", http.StatusNotFound)
 		return
 	}
 

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"donapresentes/controllers"
 	"donapresentes/controllers/config"
 	"donapresentes/routes"
 
@@ -38,6 +39,11 @@ func init() {
 
 func main() {
 	defer config.DB.Close()
+
+	// Initialize repositories after database is connected
+	controllers.InitFornecedorRepository()
+	controllers.InitTransportadoraRepository()
+	controllers.InitFuncionarioRepository()
 
 	r := mux.NewRouter()
 
