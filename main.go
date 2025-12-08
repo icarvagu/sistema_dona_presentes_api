@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"donapresentes/controllers"
 	"donapresentes/controllers/config"
 	"donapresentes/routes"
 
@@ -39,6 +40,14 @@ func init() {
 func main() {
 	defer config.DB.Close()
 
+	// Initialize repositories after database is connected
+	controllers.InitFornecedorRepository()
+	controllers.InitTransportadoraRepository()
+	controllers.InitFuncionarioRepository()
+	controllers.InitProdutoRepository()
+	controllers.InitClienteRepository()
+	controllers.InitVendaRepository()
+
 	r := mux.NewRouter()
 
 	// Register fornecedores routes
@@ -49,6 +58,15 @@ func main() {
 
 	// Register funcionarios routes
 	routes.RegisterFuncionariosRoutes(r)
+
+	// Register produtos routes
+	routes.RegisterProdutosRoutes(r)
+
+	// Register clientes routes
+	routes.RegisterClientesRoutes(r)
+
+	// Register vendas routes
+	routes.RegisterVendasRoutes(r)
 
 	log.Printf("Server starting on %s\n", port)
 	log.Fatal(http.ListenAndServe(port, r))
