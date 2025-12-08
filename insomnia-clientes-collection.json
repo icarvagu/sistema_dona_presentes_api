@@ -1,0 +1,87 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-12-08T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2025.1.0",
+  "resources": [
+    {
+      "_id": "wrk_clientes_dona",
+      "_type": "workspace",
+      "name": "Dona Presentes - Clientes",
+      "description": "Coleção para testar endpoints de clientes",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_clientes_base",
+      "_type": "environment",
+      "parentId": "wrk_clientes_dona",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "cliente_id": 1
+      }
+    },
+    {
+      "_id": "req_list_clientes",
+      "_type": "request",
+      "parentId": "wrk_clientes_dona",
+      "name": "Listar Clientes",
+      "method": "GET",
+      "url": "{{ base_url }}/clientes",
+      "body": {}
+    },
+    {
+      "_id": "req_get_cliente",
+      "_type": "request",
+      "parentId": "wrk_clientes_dona",
+      "name": "Obter Cliente por ID",
+      "method": "GET",
+      "url": "{{ base_url }}/clientes/{{ cliente_id }}",
+      "body": {}
+    },
+    {
+      "_id": "req_create_pf",
+      "_type": "request",
+      "parentId": "wrk_clientes_dona",
+      "name": "Criar Cliente - Pessoa Física",
+      "method": "POST",
+      "url": "{{ base_url }}/clientes",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"tipo_cliente\": \"PF\", \"situacao\": \"Ativo\", \"nome_empresa_pessoa\": \"João Silva\", \"cpf\": \"123.456.789-00\", \"email\": \"joao@example.com\", \"telefone_comercial\": \"(11) 3000-0000\", \"celular\": \"(11) 99999-0000\", \"site\": null, \"observacoes\": \"Cliente preferencial\", \"enderecos\": [{ \"tipo_endereco\": \"comercial\", \"endereco\": \"Rua A, 123, São Paulo, SP\" }], \"contatos_adicionais\": [{ \"nome\": \"Maria Silva\", \"email\": \"maria@example.com\", \"telefone\": \"(11) 98888-0000\" }] }"
+      }
+    },
+    {
+      "_id": "req_create_pj",
+      "_type": "request",
+      "parentId": "wrk_clientes_dona",
+      "name": "Criar Cliente - Pessoa Jurídica",
+      "method": "POST",
+      "url": "{{ base_url }}/clientes",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"tipo_cliente\": \"PJ\", \"situacao\": \"Ativo\", \"nome_empresa_pessoa\": \"Tech Solutions Ltda\", \"cnpj\": \"12.345.678/0001-99\", \"email\": \"contato@techsolutions.com\", \"telefone_comercial\": \"(11) 3000-1234\", \"celular\": \"(11) 99999-5678\", \"site\": \"https://techsolutions.com\", \"observacoes\": \"Grande cliente\", \"enderecos\": [{ \"tipo_endereco\": \"comercial\", \"endereco\": \"Av. Paulista, 1000, São Paulo, SP\" }, { \"tipo_endereco\": \"entrega\", \"endereco\": \"Rua B, 456, São Paulo, SP\" }], \"contatos_adicionais\": [{ \"nome\": \"Pedro Costa\", \"email\": \"pedro@techsolutions.com\", \"telefone\": \"(11) 97777-0000\" }, { \"nome\": \"Ana Garcia\", \"email\": \"ana@techsolutions.com\", \"telefone\": \"(11) 96666-0000\" }] }"
+      }
+    },
+    {
+      "_id": "req_update_cliente",
+      "_type": "request",
+      "parentId": "wrk_clientes_dona",
+      "name": "Atualizar Cliente",
+      "method": "PUT",
+      "url": "{{ base_url }}/clientes/{{ cliente_id }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"tipo_cliente\": \"PJ\", \"situacao\": \"Inativo\", \"nome_empresa_pessoa\": \"Tech Solutions Ltda (Atualizado)\", \"cnpj\": \"12.345.678/0001-99\", \"email\": \"novo.email@techsolutions.com\", \"telefone_comercial\": \"(11) 3000-5678\", \"celular\": \"(11) 99999-9999\", \"site\": \"https://newtechsolutions.com\", \"observacoes\": \"Cliente atualizado em dezembro\" }"
+      }
+    },
+    {
+      "_id": "req_delete_cliente",
+      "_type": "request",
+      "parentId": "wrk_clientes_dona",
+      "name": "Deletar Cliente",
+      "method": "DELETE",
+      "url": "{{ base_url }}/clientes/{{ cliente_id }}",
+      "body": {}
+    }
+  ]
+}

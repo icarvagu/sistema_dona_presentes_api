@@ -45,6 +45,7 @@ func main() {
 	controllers.InitTransportadoraRepository()
 	controllers.InitFuncionarioRepository()
 	controllers.InitProdutoRepository()
+	controllers.InitClienteRepository()
 
 	r := mux.NewRouter()
 
@@ -59,6 +60,9 @@ func main() {
 
 	// Register produtos routes
 	routes.RegisterProdutosRoutes(r)
+
+	// Register clientes routes
+	routes.RegisterClientesRoutes(r)
 
 	log.Printf("Server starting on %s\n", port)
 	log.Fatal(http.ListenAndServe(port, r))
