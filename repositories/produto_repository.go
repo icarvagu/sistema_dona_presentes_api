@@ -3,6 +3,7 @@ package repositories
 import (
 	"database/sql"
 	"donapresentes/models"
+	apperrors "donapresentes/errors"
 	"fmt"
 
 	"github.com/lib/pq"
@@ -20,7 +21,7 @@ func NewProdutoRepository(db *sql.DB) *ProdutoRepository {
 func (r *ProdutoRepository) GetAll() ([]models.Produto, error) {
 	rows, err := r.db.Query(`SELECT p.id, p.nome_produto, p.codigo_interno, p.codigo_fornecedor, f.id, f.nome_fantasia_ou_razao_social, f.cnpj, f.inscricao_estadual, f.responsavel_atendimento, f.email_geral, f.telefone_fixo, f.celular, f.email_responsavel, f.endereco_comercial, f.criado_em, f.atualizado_em, p.grupo_produto, p.descricao, p.fotos, p.ncm, p.origem_material, p.estoque, p.criado_em, p.atualizado_em FROM produtos p JOIN fornecedores f ON p.codigo_fornecedor = f.id`)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError(err)
 	}
 	defer rows.Close()
 
@@ -61,9 +62,9 @@ func (r *ProdutoRepository) Create(p *models.Produto) error {
 	var tmp int
 	if err := r.db.QueryRow("SELECT id FROM fornecedores WHERE id=$1", p.CodigoFornecedor).Scan(&tmp); err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("fornecedor not found")
+			return apperrors.ErrFornecedorNotFound
 		}
-		return err
+		return apperrors.NewDatabaseError(err)
 	}
 
 	err := r.db.QueryRow(`INSERT INTO produtos (nome_produto, codigo_interno, codigo_fornecedor, grupo_produto, descricao, fotos, ncm, origem_material, estoque) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, criado_em, atualizado_em`,
@@ -92,11 +93,11 @@ func (r *ProdutoRepository) Update(id int, p *models.Produto) error {
 func (r *ProdutoRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM produtos WHERE id=$1", id)
 	if err != nil {
-		return err
+		return apperrors.NewDatabaseError(err)
 	}
 	rows, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return apperrors.NewDatabaseError(err)
 	}
 	if rows == 0 {
 		return sql.ErrNoRows

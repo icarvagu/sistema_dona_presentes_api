@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"donapresentes/controllers/config"
+	apperrors "donapresentes/errors"
+	"donapresentes/middleware"
 	"donapresentes/models"
 	"donapresentes/repositories"
 
@@ -23,7 +25,7 @@ func InitFuncionarioRepository() {
 func GetFuncionarios(w http.ResponseWriter, r *http.Request) {
 	funcionarios, err := funcionarioRepo.GetAll()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 
@@ -36,17 +38,17 @@ func GetFuncionario(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "ID do funcionário inválido", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 
 	f, err := funcionarioRepo.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "Funcionário não encontrado", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrFuncionarioNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 
@@ -59,13 +61,17 @@ func CreateFuncionario(w http.ResponseWriter, r *http.Request) {
 	var f models.Funcionario
 	err := json.NewDecoder(r.Body).Decode(&f)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
 	err = funcionarioRepo.Create(&f)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 
@@ -79,20 +85,24 @@ func UpdateFuncionario(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "ID do funcionário inválido", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 
 	var f models.Funcionario
 	err = json.NewDecoder(r.Body).Decode(&f)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
 	err = funcionarioRepo.Update(id, &f)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 
@@ -106,17 +116,17 @@ func DeleteFuncionario(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "ID do funcionário inválido", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 
 	err = funcionarioRepo.Delete(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "Funcionário não encontrado", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrFuncionarioNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 

@@ -3,6 +3,7 @@ package repositories
 import (
 	"database/sql"
 	"donapresentes/models"
+	apperrors "donapresentes/errors"
 )
 
 type TransportadoraRepository struct {
@@ -17,7 +18,7 @@ func NewTransportadoraRepository(db *sql.DB) *TransportadoraRepository {
 func (r *TransportadoraRepository) GetAll() ([]models.Transportadora, error) {
 	rows, err := r.db.Query("SELECT id, nome_transportadora, tipo_transportadora, email, telefone_fixo, celular, endereco_completo, contato_principal_nome, contato_principal_telefone, site, created_at, updated_at FROM transportadoras")
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError(err)
 	}
 	defer rows.Close()
 
@@ -63,11 +64,11 @@ func (r *TransportadoraRepository) Update(id int, t *models.Transportadora) erro
 func (r *TransportadoraRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM transportadoras WHERE id=$1", id)
 	if err != nil {
-		return err
+		return apperrors.NewDatabaseError(err)
 	}
 	rows, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return apperrors.NewDatabaseError(err)
 	}
 	if rows == 0 {
 		return sql.ErrNoRows

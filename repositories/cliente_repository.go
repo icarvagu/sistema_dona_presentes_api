@@ -3,6 +3,7 @@ package repositories
 import (
 	"database/sql"
 	"donapresentes/models"
+	apperrors "donapresentes/errors"
 	"fmt"
 	"regexp"
 )
@@ -19,7 +20,7 @@ func NewClienteRepository(db *sql.DB) *ClienteRepository {
 func ValidateEmail(email string) error {
 	pattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 	if !regexp.MustCompile(pattern).MatchString(email) {
-		return fmt.Errorf("email inválido")
+		return apperrors.ErrInvalidEmail
 	}
 	return nil
 }
@@ -27,7 +28,7 @@ func ValidateEmail(email string) error {
 func ValidateCPF(cpf string) error {
 	cpf = regexp.MustCompile(`\D`).ReplaceAllString(cpf, "")
 	if len(cpf) != 11 {
-		return fmt.Errorf("CPF deve ter 11 dígitos")
+		return apperrors.ErrInvalidCPF
 	}
 	return nil
 }
@@ -35,7 +36,7 @@ func ValidateCPF(cpf string) error {
 func ValidateCNPJ(cnpj string) error {
 	cnpj = regexp.MustCompile(`\D`).ReplaceAllString(cnpj, "")
 	if len(cnpj) != 14 {
-		return fmt.Errorf("CNPJ deve ter 14 dígitos")
+		return apperrors.ErrInvalidCNPJ
 	}
 	return nil
 }
@@ -44,7 +45,7 @@ func ValidateCNPJ(cnpj string) error {
 func (r *ClienteRepository) GetAll() ([]models.Cliente, error) {
 	rows, err := r.db.Query(`SELECT id, tipo_cliente, situacao, nome_empresa_pessoa, cnpj, cpf, email, telefone_comercial, celular, site, observacoes, criado_em, atualizado_em FROM clientes`)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError(err)
 	}
 	defer rows.Close()
 
@@ -53,7 +54,7 @@ func (r *ClienteRepository) GetAll() ([]models.Cliente, error) {
 		var c models.Cliente
 		err := rows.Scan(&c.ID, &c.TipoCliente, &c.Situacao, &c.NomeEmpresaPessoa, &c.CNPJ, &c.CPF, &c.Email, &c.TelefoneComercial, &c.Celular, &c.Site, &c.Observacoes, &c.CriadoEm, &c.AtualizadoEm)
 		if err != nil {
-			return nil, err
+			return nil, apperrors.NewDatabaseError(err)
 		}
 
 		// Fetch enderecos
@@ -91,17 +92,17 @@ func (r *ClienteRepository) GetByID(id int) (*models.Cliente, error) {
 func (r *ClienteRepository) Create(c *models.Cliente) error {
 	// Validate required fields
 	if c.NomeEmpresaPessoa == "" || c.Email == "" || c.TipoCliente == "" || c.Situacao == "" {
-		return fmt.Errorf("nome_empresa_pessoa, email, tipo_cliente e situacao são obrigatórios")
+		return apperrors.NewMissingFieldError("nome_empresa_pessoa", "email", "tipo_cliente", "situacao")
 	}
 
 	// Validate tipo_cliente
 	if c.TipoCliente != "PF" && c.TipoCliente != "PJ" {
-		return fmt.Errorf("tipo_cliente deve ser 'PF' ou 'PJ'")
+		return apperrors.NewInvalidFieldError("tipo_cliente", "deve ser 'PF' ou 'PJ'")
 	}
 
 	// Validate situacao
 	if c.Situacao != "Ativo" && c.Situacao != "Inativo" {
-		return fmt.Errorf("situacao deve ser 'Ativo' ou 'Inativo'")
+		return apperrors.NewInvalidFieldError("situacao", "deve ser 'Ativo' ou 'Inativo'")
 	}
 
 	// Validate email
@@ -112,14 +113,14 @@ func (r *ClienteRepository) Create(c *models.Cliente) error {
 	// Validate CPF/CNPJ
 	if c.TipoCliente == "PF" {
 		if c.CPF == nil || *c.CPF == "" {
-			return fmt.Errorf("CPF é obrigatório para Pessoa Física")
+			return apperrors.NewMissingFieldError("CPF")
 		}
 		if err := ValidateCPF(*c.CPF); err != nil {
 			return err
 		}
 	} else if c.TipoCliente == "PJ" {
 		if c.CNPJ == nil || *c.CNPJ == "" {
-			return fmt.Errorf("CNPJ é obrigatório para Pessoa Jurídica")
+			return apperrors.NewMissingFieldError("CNPJ")
 		}
 		if err := ValidateCNPJ(*c.CNPJ); err != nil {
 			return err
@@ -132,7 +133,7 @@ func (r *ClienteRepository) Create(c *models.Cliente) error {
 		c.TipoCliente, c.Situacao, c.NomeEmpresaPessoa, c.CNPJ, c.CPF, c.Email, c.TelefoneComercial, c.Celular, c.Site, c.Observacoes).
 		Scan(&c.ID, &c.CriadoEm, &c.AtualizadoEm)
 	if err != nil {
-		return err
+		return apperrors.NewDatabaseError(err)
 	}
 
 	// Insert enderecos
@@ -154,15 +155,15 @@ func (r *ClienteRepository) Create(c *models.Cliente) error {
 func (r *ClienteRepository) Update(id int, c *models.Cliente) error {
 	// Validate required fields
 	if c.NomeEmpresaPessoa == "" || c.Email == "" || c.TipoCliente == "" || c.Situacao == "" {
-		return fmt.Errorf("nome_empresa_pessoa, email, tipo_cliente e situacao são obrigatórios")
+		return apperrors.NewMissingFieldError("nome_empresa_pessoa", "email", "tipo_cliente", "situacao")
 	}
 
 	if c.TipoCliente != "PF" && c.TipoCliente != "PJ" {
-		return fmt.Errorf("tipo_cliente deve ser 'PF' ou 'PJ'")
+		return apperrors.NewInvalidFieldError("tipo_cliente", "deve ser 'PF' ou 'PJ'")
 	}
 
 	if c.Situacao != "Ativo" && c.Situacao != "Inativo" {
-		return fmt.Errorf("situacao deve ser 'Ativo' ou 'Inativo'")
+		return apperrors.NewInvalidFieldError("situacao", "deve ser 'Ativo' ou 'Inativo'")
 	}
 
 	if err := ValidateEmail(c.Email); err != nil {
@@ -171,14 +172,14 @@ func (r *ClienteRepository) Update(id int, c *models.Cliente) error {
 
 	if c.TipoCliente == "PF" {
 		if c.CPF == nil || *c.CPF == "" {
-			return fmt.Errorf("CPF é obrigatório para Pessoa Física")
+			return apperrors.NewMissingFieldError("CPF")
 		}
 		if err := ValidateCPF(*c.CPF); err != nil {
 			return err
 		}
 	} else if c.TipoCliente == "PJ" {
 		if c.CNPJ == nil || *c.CNPJ == "" {
-			return fmt.Errorf("CNPJ é obrigatório para Pessoa Jurídica")
+			return apperrors.NewMissingFieldError("CNPJ")
 		}
 		if err := ValidateCNPJ(*c.CNPJ); err != nil {
 			return err
@@ -188,18 +189,21 @@ func (r *ClienteRepository) Update(id int, c *models.Cliente) error {
 	_, err := r.db.Exec(
 		`UPDATE clientes SET tipo_cliente=$1, situacao=$2, nome_empresa_pessoa=$3, cnpj=$4, cpf=$5, email=$6, telefone_comercial=$7, celular=$8, site=$9, observacoes=$10, atualizado_em=NOW() WHERE id=$11`,
 		c.TipoCliente, c.Situacao, c.NomeEmpresaPessoa, c.CNPJ, c.CPF, c.Email, c.TelefoneComercial, c.Celular, c.Site, c.Observacoes, id)
-	return err
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+	return nil
 }
 
 // Delete removes a cliente and related enderecos/contatos (cascade)
 func (r *ClienteRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM clientes WHERE id=$1", id)
 	if err != nil {
-		return err
+		return apperrors.NewDatabaseError(err)
 	}
 	rows, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return apperrors.NewDatabaseError(err)
 	}
 	if rows == 0 {
 		return sql.ErrNoRows
@@ -211,7 +215,7 @@ func (r *ClienteRepository) Delete(id int) error {
 func (r *ClienteRepository) GetEnderecos(clienteID int) ([]models.Endereco, error) {
 	rows, err := r.db.Query(`SELECT id, cliente_id, tipo_endereco, endereco, criado_em, atualizado_em FROM enderecos_cliente WHERE cliente_id=$1`, clienteID)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError(err)
 	}
 	defer rows.Close()
 
@@ -220,7 +224,7 @@ func (r *ClienteRepository) GetEnderecos(clienteID int) ([]models.Endereco, erro
 		var e models.Endereco
 		err := rows.Scan(&e.ID, &e.ClienteID, &e.TipoEndereco, &e.Endereco, &e.CriadoEm, &e.AtualizadoEm)
 		if err != nil {
-			return nil, err
+			return nil, apperrors.NewDatabaseError(err)
 		}
 		enderecos = append(enderecos, e)
 	}
@@ -228,21 +232,27 @@ func (r *ClienteRepository) GetEnderecos(clienteID int) ([]models.Endereco, erro
 }
 
 func (r *ClienteRepository) CreateEndereco(e *models.Endereco) error {
-	if e.Endereco == "" || (e.TipoEndereco != "comercial" && e.TipoEndereco != "entrega") {
-		return fmt.Errorf("endereco e tipo_endereco são obrigatórios")
+	if e.Endereco == "" {
+		return apperrors.NewMissingFieldError("endereco")
+	}
+	if e.TipoEndereco != "comercial" && e.TipoEndereco != "entrega" {
+		return apperrors.NewInvalidFieldError("tipo_endereco", "deve ser 'comercial' ou 'entrega'")
 	}
 	err := r.db.QueryRow(
 		`INSERT INTO enderecos_cliente (cliente_id, tipo_endereco, endereco) VALUES ($1,$2,$3) RETURNING id, criado_em, atualizado_em`,
 		e.ClienteID, e.TipoEndereco, e.Endereco).
 		Scan(&e.ID, &e.CriadoEm, &e.AtualizadoEm)
-	return err
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+	return nil
 }
 
 // Contato adicional methods
 func (r *ClienteRepository) GetContatosAdicionais(clienteID int) ([]models.ContatoAdicional, error) {
 	rows, err := r.db.Query(`SELECT id, cliente_id, nome, email, telefone, criado_em, atualizado_em FROM contatos_adicionais WHERE cliente_id=$1`, clienteID)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError(err)
 	}
 	defer rows.Close()
 
@@ -251,7 +261,7 @@ func (r *ClienteRepository) GetContatosAdicionais(clienteID int) ([]models.Conta
 		var c models.ContatoAdicional
 		err := rows.Scan(&c.ID, &c.ClienteID, &c.Nome, &c.Email, &c.Telefone, &c.CriadoEm, &c.AtualizadoEm)
 		if err != nil {
-			return nil, err
+			return nil, apperrors.NewDatabaseError(err)
 		}
 		contatos = append(contatos, c)
 	}
@@ -260,11 +270,14 @@ func (r *ClienteRepository) GetContatosAdicionais(clienteID int) ([]models.Conta
 
 func (r *ClienteRepository) CreateContatoAdicional(c *models.ContatoAdicional) error {
 	if c.Nome == "" {
-		return fmt.Errorf("nome do contato é obrigatório")
+		return apperrors.NewMissingFieldError("nome")
 	}
 	err := r.db.QueryRow(
 		`INSERT INTO contatos_adicionais (cliente_id, nome, email, telefone) VALUES ($1,$2,$3,$4) RETURNING id, criado_em, atualizado_em`,
 		c.ClienteID, c.Nome, c.Email, c.Telefone).
 		Scan(&c.ID, &c.CriadoEm, &c.AtualizadoEm)
-	return err
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+	return nil
 }
