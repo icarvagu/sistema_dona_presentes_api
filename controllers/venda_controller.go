@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"donapresentes/controllers/config"
+	apperrors "donapresentes/errors"
+	"donapresentes/middleware"
 	"donapresentes/models"
 	"donapresentes/repositories"
 
@@ -23,7 +25,7 @@ func InitVendaRepository() {
 func GetVendas(w http.ResponseWriter, r *http.Request) {
 	vs, err := vendaRepo.GetAll()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -35,16 +37,16 @@ func GetVenda(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "ID inválido", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	v, err := vendaRepo.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "Venda não encontrada", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrVendaNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -55,13 +57,17 @@ func GetVenda(w http.ResponseWriter, r *http.Request) {
 func CreateVenda(w http.ResponseWriter, r *http.Request) {
 	var input models.VendaInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "JSON inválido: "+err.Error(), http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
 	v, err := vendaRepo.Create(&input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -74,22 +80,26 @@ func UpdateVenda(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "ID inválido", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	var input models.VendaInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "JSON inválido: "+err.Error(), http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
 	v, err := vendaRepo.Update(id, &input)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "Venda não encontrada", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrVendaNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -101,15 +111,15 @@ func DeleteVenda(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "ID inválido", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	if err := vendaRepo.Delete(id); err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "Venda não encontrada", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrVendaNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

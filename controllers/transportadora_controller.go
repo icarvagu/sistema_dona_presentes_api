@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"donapresentes/controllers/config"
+	apperrors "donapresentes/errors"
+	"donapresentes/middleware"
 	"donapresentes/models"
 	"donapresentes/repositories"
 
@@ -23,7 +25,7 @@ func InitTransportadoraRepository() {
 func GetTransportadoras(w http.ResponseWriter, r *http.Request) {
 	items, err := transportadoraRepo.GetAll()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 
@@ -36,17 +38,17 @@ func GetTransportadora(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 
 	t, err := transportadoraRepo.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "not found", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrTransportadoraNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 
@@ -58,13 +60,13 @@ func GetTransportadora(w http.ResponseWriter, r *http.Request) {
 func CreateTransportadora(w http.ResponseWriter, r *http.Request) {
 	var t models.Transportadora
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
 	err := transportadoraRepo.Create(&t)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 
@@ -78,19 +80,19 @@ func UpdateTransportadora(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 
 	var t models.Transportadora
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
 	err = transportadoraRepo.Update(id, &t)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 
@@ -104,17 +106,17 @@ func DeleteTransportadora(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 
 	err = transportadoraRepo.Delete(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "not found", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrTransportadoraNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 

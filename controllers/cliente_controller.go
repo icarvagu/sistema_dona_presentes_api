@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"donapresentes/controllers/config"
+	apperrors "donapresentes/errors"
+	"donapresentes/middleware"
 	"donapresentes/models"
 	"donapresentes/repositories"
 
@@ -23,7 +25,7 @@ func InitClienteRepository() {
 func GetClientes(w http.ResponseWriter, r *http.Request) {
 	cs, err := clienteRepo.GetAll()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -35,16 +37,16 @@ func GetCliente(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "ID inválido", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	c, err := clienteRepo.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "Cliente não encontrado", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrClienteNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -55,12 +57,16 @@ func GetCliente(w http.ResponseWriter, r *http.Request) {
 func CreateCliente(w http.ResponseWriter, r *http.Request) {
 	var c models.Cliente
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
-		http.Error(w, "JSON inválido: "+err.Error(), http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
 	if err := clienteRepo.Create(&c); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, err, http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -73,21 +79,25 @@ func UpdateCliente(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "ID inválido", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	var c models.Cliente
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
-		http.Error(w, "JSON inválido: "+err.Error(), http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
 	if err := clienteRepo.Update(id, &c); err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "Cliente não encontrado", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrClienteNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, err, http.StatusBadRequest)
 		return
 	}
 	c.ID = id
@@ -100,15 +110,15 @@ func DeleteCliente(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "ID inválido", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	if err := clienteRepo.Delete(id); err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "Cliente não encontrado", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrClienteNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

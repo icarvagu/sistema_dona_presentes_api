@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"donapresentes/controllers/config"
+	apperrors "donapresentes/errors"
+	"donapresentes/middleware"
 	"donapresentes/models"
 	"donapresentes/repositories"
 
@@ -23,7 +25,7 @@ func InitProdutoRepository() {
 func GetProdutos(w http.ResponseWriter, r *http.Request) {
 	ps, err := produtoRepo.GetAll()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -35,16 +37,16 @@ func GetProduto(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	p, err := produtoRepo.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "not found", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrProdutoNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -55,21 +57,16 @@ func GetProduto(w http.ResponseWriter, r *http.Request) {
 func CreateProduto(w http.ResponseWriter, r *http.Request) {
 	var p models.Produto
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	// basic validation
-	if p.NomeProduto == "" || p.CodigoInterno == "" || p.CodigoFornecedor == 0 {
-		http.Error(w, "nome_produto, codigo_interno and codigo_fornecedor are required", http.StatusBadRequest)
-		return
-	}
-	if p.Estoque < 0 {
-		http.Error(w, "estoque cannot be negative", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 
 	if err := produtoRepo.Create(&p); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusBadRequest)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -82,28 +79,24 @@ func UpdateProduto(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	var p models.Produto
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if p.NomeProduto == "" || p.CodigoInterno == "" || p.CodigoFornecedor == 0 {
-		http.Error(w, "nome_produto, codigo_interno and codigo_fornecedor are required", http.StatusBadRequest)
-		return
-	}
-	if p.Estoque < 0 {
-		http.Error(w, "estoque cannot be negative", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
 	if err := produtoRepo.Update(id, &p); err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "not found", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrProdutoNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 	p.ID = id
@@ -116,15 +109,15 @@ func DeleteProduto(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
 	if err := produtoRepo.Delete(id); err != nil {
 		if err == sql.ErrNoRows {
-			http.Error(w, "not found", http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrProdutoNotFound, http.StatusNotFound)
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

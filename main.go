@@ -8,6 +8,7 @@ import (
 
 	"donapresentes/controllers"
 	"donapresentes/controllers/config"
+	"donapresentes/middleware"
 	"donapresentes/routes"
 
 	"github.com/gorilla/mux"
@@ -49,6 +50,10 @@ func main() {
 	controllers.InitVendaRepository()
 
 	r := mux.NewRouter()
+
+	// Aplicar middlewares globais
+	r.Use(middleware.LoggingMiddleware)
+	r.Use(middleware.RecoveryMiddleware)
 
 	// Register fornecedores routes
 	routes.RegisterFornecedoresRoutes(r)

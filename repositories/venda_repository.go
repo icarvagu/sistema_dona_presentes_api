@@ -3,7 +3,7 @@ package repositories
 import (
 	"database/sql"
 	"donapresentes/models"
-	"fmt"
+	apperrors "donapresentes/errors"
 )
 
 type VendaRepository struct {
@@ -17,45 +17,45 @@ func NewVendaRepository(db *sql.DB) *VendaRepository {
 // ValidateVenda checks required fields and relationships
 func (r *VendaRepository) ValidateVenda(v *models.VendaInput) error {
 	if v.VendedorID == 0 {
-		return fmt.Errorf("vendedor_id é obrigatório")
+		return apperrors.NewMissingFieldError("vendedor_id")
 	}
 	if v.FormaPagamento == "" {
-		return fmt.Errorf("forma_pagamento é obrigatória")
+		return apperrors.NewMissingFieldError("forma_pagamento")
 	}
 	if v.Parcelas <= 0 {
-		return fmt.Errorf("parcelas deve ser maior que 0")
+		return apperrors.NewInvalidFieldError("parcelas", "deve ser maior que 0")
 	}
 	if len(v.Itens) == 0 {
-		return fmt.Errorf("venda deve ter pelo menos 1 item")
+		return apperrors.NewValidationError("venda deve ter pelo menos 1 item")
 	}
 
 	// Validate vendedor exists
 	var tmp int
 	if err := r.db.QueryRow("SELECT id FROM funcionarios WHERE id=$1", v.VendedorID).Scan(&tmp); err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("vendedor não encontrado")
+			return apperrors.ErrFuncionarioNotFound
 		}
-		return err
+		return apperrors.NewDatabaseError(err)
 	}
 
 	// Validate itens
 	for i, item := range v.Itens {
 		if item.ProdutoID == 0 {
-			return fmt.Errorf("item %d: produto_id é obrigatório", i+1)
+			return apperrors.NewInvalidFieldError("item "+string(rune(i+1)), "produto_id é obrigatório")
 		}
 		if item.Quantidade <= 0 {
-			return fmt.Errorf("item %d: quantidade deve ser maior que 0", i+1)
+			return apperrors.NewInvalidFieldError("item "+string(rune(i+1)), "quantidade deve ser maior que 0")
 		}
 		if item.ValorUnitario <= 0 {
-			return fmt.Errorf("item %d: valor_unitario deve ser maior que 0", i+1)
+			return apperrors.NewInvalidFieldError("item "+string(rune(i+1)), "valor_unitario deve ser maior que 0")
 		}
 
 		// Validate produto exists
 		if err := r.db.QueryRow("SELECT id FROM produtos WHERE id=$1", item.ProdutoID).Scan(&tmp); err != nil {
 			if err == sql.ErrNoRows {
-				return fmt.Errorf("item %d: produto não encontrado", i+1)
+				return apperrors.ErrProdutoNotFound
 			}
-			return err
+			return apperrors.NewDatabaseError(err)
 		}
 	}
 
@@ -66,7 +66,7 @@ func (r *VendaRepository) ValidateVenda(v *models.VendaInput) error {
 func (r *VendaRepository) GetAll() ([]models.Venda, error) {
 	rows, err := r.db.Query(`SELECT id, vendedor_id, forma_pagamento, parcelas, prazo_dias, inicio_primeira_parcela, criado_em, atualizado_em FROM vendas`)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError(err)
 	}
 	defer rows.Close()
 
@@ -97,7 +97,10 @@ func (r *VendaRepository) GetByID(id int) (*models.Venda, error) {
 	err := r.db.QueryRow(`SELECT id, vendedor_id, forma_pagamento, parcelas, prazo_dias, inicio_primeira_parcela, criado_em, atualizado_em FROM vendas WHERE id=$1`, id).
 		Scan(&v.ID, &v.VendedorID, &v.FormaPagamento, &v.Parcelas, &v.PrazoDias, &v.InicioPrimeiraParcela, &v.CriadoEm, &v.AtualizadoEm)
 	if err != nil {
-		return nil, err
+		if err == sql.ErrNoRows {
+			return nil, sql.ErrNoRows
+		}
+		return nil, apperrors.NewDatabaseError(err)
 	}
 
 	vendedor, _ := r.GetVendedor(v.VendedorID)
@@ -121,7 +124,7 @@ func (r *VendaRepository) Create(input *models.VendaInput) (*models.Venda, error
 		input.VendedorID, input.FormaPagamento, input.Parcelas, input.PrazoDias, input.InicioPrimeiraParcela).
 		Scan(&v.ID, &v.CriadoEm, &v.AtualizadoEm)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError(err)
 	}
 
 	v.VendedorID = input.VendedorID
@@ -157,7 +160,7 @@ func (r *VendaRepository) Update(id int, input *models.VendaInput) (*models.Vend
 		`UPDATE vendas SET vendedor_id=$1, forma_pagamento=$2, parcelas=$3, prazo_dias=$4, inicio_primeira_parcela=$5, atualizado_em=NOW() WHERE id=$6`,
 		input.VendedorID, input.FormaPagamento, input.Parcelas, input.PrazoDias, input.InicioPrimeiraParcela, id)
 	if err != nil {
-		return nil, err
+		return nil, apperrors.NewDatabaseError(err)
 	}
 
 	// Delete existing itens
@@ -183,11 +186,11 @@ func (r *VendaRepository) Update(id int, input *models.VendaInput) (*models.Vend
 func (r *VendaRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM vendas WHERE id=$1", id)
 	if err != nil {
-		return err
+		return apperrors.NewDatabaseError(err)
 	}
 	rows, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return apperrors.NewDatabaseError(err)
 	}
 	if rows == 0 {
 		return sql.ErrNoRows
@@ -198,8 +201,8 @@ func (r *VendaRepository) Delete(id int) error {
 // Helper methods
 func (r *VendaRepository) GetVendedor(vendedorID int) (*models.Funcionario, error) {
 	var f models.Funcionario
-	err := r.db.QueryRow(`SELECT id, nome_completo,cpf FROM funcionarios WHERE id=$1`, vendedorID).
-		Scan(&f.ID, &f.NomeCompleto, f.CPF)
+	err := r.db.QueryRow(`SELECT id, nome_completo, cpf, rg, data_nascimento, sexo, situacao, email_contato, endereco_completo, telefones_contato, observacoes, criado_em FROM funcionarios WHERE id=$1`, vendedorID).
+		Scan(&f.ID, &f.NomeCompleto, &f.CPF, &f.RG, &f.DataNascimento, &f.Sexo, &f.Situacao, &f.EmailContato, &f.EnderecoCompleto, &f.TelefonesContato, &f.Observacoes, &f.CriadoEm)
 	if err != nil {
 		return nil, err
 	}
@@ -240,10 +243,23 @@ func (r *VendaRepository) CreateItem(item *models.VendaItem) error {
 
 func (r *VendaRepository) GetProdutoBasico(produtoID int) (*models.Produto, error) {
 	var p models.Produto
-	err := r.db.QueryRow(`SELECT id, nome_produto FROM produtos WHERE id=$1`, produtoID).
-		Scan(&p.ID, &p.NomeProduto)
+	var grupoProduto, descricao, ncm, origemMaterial sql.NullString
+	err := r.db.QueryRow(`SELECT id, nome_produto, codigo_interno, codigo_fornecedor, grupo_produto, descricao, ncm, origem_material, estoque, criado_em, atualizado_em FROM produtos WHERE id=$1`, produtoID).
+		Scan(&p.ID, &p.NomeProduto, &p.CodigoInterno, &p.CodigoFornecedor, &grupoProduto, &descricao, &ncm, &origemMaterial, &p.Estoque, &p.CriadoEm, &p.AtualizadoEm)
 	if err != nil {
 		return nil, err
+	}
+	if grupoProduto.Valid {
+		p.GrupoProduto = grupoProduto.String
+	}
+	if descricao.Valid {
+		p.Descricao = descricao.String
+	}
+	if ncm.Valid {
+		p.NCM = ncm.String
+	}
+	if origemMaterial.Valid {
+		p.OrigemMaterial = origemMaterial.String
 	}
 	return &p, nil
 }
