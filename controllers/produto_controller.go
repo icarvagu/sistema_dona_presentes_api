@@ -61,7 +61,8 @@ func CreateProduto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := produtoRepo.Create(&p); err != nil {
+	created, err := produtoRepo.Create(&p)
+	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
 			middleware.ErrorHandler(w, appErr, appErr.Code)
 			return
@@ -71,7 +72,7 @@ func CreateProduto(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(p)
+	json.NewEncoder(w).Encode(created)
 }
 
 // Update produto
@@ -87,7 +88,8 @@ func UpdateProduto(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
-	if err := produtoRepo.Update(id, &p); err != nil {
+	updated, err := produtoRepo.Update(id, &p)
+	if err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrProdutoNotFound, http.StatusNotFound)
 			return
@@ -101,7 +103,7 @@ func UpdateProduto(w http.ResponseWriter, r *http.Request) {
 	}
 	p.ID = id
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(p)
+	json.NewEncoder(w).Encode(updated)
 }
 
 // Delete produto

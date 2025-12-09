@@ -56,37 +56,59 @@ func (r *ProdutoRepository) GetByID(id int) (*models.Produto, error) {
 	return &p, nil
 }
 
+// GetByCodigoInterno returns um produto by codigo_interno (sem fornecedor nested)
+func (r *ProdutoRepository) GetByCodigoInterno(codigoInterno string) (*models.Produto, error) {
+	var p models.Produto
+	var fotos pq.StringArray
+	err := r.db.QueryRow(
+		`SELECT id, nome_produto, codigo_interno, codigo_fornecedor, grupo_produto, descricao, fotos, ncm, origem_material, estoque, criado_em, atualizado_em FROM produtos WHERE codigo_interno=$1`,
+		codigoInterno,
+	).Scan(&p.ID, &p.NomeProduto, &p.CodigoInterno, &p.CodigoFornecedor, &p.GrupoProduto, &p.Descricao, &fotos, &p.NCM, &p.OrigemMaterial, &p.Estoque, &p.CriadoEm, &p.AtualizadoEm)
+	if err != nil {
+		return nil, err
+	}
+	p.Fotos = []string(fotos)
+	return &p, nil
+}
+
 // Create inserts a new produto. Validates fornecedor existence.
-func (r *ProdutoRepository) Create(p *models.Produto) error {
+func (r *ProdutoRepository) Create(p *models.Produto) (*models.Produto, error) {
 	// check fornecedor exists
 	var tmp int
 	if err := r.db.QueryRow("SELECT id FROM fornecedores WHERE id=$1", p.CodigoFornecedor).Scan(&tmp); err != nil {
 		if err == sql.ErrNoRows {
-			return apperrors.ErrFornecedorNotFound
+			return nil, apperrors.ErrFornecedorNotFound
 		}
-		return apperrors.NewDatabaseError(err)
+		return nil, apperrors.NewDatabaseError(err)
 	}
 
 	err := r.db.QueryRow(`INSERT INTO produtos (nome_produto, codigo_interno, codigo_fornecedor, grupo_produto, descricao, fotos, ncm, origem_material, estoque) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id, criado_em, atualizado_em`,
 		p.NomeProduto, p.CodigoInterno, p.CodigoFornecedor, p.GrupoProduto, p.Descricao, pq.Array(p.Fotos), p.NCM, p.OrigemMaterial, p.Estoque).
 		Scan(&p.ID, &p.CriadoEm, &p.AtualizadoEm)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
 }
 
 // Update updates an existing produto
-func (r *ProdutoRepository) Update(id int, p *models.Produto) error {
+func (r *ProdutoRepository) Update(id int, p *models.Produto) (*models.Produto, error) {
 	// ensure fornecedor exists
 	var tmp int
 	if err := r.db.QueryRow("SELECT id FROM fornecedores WHERE id=$1", p.CodigoFornecedor).Scan(&tmp); err != nil {
 		if err == sql.ErrNoRows {
-			return fmt.Errorf("fornecedor not found")
+			return nil, fmt.Errorf("fornecedor not found")
 		}
-		return err
+		return nil, err
 	}
 
 	_, err := r.db.Exec(`UPDATE produtos SET nome_produto=$1, codigo_interno=$2, codigo_fornecedor=$3, grupo_produto=$4, descricao=$5, fotos=$6, ncm=$7, origem_material=$8, estoque=$9, atualizado_em=NOW() WHERE id=$10`,
 		p.NomeProduto, p.CodigoInterno, p.CodigoFornecedor, p.GrupoProduto, p.Descricao, pq.Array(p.Fotos), p.NCM, p.OrigemMaterial, p.Estoque, id)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	p.ID = id
+	return p, nil
 }
 
 // Delete removes a produto
