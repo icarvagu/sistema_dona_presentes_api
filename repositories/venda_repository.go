@@ -97,6 +97,9 @@ func (r *VendaRepository) GetByID(id int) (*models.Venda, error) {
 	err := r.db.QueryRow(`SELECT id, vendedor_id, forma_pagamento, parcelas, prazo_dias, inicio_primeira_parcela, criado_em, atualizado_em FROM vendas WHERE id=$1`, id).
 		Scan(&v.ID, &v.VendedorID, &v.FormaPagamento, &v.Parcelas, &v.PrazoDias, &v.InicioPrimeiraParcela, &v.CriadoEm, &v.AtualizadoEm)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, sql.ErrNoRows
+		}
 		return nil, apperrors.NewDatabaseError(err)
 	}
 
@@ -198,8 +201,8 @@ func (r *VendaRepository) Delete(id int) error {
 // Helper methods
 func (r *VendaRepository) GetVendedor(vendedorID int) (*models.Funcionario, error) {
 	var f models.Funcionario
-	err := r.db.QueryRow(`SELECT id, nome_completo,cpf FROM funcionarios WHERE id=$1`, vendedorID).
-		Scan(&f.ID, &f.NomeCompleto, f.CPF)
+	err := r.db.QueryRow(`SELECT id, nome_completo, cpf, rg, data_nascimento, sexo, situacao, email_contato, endereco_completo, telefones_contato, observacoes, criado_em FROM funcionarios WHERE id=$1`, vendedorID).
+		Scan(&f.ID, &f.NomeCompleto, &f.CPF, &f.RG, &f.DataNascimento, &f.Sexo, &f.Situacao, &f.EmailContato, &f.EnderecoCompleto, &f.TelefonesContato, &f.Observacoes, &f.CriadoEm)
 	if err != nil {
 		return nil, err
 	}
@@ -240,10 +243,23 @@ func (r *VendaRepository) CreateItem(item *models.VendaItem) error {
 
 func (r *VendaRepository) GetProdutoBasico(produtoID int) (*models.Produto, error) {
 	var p models.Produto
-	err := r.db.QueryRow(`SELECT id, nome_produto FROM produtos WHERE id=$1`, produtoID).
-		Scan(&p.ID, &p.NomeProduto)
+	var grupoProduto, descricao, ncm, origemMaterial sql.NullString
+	err := r.db.QueryRow(`SELECT id, nome_produto, codigo_interno, codigo_fornecedor, grupo_produto, descricao, ncm, origem_material, estoque, criado_em, atualizado_em FROM produtos WHERE id=$1`, produtoID).
+		Scan(&p.ID, &p.NomeProduto, &p.CodigoInterno, &p.CodigoFornecedor, &grupoProduto, &descricao, &ncm, &origemMaterial, &p.Estoque, &p.CriadoEm, &p.AtualizadoEm)
 	if err != nil {
 		return nil, err
+	}
+	if grupoProduto.Valid {
+		p.GrupoProduto = grupoProduto.String
+	}
+	if descricao.Valid {
+		p.Descricao = descricao.String
+	}
+	if ncm.Valid {
+		p.NCM = ncm.String
+	}
+	if origemMaterial.Valid {
+		p.OrigemMaterial = origemMaterial.String
 	}
 	return &p, nil
 }
