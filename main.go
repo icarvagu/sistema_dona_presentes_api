@@ -73,6 +73,9 @@ func main() {
 	// Register vendas routes
 	routes.RegisterVendasRoutes(r)
 
+	// Register produtos XBZ routes
+	routes.RegisterProdutoXBZRoutes(r)
+
 	log.Printf("Server starting on %s\n", port)
 	log.Fatal(http.ListenAndServe(port, r))
 }
