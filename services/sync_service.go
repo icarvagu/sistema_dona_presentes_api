@@ -9,18 +9,18 @@ import (
 
 type SyncService struct {
 	provider           ExternalAPIProvider
-	produtoRepository  *repositories.ProdutoRepository
-	fornecedorRepository *repositories.FornecedorRepository
+	productRepository  *repositories.ProductRepository
+	fornecedorRepository *repositories.SupplierRepository
 }
 
 func NewSyncService(
 	provider ExternalAPIProvider,
-	produtoRepo *repositories.ProdutoRepository,
-	fornecedorRepo *repositories.FornecedorRepository,
+	productRepo *repositories.ProductRepository,
+	fornecedorRepo *repositories.SupplierRepository,
 ) *SyncService {
 	return &SyncService{
 		provider:            provider,
-		produtoRepository:   produtoRepo,
+		productRepository:   productRepo,
 		fornecedorRepository: fornecedorRepo,
 	}
 }
@@ -38,7 +38,7 @@ func (s *SyncService) Sincronizar() (*SyncResult, error) {
 	result.Total = len(itemsExternos)
 
 	// Garantir que o fornecedor XBZ existe
-	fornecedorXBZ := s.provider.MapearParaFornecedor(nil)
+	fornecedorXBZ := s.provider.MapToSupplier(nil)
 	fornecedorID, err := s.garantirFornecedor(fornecedorXBZ)
 	if err != nil {
 		result.Erros++
@@ -47,22 +47,22 @@ func (s *SyncService) Sincronizar() (*SyncResult, error) {
 
 	// Sincronizar cada produto
 	for _, itemExterno := range itemsExternos {
-		produtoLocal := s.provider.MapearParaProdutoLocal(itemExterno)
+		produtoLocal := s.provider.MapToLocalProduct(itemExterno)
 		if produtoLocal == nil {
 			result.Erros++
 			continue
 		}
 
 		// Associar ao fornecedor
-		produtoLocal.CodigoFornecedor = fornecedorID
+		produtoLocal.SupplierID = fornecedorID
 
 		// Verificar se já existe
-		existente, err := s.produtoRepository.GetByCodigoInterno(produtoLocal.CodigoInterno)
+		existente, err := s.productRepository.GetByCodigoInterno(produtoLocal.InternalCode)
 		if err == nil && existente != nil {
 			// Atualizar
 			produtoLocal.ID = existente.ID
-			produtoLocal.CriadoEm = existente.CriadoEm
-			_, err := s.produtoRepository.Update(produtoLocal.ID, produtoLocal)
+			produtoLocal.CreatedAt = existente.CreatedAt
+			_, err := s.productRepository.Update(produtoLocal.ID, produtoLocal)
 			if err != nil {
 				result.Erros++
 				continue
@@ -74,7 +74,7 @@ func (s *SyncService) Sincronizar() (*SyncResult, error) {
 			continue
 		} else {
 			// Criar novo
-			_, err := s.produtoRepository.Create(produtoLocal)
+			_, err := s.productRepository.Create(produtoLocal)
 			if err != nil {
 				result.Erros++
 				continue
@@ -87,7 +87,7 @@ func (s *SyncService) Sincronizar() (*SyncResult, error) {
 }
 
 // garantirFornecedor verifica se fornecedor existe, se não cria
-func (s *SyncService) garantirFornecedor(fornecedor *models.Fornecedor) (int, error) {
+func (s *SyncService) garantirFornecedor(fornecedor *models.Supplier) (int, error) {
 	// Buscar por nome
 	existentes, err := s.fornecedorRepository.GetAll()
 	if err != nil {
@@ -95,7 +95,7 @@ func (s *SyncService) garantirFornecedor(fornecedor *models.Fornecedor) (int, er
 	}
 
 	for _, f := range existentes {
-		if f.FantasyName == fornecedor.FantasyName {
+		if f.Name == fornecedor.Name {
 			return f.ID, nil
 		}
 	}
@@ -112,7 +112,7 @@ func (s *SyncService) garantirFornecedor(fornecedor *models.Fornecedor) (int, er
 		return 0, err
 	}
 	for _, f := range existentes2 {
-		if f.FantasyName == fornecedor.FantasyName {
+		if f.Name == fornecedor.Name {
 			return f.ID, nil
 		}
 	}

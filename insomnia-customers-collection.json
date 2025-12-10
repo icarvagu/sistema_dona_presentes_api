@@ -1,0 +1,87 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-12-08T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2025.1.0",
+  "resources": [
+    {
+      "_id": "wrk_customers_dona",
+      "_type": "workspace",
+      "name": "Dona Presentes - Customers",
+      "description": "Collection for testing customer endpoints",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_customers_base",
+      "_type": "environment",
+      "parentId": "wrk_customers_dona",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "customer_id": 1
+      }
+    },
+    {
+      "_id": "req_list_customers",
+      "_type": "request",
+      "parentId": "wrk_customers_dona",
+      "name": "List Customers",
+      "method": "GET",
+      "url": "{{ base_url }}/customers",
+      "body": {}
+    },
+    {
+      "_id": "req_get_customer",
+      "_type": "request",
+      "parentId": "wrk_customers_dona",
+      "name": "Get Customer by ID",
+      "method": "GET",
+      "url": "{{ base_url }}/customers/{{ customer_id }}",
+      "body": {}
+    },
+    {
+      "_id": "req_create_pf",
+      "_type": "request",
+      "parentId": "wrk_customers_dona",
+      "name": "Create Customer - Individual",
+      "method": "POST",
+      "url": "{{ base_url }}/customers",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"tipo_cliente\": \"PF\", \"situacao\": \"Ativo\", \"nome_empresa_pessoa\": \"João Silva\", \"cpf\": \"123.456.789-00\", \"email\": \"joao@example.com\", \"telefone_comercial\": \"(11) 3000-0000\", \"celular\": \"(11) 99999-0000\", \"site\": null, \"observacoes\": \"Preferred customer\", \"enderecos\": [{ \"tipo_endereco\": \"comercial\", \"endereco\": \"Rua A, 123, São Paulo, SP\" }], \"contatos_adicionais\": [{ \"nome\": \"Maria Silva\", \"email\": \"maria@example.com\", \"telefone\": \"(11) 98888-0000\" }] }"
+      }
+    },
+    {
+      "_id": "req_create_pj",
+      "_type": "request",
+      "parentId": "wrk_customers_dona",
+      "name": "Create Customer - Company",
+      "method": "POST",
+      "url": "{{ base_url }}/customers",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"tipo_cliente\": \"PJ\", \"situacao\": \"Ativo\", \"nome_empresa_pessoa\": \"Tech Solutions Ltda\", \"cnpj\": \"12.345.678/0001-99\", \"email\": \"contato@techsolutions.com\", \"telefone_comercial\": \"(11) 3000-1234\", \"celular\": \"(11) 99999-5678\", \"site\": \"https://techsolutions.com\", \"observacoes\": \"Large customer\", \"enderecos\": [{ \"tipo_endereco\": \"comercial\", \"endereco\": \"Av. Paulista, 1000, São Paulo, SP\" }, { \"tipo_endereco\": \"entrega\", \"endereco\": \"Rua B, 456, São Paulo, SP\" }], \"contatos_adicionais\": [{ \"nome\": \"Pedro Costa\", \"email\": \"pedro@techsolutions.com\", \"telefone\": \"(11) 97777-0000\" }, { \"nome\": \"Ana Garcia\", \"email\": \"ana@techsolutions.com\", \"telefone\": \"(11) 96666-0000\" }] }"
+      }
+    },
+    {
+      "_id": "req_update_customer",
+      "_type": "request",
+      "parentId": "wrk_customers_dona",
+      "name": "Update Customer",
+      "method": "PUT",
+      "url": "{{ base_url }}/customers/{{ customer_id }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"tipo_cliente\": \"PJ\", \"situacao\": \"Inativo\", \"nome_empresa_pessoa\": \"Tech Solutions Ltda (Updated)\", \"cnpj\": \"12.345.678/0001-99\", \"email\": \"novo.email@techsolutions.com\", \"telefone_comercial\": \"(11) 3000-5678\", \"celular\": \"(11) 99999-9999\", \"site\": \"https://newtechsolutions.com\", \"observacoes\": \"Customer updated in December\" }"
+      }
+    },
+    {
+      "_id": "req_delete_customer",
+      "_type": "request",
+      "parentId": "wrk_customers_dona",
+      "name": "Delete Customer",
+      "method": "DELETE",
+      "url": "{{ base_url }}/customers/{{ customer_id }}",
+      "body": {}
+    }
+  ]
+}

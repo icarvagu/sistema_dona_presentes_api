@@ -1,0 +1,87 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-12-08T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2025.1.0",
+  "resources": [
+    {
+      "_id": "wrk_sales_dona",
+      "_type": "workspace",
+      "name": "Dona Presentes - Sales",
+      "description": "Collection for testing sales endpoints",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_sales_base",
+      "_type": "environment",
+      "parentId": "wrk_sales_dona",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "sale_id": 1
+      }
+    },
+    {
+      "_id": "req_list_sales",
+      "_type": "request",
+      "parentId": "wrk_sales_dona",
+      "name": "List Sales",
+      "method": "GET",
+      "url": "{{ base_url }}/sales",
+      "body": {}
+    },
+    {
+      "_id": "req_get_sale",
+      "_type": "request",
+      "parentId": "wrk_sales_dona",
+      "name": "Get Sale by ID",
+      "method": "GET",
+      "url": "{{ base_url }}/sales/{{ sale_id }}",
+      "body": {}
+    },
+    {
+      "_id": "req_create_sale",
+      "_type": "request",
+      "parentId": "wrk_sales_dona",
+      "name": "Create Sale",
+      "method": "POST",
+      "url": "{{ base_url }}/sales",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"vendedor_id\": 1, \"forma_pagamento\": \"cartao\", \"parcelas\": 3, \"prazo_dias\": 30, \"inicio_primeira_parcela\": \"2025-02-01T00:00:00Z\", \"itens\": [{ \"produto_id\": 1, \"quantidade\": 2, \"valor_unitario\": 25.00 }, { \"produto_id\": 2, \"quantidade\": 1, \"valor_unitario\": 50.00 }] }"
+      }
+    },
+    {
+      "_id": "req_create_sale_boleto",
+      "_type": "request",
+      "parentId": "wrk_sales_dona",
+      "name": "Create Sale - Boleto",
+      "method": "POST",
+      "url": "{{ base_url }}/sales",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"vendedor_id\": 1, \"forma_pagamento\": \"boleto\", \"parcelas\": 1, \"prazo_dias\": 15, \"inicio_primeira_parcela\": \"2025-02-15T00:00:00Z\", \"itens\": [{ \"produto_id\": 1, \"quantidade\": 5, \"valor_unitario\": 30.00 }] }"
+      }
+    },
+    {
+      "_id": "req_update_sale",
+      "_type": "request",
+      "parentId": "wrk_sales_dona",
+      "name": "Update Sale",
+      "method": "PUT",
+      "url": "{{ base_url }}/sales/{{ sale_id }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"vendedor_id\": 1, \"forma_pagamento\": \"pix\", \"parcelas\": 2, \"prazo_dias\": 20, \"inicio_primeira_parcela\": \"2025-02-10T00:00:00Z\", \"itens\": [{ \"produto_id\": 2, \"quantidade\": 3, \"valor_unitario\": 40.00 }] }"
+      }
+    },
+    {
+      "_id": "req_delete_sale",
+      "_type": "request",
+      "parentId": "wrk_sales_dona",
+      "name": "Delete Sale",
+      "method": "DELETE",
+      "url": "{{ base_url }}/sales/{{ sale_id }}",
+      "body": {}
+    }
+  ]
+}

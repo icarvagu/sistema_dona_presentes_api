@@ -1,0 +1,117 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-11-11T12:30:00.000Z",
+  "__export_source": "insomnia.desktop.app:v9.0.0",
+  "resources": [
+    {
+      "_id": "wrk_carriers_crud",
+      "parentId": null,
+      "modified": 1731304200000,
+      "created": 1731304200000,
+      "name": "Carriers CRUD API",
+      "description": "Dona Presentes - Carriers API",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_local_carriers",
+      "parentId": "wrk_carriers_crud",
+      "modified": 1731304200000,
+      "created": 1731304200000,
+      "name": "Local",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "carrier_id": "1"
+      },
+      "_type": "environment"
+    },
+    {
+      "_id": "fld_carriers",
+      "parentId": "wrk_carriers_crud",
+      "modified": 1731304200000,
+      "created": 1731304200000,
+      "name": "Carriers",
+      "description": "Carrier management endpoints",
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_get_all_carriers",
+      "parentId": "fld_carriers",
+      "name": "GET - List All Carriers",
+      "method": "GET",
+      "url": "{{ base_url }}/carriers",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_carrier_by_id",
+      "parentId": "fld_carriers",
+      "name": "GET - Get Carrier by ID",
+      "method": "GET",
+      "url": "{{ base_url }}/carriers/{{ carrier_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_create_carrier",
+      "parentId": "fld_carriers",
+      "name": "POST - Create Carrier",
+      "method": "POST",
+      "url": "{{ base_url }}/carriers",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome_transportadora\": \"Transporte Exemplo Ltda\",\n  \"tipo_transportadora\": \"Pessoa Jurídica\",\n  \"email\": \"contato@transporteexemplo.com\",\n  \"telefone_fixo\": \"+55 11 3000-0000\",\n  \"celular\": \"+55 11 99999-0000\",\n  \"endereco_completo\": \"Av. Exemplo, 123, São Paulo, SP\",\n  \"contato_principal_nome\": \"Ana Pereira\",\n  \"contato_principal_telefone\": \"+55 11 99999-0001\",\n  \"site\": \"https://transporteexemplo.com\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_update_carrier",
+      "parentId": "fld_carriers",
+      "name": "PUT - Update Carrier",
+      "method": "PUT",
+      "url": "{{ base_url }}/carriers/{{ carrier_id }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome_transportadora\": \"Transporte Exemplo Ltda - Updated\",\n  \"tipo_transportadora\": \"Pessoa Jurídica\",\n  \"email\": \"contato.updated@transporteexemplo.com\",\n  \"telefone_fixo\": \"+55 11 3001-0000\",\n  \"celular\": \"+55 11 99999-1111\",\n  \"endereco_completo\": \"Av. Atualizada, 456, São Paulo, SP\",\n  \"contato_principal_nome\": \"Ana Pereira Updated\",\n  \"contato_principal_telefone\": \"+55 11 99999-2222\",\n  \"site\": \"https://transporteexemplo.com/pt\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_delete_carrier",
+      "parentId": "fld_carriers",
+      "name": "DELETE - Delete Carrier",
+      "method": "DELETE",
+      "url": "{{ base_url }}/carriers/{{ carrier_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    }
+  ]
+}

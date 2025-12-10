@@ -1,0 +1,75 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-12-08T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2025.1.0",
+  "resources": [
+    {
+      "_id": "wrk_products_dona",
+      "_type": "workspace",
+      "name": "Dona Presentes - Products",
+      "description": "Collection for testing product endpoints",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_products_base",
+      "_type": "environment",
+      "parentId": "wrk_products_dona",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "product_id": 1
+      }
+    },
+    {
+      "_id": "req_list_products",
+      "_type": "request",
+      "parentId": "wrk_products_dona",
+      "name": "List Products",
+      "method": "GET",
+      "url": "{{ base_url }}/products",
+      "body": {}
+    },
+    {
+      "_id": "req_get_product",
+      "_type": "request",
+      "parentId": "wrk_products_dona",
+      "name": "Get Product by ID",
+      "method": "GET",
+      "url": "{{ base_url }}/products/{{ product_id }}",
+      "body": {}
+    },
+    {
+      "_id": "req_create_product",
+      "_type": "request",
+      "parentId": "wrk_products_dona",
+      "name": "Create Product",
+      "method": "POST",
+      "url": "{{ base_url }}/products",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"nome_produto\": \"Caneca Exemplo\", \"codigo_interno\": \"CAN-001\", \"codigo_fornecedor\": 1, \"grupo_produto\": \"canecas\", \"descricao\": \"Caneca cerâmica branca - 350ml\", \"fotos\": [\"https://example.com/foto1.jpg\", \"https://example.com/foto2.jpg\"], \"ncm\": \"6912.00.00\", \"origem_material\": \"BR\", \"estoque\": 100 }"
+      }
+    },
+    {
+      "_id": "req_update_product",
+      "_type": "request",
+      "parentId": "wrk_products_dona",
+      "name": "Update Product",
+      "method": "PUT",
+      "url": "{{ base_url }}/products/{{ product_id }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"nome_produto\": \"Caneca Exemplo - Atualizada\", \"codigo_interno\": \"CAN-001\", \"codigo_fornecedor\": 1, \"grupo_produto\": \"canecas\", \"descricao\": \"Caneca cerâmica branca - 350ml (edição atualizada)\", \"fotos\": [\"https://example.com/foto1.jpg\"], \"ncm\": \"6912.00.00\", \"origem_material\": \"BR\", \"estoque\": 120 }"
+      }
+    },
+    {
+      "_id": "req_delete_product",
+      "_type": "request",
+      "parentId": "wrk_products_dona",
+      "name": "Delete Product",
+      "method": "DELETE",
+      "url": "{{ base_url }}/products/{{ product_id }}",
+      "body": {}
+    }
+  ]
+}
