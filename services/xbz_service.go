@@ -212,20 +212,20 @@ func toInterfaceSliceFromGeneric(items []map[string]interface{}) []interface{} {
 	return out
 }
 
-// MapearParaProdutoLocal implementa ExternalAPIProvider.MapearParaProdutoLocal
-func (s *XBZService) MapearParaProdutoLocal(item interface{}) *models.Produto {
+// MapToLocalProduct implements ExternalAPIProvider.MapToLocalProduct
+func (s *XBZService) MapToLocalProduct(item interface{}) *models.Product {
 	// Tenta cast direto para o tipo estruturado
 	if xbzProd, ok := item.(XBZProduto); ok {
-		prod := &models.Produto{
-			NomeProduto:    xbzProd.Nome,
-			CodigoInterno:  xbzProd.CodigoXbz,
-			GrupoProduto:   xbzProd.WebTipo,
-			Descricao:      xbzProd.Descricao,
+		prod := &models.Product{
+			ProductName:    xbzProd.Nome,
+			InternalCode:   xbzProd.CodigoXbz,
+			ProductGroup:   xbzProd.WebTipo,
+			Description:    xbzProd.Descricao,
 			NCM:            xbzProd.Ncm,
-			OrigemMaterial: "",
-			Estoque:        xbzProd.QuantidadeDisponivel,
-			CriadoEm:       time.Now(),
-			AtualizadoEm:   time.Now(),
+			MaterialOrigin: "",
+			Stock:          xbzProd.QuantidadeDisponivel,
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
 		}
 		return prod
 	}
@@ -259,16 +259,16 @@ func (s *XBZService) MapearParaProdutoLocal(item interface{}) *models.Produto {
 			return 0
 		}
 
-		prod := &models.Produto{
-			NomeProduto:    getString("Nome"),
-			CodigoInterno:  getString("CodigoXbz"),
-			GrupoProduto:   getString("WebTipo"),
-			Descricao:      getString("Descricao"),
+		prod := &models.Product{
+			ProductName:    getString("Nome"),
+			InternalCode:   getString("CodigoXbz"),
+			ProductGroup:   getString("WebTipo"),
+			Description:    getString("Descricao"),
 			NCM:            getString("Ncm"),
-			OrigemMaterial: "",
-			Estoque:        getInt("QuantidadeDisponivel"),
-			CriadoEm:       time.Now(),
-			AtualizadoEm:   time.Now(),
+			MaterialOrigin: "",
+			Stock:          getInt("QuantidadeDisponivel"),
+			CreatedAt:      time.Now(),
+			UpdatedAt:      time.Now(),
 		}
 		return prod
 	}
@@ -276,14 +276,14 @@ func (s *XBZService) MapearParaProdutoLocal(item interface{}) *models.Produto {
 	return nil
 }
 
-// MapearParaFornecedor implementa ExternalAPIProvider.MapearParaFornecedor
-func (s *XBZService) MapearParaFornecedor(item interface{}) *models.Fornecedor {
+// MapToSupplier implements ExternalAPIProvider.MapToSupplier
+func (s *XBZService) MapToSupplier(item interface{}) *models.Supplier {
 	// XBZ não retorna dados de fornecedor direto, então retornamos um padrão
 	nome := "XBZ Brindes"
-	return &models.Fornecedor{
-		FantasyName: nome,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
+	return &models.Supplier{
+		Name:      nome,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
 	}
 }
 

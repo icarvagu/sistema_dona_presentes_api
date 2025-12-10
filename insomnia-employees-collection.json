@@ -1,0 +1,97 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-11-12T23:50:00.000Z",
+  "__export_source": "insomnia.desktop.app:v9.0.0",
+  "resources": [
+    {
+      "_id": "wrk_employees_crud",
+      "parentId": null,
+      "name": "Employees CRUD API",
+      "description": "Dona Presentes - Employees API",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_local_employees",
+      "parentId": "wrk_employees_crud",
+      "name": "Local",
+      "description": "Local development environment",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "employee_id": "1"
+      },
+      "_type": "environment"
+    },
+    {
+      "_id": "fld_employees",
+      "parentId": "wrk_employees_crud",
+      "name": "Employees",
+      "description": "Employee management endpoints",
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_get_all_employees",
+      "parentId": "fld_employees",
+      "name": "GET - List All Employees",
+      "method": "GET",
+      "url": "{{ base_url }}/employees",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_employee_by_id",
+      "parentId": "fld_employees",
+      "name": "GET - Get Employee by ID",
+      "method": "GET",
+      "url": "{{ base_url }}/employees/{{ employee_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_create_employee",
+      "parentId": "fld_employees",
+      "name": "POST - Create Employee",
+      "method": "POST",
+      "url": "{{ base_url }}/employees",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome_completo\": \"João Silva Santos\",\n  \"cpf\": \"123.456.789-00\",\n  \"rg\": \"12.345.678-9\",\n  \"data_nascimento\": \"1990-05-15T00:00:00Z\",\n  \"sexo\": \"Masculino\",\n  \"situacao\": \"Ativo\",\n  \"email_contato\": \"joao.silva@example.com\",\n  \"endereco_completo\": \"Rua Principal, 100, São Paulo, SP\",\n  \"telefones_contato\": \"+55 11 3000-0000, +55 11 99999-0000\",\n  \"observacoes\": \"Employee in probation period\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_update_employee",
+      "parentId": "fld_employees",
+      "name": "PUT - Update Employee",
+      "method": "PUT",
+      "url": "{{ base_url }}/employees/{{ employee_id }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome_completo\": \"João Silva Santos Updated\",\n  \"cpf\": \"123.456.789-00\",\n  \"rg\": \"12.345.678-9\",\n  \"data_nascimento\": \"1990-05-15T00:00:00Z\",\n  \"sexo\": \"Masculino\",\n  \"situacao\": \"Ativo\",\n  \"email_contato\": \"joao.silva.atualizado@example.com\",\n  \"endereco_completo\": \"Avenida Atualizada, 200, São Paulo, SP\",\n  \"telefones_contato\": \"+55 11 3001-0000, +55 11 99999-1111\",\n  \"observacoes\": \"Employee confirmed after probation period\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_delete_employee",
+      "parentId": "fld_employees",
+      "name": "DELETE - Delete Employee",
+      "method": "DELETE",
+      "url": "{{ base_url }}/employees/{{ employee_id }}",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "_type": "request"
+    }
+  ]
+}

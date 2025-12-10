@@ -9,11 +9,11 @@ type ExternalAPIProvider interface {
 	// GetProdutos busca a lista de produtos da API externa
 	GetProdutos() ([]interface{}, error)
 
-	// MapearParaProdutoLocal mapeia o objeto externo para o modelo local Produto
-	MapearParaProdutoLocal(interface{}) *models.Produto
+	// MapToLocalProduct maps the external object to the local Product model
+	MapToLocalProduct(interface{}) *models.Product
 
-	// MapearParaFornecedor mapeia fornecedor da API para modelo local se necessário
-	MapearParaFornecedor(interface{}) *models.Fornecedor
+	// MapToSupplier maps the external provider info to the local Supplier model if needed
+	MapToSupplier(interface{}) *models.Supplier
 }
 
 // SyncConfig contém configurações para sincronização

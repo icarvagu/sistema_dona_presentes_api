@@ -1,0 +1,135 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-11-11T12:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v9.0.0",
+  "resources": [
+    {
+      "_id": "wrk_suppliers_crud",
+      "parentId": null,
+      "modified": 1731302400000,
+      "created": 1731302400000,
+      "name": "Suppliers CRUD API",
+      "description": "Dona Presentes - Suppliers API",
+      "scope": "collection",
+      "_type": "workspace"
+    },
+    {
+      "_id": "env_local",
+      "parentId": "wrk_suppliers_crud",
+      "modified": 1731302400000,
+      "created": 1731302400000,
+      "name": "Local",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "supplier_id": "1"
+      },
+      "_type": "environment"
+    },
+    {
+      "_id": "fld_suppliers",
+      "parentId": "wrk_suppliers_crud",
+      "modified": 1731302400000,
+      "created": 1731302400000,
+      "name": "Suppliers",
+      "description": "Supplier management endpoints",
+      "_type": "request_group"
+    },
+    {
+      "_id": "req_get_all_suppliers",
+      "parentId": "fld_suppliers",
+      "name": "GET - List All Suppliers",
+      "method": "GET",
+      "url": "{{ base_url }}/suppliers",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_get_supplier_by_id",
+      "parentId": "fld_suppliers",
+      "name": "GET - Get Supplier by ID",
+      "method": "GET",
+      "url": "{{ base_url }}/suppliers/{{ supplier_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_create_supplier_pj",
+      "parentId": "fld_suppliers",
+      "name": "POST - Create Supplier (Company)",
+      "method": "POST",
+      "url": "{{ base_url }}/suppliers",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome_fantasia_ou_razao_social\": \"ACME Corporation\",\n  \"cnpj\": \"12.345.678/0001-99\",\n  \"inscricao_estadual\": \"123.456.789.012\",\n  \"responsavel_atendimento\": \"João Silva\",\n  \"email_geral\": \"contato@acme.com\",\n  \"telefone_fixo\": \"+55 11 3000-0000\",\n  \"celular\": \"+55 11 99999-8888\",\n  \"email_responsavel\": \"joao@acme.com\",\n  \"endereco_comercial\": \"Rua das Flores, 123, São Paulo, SP\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_create_supplier_pf",
+      "parentId": "fld_suppliers",
+      "name": "POST - Create Supplier (Individual)",
+      "method": "POST",
+      "url": "{{ base_url }}/suppliers",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome_fantasia_ou_razao_social\": \"Maria de Souza\",\n  \"email_geral\": \"maria@exemplo.com\",\n  \"telefone_fixo\": \"+55 11 3000-1111\",\n  \"celular\": \"+55 11 99999-7777\",\n  \"email_responsavel\": \"maria@exemplo.com\",\n  \"endereco_comercial\": \"Rua Principal, 456, Rio de Janeiro, RJ\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_update_supplier",
+      "parentId": "fld_suppliers",
+      "name": "PUT - Update Supplier",
+      "method": "PUT",
+      "url": "{{ base_url }}/suppliers/{{ supplier_id }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome_fantasia_ou_razao_social\": \"ACME Corporation Updated\",\n  \"cnpj\": \"12.345.678/0001-99\",\n  \"inscricao_estadual\": \"123.456.789.012\",\n  \"responsavel_atendimento\": \"João Silva Updated\",\n  \"email_geral\": \"updated@acme.com\",\n  \"telefone_fixo\": \"+55 11 3001-0000\",\n  \"celular\": \"+55 11 99999-9999\",\n  \"email_responsavel\": \"joao.updated@acme.com\",\n  \"endereco_comercial\": \"Avenida Paulista, 1000, São Paulo, SP\"\n}"
+      },
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    },
+    {
+      "_id": "req_delete_supplier",
+      "parentId": "fld_suppliers",
+      "name": "DELETE - Delete Supplier",
+      "method": "DELETE",
+      "url": "{{ base_url }}/suppliers/{{ supplier_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "_type": "request"
+    }
+  ]
+}

@@ -42,12 +42,12 @@ func main() {
 	defer config.DB.Close()
 
 	// Initialize repositories after database is connected
-	controllers.InitFornecedorRepository()
-	controllers.InitTransportadoraRepository()
-	controllers.InitFuncionarioRepository()
-	controllers.InitProdutoRepository()
-	controllers.InitClienteRepository()
-	controllers.InitVendaRepository()
+	controllers.InitSupplierRepository()
+	controllers.InitCarrierRepository()
+	controllers.InitEmployeeRepository()
+	controllers.InitProductRepository()
+	controllers.InitCustomerRepository()
+	controllers.InitSaleRepository()
 
 	r := mux.NewRouter()
 
@@ -55,26 +55,26 @@ func main() {
 	r.Use(middleware.LoggingMiddleware)
 	r.Use(middleware.RecoveryMiddleware)
 
-	// Register fornecedores routes
-	routes.RegisterFornecedoresRoutes(r)
+	// Register suppliers routes
+	routes.RegisterSuppliersRoutes(r)
 
-	// Register transportadora routes
-	routes.RegisterTransportadoraRoutes(r)
+	// Register carriers routes
+	routes.RegisterCarriersRoutes(r)
 
-	// Register funcionarios routes
-	routes.RegisterFuncionariosRoutes(r)
+	// Register employees routes
+	routes.RegisterEmployeesRoutes(r)
 
-	// Register produtos routes
-	routes.RegisterProdutosRoutes(r)
+	// Register products routes
+	routes.RegisterProductsRoutes(r)
 
-	// Register clientes routes
-	routes.RegisterClientesRoutes(r)
+	// Register customers routes
+	routes.RegisterCustomersRoutes(r)
 
-	// Register vendas routes
-	routes.RegisterVendasRoutes(r)
+	// Register sales routes
+	routes.RegisterSalesRoutes(r)
 
-	// Register produtos XBZ routes
-	routes.RegisterProdutoXBZRoutes(r)
+	// Register products XBZ routes
+	routes.RegisterProductsXBZRoutes(r)
 
 	log.Printf("Server starting on %s\n", port)
 	log.Fatal(http.ListenAndServe(port, r))

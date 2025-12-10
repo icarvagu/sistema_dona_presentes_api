@@ -28,73 +28,73 @@ var (
 	// Erros de validação
 	ErrInvalidInput = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "Dados de entrada inválidos",
+		Message: "Invalid input data",
 	}
 
 	ErrInvalidID = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "ID inválido",
+		Message: "Invalid ID",
 	}
 
 	ErrInvalidEmail = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "Email inválido",
+		Message: "Invalid email",
 	}
 
 	ErrInvalidCPF = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "CPF inválido (deve ter 11 dígitos)",
+		Message: "Invalid CPF (must have 11 digits)",
 	}
 
 	ErrInvalidCNPJ = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "CNPJ inválido (deve ter 14 dígitos)",
+		Message: "Invalid CNPJ (must have 14 digits)",
 	}
 
 	ErrMissingField = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "Campo obrigatório não fornecido",
+		Message: "Required field missing",
 	}
 
 	ErrInvalidJSON = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "JSON inválido na requisição",
+		Message: "Invalid JSON in request",
 	}
 
 	// Erros de recurso não encontrado
 	ErrNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Recurso não encontrado",
+		Message: "Resource not found",
 	}
 
-	ErrClienteNotFound = &AppError{
+	ErrCustomerNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Cliente não encontrado",
+		Message: "Customer not found",
 	}
 
-	ErrFornecedorNotFound = &AppError{
+	ErrSupplierNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Fornecedor não encontrado",
+		Message: "Supplier not found",
 	}
 
-	ErrFuncionarioNotFound = &AppError{
+	ErrEmployeeNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Funcionário não encontrado",
+		Message: "Employee not found",
 	}
 
-	ErrProdutoNotFound = &AppError{
+	ErrProductNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Produto não encontrado",
+		Message: "Product not found",
 	}
 
-	ErrTransportadoraNotFound = &AppError{
+	ErrCarrierNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Transportadora não encontrada",
+		Message: "Carrier not found",
 	}
 
-	ErrVendaNotFound = &AppError{
+	ErrSaleNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Venda não encontrada",
+		Message: "Sale not found",
 	}
 
 	// Erros de conflito
