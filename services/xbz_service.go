@@ -15,7 +15,7 @@ import (
 
 const (
 	XBZBaseURL = "https://api.minhaxbz.com.br:5001"
-	XBZTimeout = 30 * time.Second
+	XBZTimeout = 120 * time.Second
 )
 
 type XBZService struct {
@@ -113,6 +113,7 @@ func (s *XBZService) GetProdutos() ([]interface{}, error) {
 }
 
 func (s *XBZService) fetch(fullURL string) ([]byte, error) {
+	start := time.Now()
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("erro ao criar request: %w", err)
@@ -120,9 +121,11 @@ func (s *XBZService) fetch(fullURL string) ([]byte, error) {
 	req.Header.Set("User-Agent", "DonaPresentes/1.0")
 	req.Header.Set("Accept", "application/json")
 
+	log.Printf("[XBZ] iniciando request para API (timeout=%s)", XBZTimeout)
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao fazer requisição: %w", err)
+		duration := time.Since(start)
+		return nil, fmt.Errorf("erro ao fazer requisição: %w (duracao=%s)", err, duration)
 	}
 	defer resp.Body.Close()
 
@@ -133,8 +136,11 @@ func (s *XBZService) fetch(fullURL string) ([]byte, error) {
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("erro ao ler resposta: %w", err)
+		duration := time.Since(start)
+		return nil, fmt.Errorf("erro ao ler resposta: %w (duracao=%s)", err, duration)
 	}
+	duration := time.Since(start)
+	log.Printf("[XBZ] requisição concluída com sucesso (duracao=%s, tamanho=%d bytes)", duration, len(body))
 	return body, nil
 }
 

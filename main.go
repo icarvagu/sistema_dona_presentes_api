@@ -8,8 +8,11 @@ import (
 
 	"donapresentes/controllers"
 	"donapresentes/controllers/config"
+	"donapresentes/internal/jobs"
 	"donapresentes/middleware"
+	"donapresentes/repositories"
 	"donapresentes/routes"
+	"donapresentes/services"
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -36,6 +39,8 @@ func init() {
 		panic(fmt.Sprintf("Failed to run migrations: %v", err))
 	}
 	fmt.Println("Connected to the database successfully!")
+	log.Printf("Connected to the database successfully! log")
+
 }
 
 func main() {
@@ -48,6 +53,17 @@ func main() {
 	controllers.InitProductRepository()
 	controllers.InitCustomerRepository()
 	controllers.InitSaleRepository()
+
+	// Initialize services and scheduler
+	productRepo := repositories.NewProductRepository(config.DB)
+	supplierRepo := repositories.NewSupplierRepository(config.DB)
+	xbzService := services.NewXBZService("36168035000181", "X142AA979C")
+	syncService := services.NewSyncService(xbzService, productRepo, supplierRepo)
+
+	scheduler := jobs.NewScheduler(syncService, xbzService)
+	scheduler.RegisterJobs()
+	scheduler.Start()
+	defer scheduler.Stop()
 
 	r := mux.NewRouter()
 
