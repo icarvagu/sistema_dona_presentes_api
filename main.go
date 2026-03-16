@@ -46,13 +46,14 @@ func init() {
 func main() {
 	defer config.DB.Close()
 
-	// Initialize repositories after database is connected
-	controllers.InitSupplierRepository()
-	controllers.InitCarrierRepository()
-	controllers.InitEmployeeRepository()
-	controllers.InitProductRepository()
-	controllers.InitCustomerRepository()
-	controllers.InitSaleRepository()
+	// Initialize services after database is connected
+	controllers.InitAuthService()
+	controllers.InitSupplierService()
+	controllers.InitCarrierService()
+	controllers.InitUserService()
+	controllers.InitProductService()
+	controllers.InitCustomerService()
+	controllers.InitSaleService()
 
 	// Initialize services and scheduler
 	productRepo := repositories.NewProductRepository(config.DB)
@@ -66,32 +67,78 @@ func main() {
 	defer scheduler.Stop()
 
 	r := mux.NewRouter()
+	r.StrictSlash(true)
 
-	// Aplicar middlewares globais
+	// Aplicar middlewares globais (CORS deve ser o primeiro)
+	r.Use(middleware.CORSMiddleware)
+	r.Use(middleware.NormalizePathMiddleware)
 	r.Use(middleware.LoggingMiddleware)
 	r.Use(middleware.RecoveryMiddleware)
 
-	// Register suppliers routes
-	routes.RegisterSuppliersRoutes(r)
+	// Rotas públicas (sem autenticação)
+	routes.RegisterAuthRoutes(r)
+
+	// Criar router protegido com middleware de autenticação
+	authService := services.NewAuthService(repositories.NewUserRepository(config.DB))
+	protectedRouter := r.PathPrefix("").Subrouter()
+	protectedRouter.Use(middleware.AuthMiddleware(authService))
+
+	// Rotas protegidas (requerem autenticação)
+	routes.RegisterSuppliersRoutes(protectedRouter)
 
 	// Register carriers routes
-	routes.RegisterCarriersRoutes(r)
+	routes.RegisterCarriersRoutes(protectedRouter)
 
-	// Register employees routes
-	routes.RegisterEmployeesRoutes(r)
+	// Register users routes
+	routes.RegisterUsersRoutes(protectedRouter)
 
 	// Register products routes
-	routes.RegisterProductsRoutes(r)
+	routes.RegisterProductsRoutes(protectedRouter)
 
 	// Register customers routes
-	routes.RegisterCustomersRoutes(r)
+	routes.RegisterCustomersRoutes(protectedRouter)
 
 	// Register sales routes
-	routes.RegisterSalesRoutes(r)
+	routes.RegisterSalesRoutes(protectedRouter)
 
-	// Register products XBZ routes
-	routes.RegisterProductsXBZRoutes(r)
+	// Criar router para rotas administrativas (apenas admin)
+	adminRouter := protectedRouter.PathPrefix("").Subrouter()
+	adminRouter.Use(middleware.AdminOnlyMiddleware())
+	
+	// Inicializar controller XBZ
+	controllers.InitProductXBZController()
+	
+	// Rotas administrativas
+	adminRouter.HandleFunc("/users", controllers.CreateUser).Methods("POST", "OPTIONS")
+	adminRouter.HandleFunc("/users/{id}", controllers.DeleteUser).Methods("DELETE", "OPTIONS")
+	adminRouter.HandleFunc("/products-xbz/sync", controllers.SyncProductsFromXBZ).Methods("POST", "OPTIONS")
+
+	// Wrapper HTTP handler para garantir CORS em todas as rotas, incluindo 404 e rotas não encontradas
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		// Aplicar CORS antes de processar qualquer requisição
+		origin := req.Header.Get("Origin")
+		if origin != "" {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-CSRF-Token")
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type, Location")
+		w.Header().Set("Access-Control-Max-Age", "3600")
+		w.Header().Set("Access-Control-Allow-Credentials", "false")
+
+		// Responder preflight imediatamente (deve ser antes de qualquer processamento)
+		if req.Method == "OPTIONS" {
+			log.Printf("[CORS] Preflight request para %s", req.URL.Path)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		r.ServeHTTP(w, req)
+	})
 
 	log.Printf("Server starting on %s\n", port)
-	log.Fatal(http.ListenAndServe(port, r))
+	log.Fatal(http.ListenAndServe(port, handler))
 }

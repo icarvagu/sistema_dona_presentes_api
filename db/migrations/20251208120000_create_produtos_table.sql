@@ -1,28 +1,28 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE produtos (
+CREATE TABLE products (
     id SERIAL PRIMARY KEY,
-    nome_produto TEXT NOT NULL,
-    codigo_interno TEXT NOT NULL UNIQUE,
-    codigo_fornecedor INTEGER NOT NULL,
-    grupo_produto TEXT,
-    descricao TEXT,
-    fotos TEXT[],
+    product_name TEXT NOT NULL,
+    internal_code TEXT NOT NULL UNIQUE,
+    supplier_id INTEGER NOT NULL,
+    product_group TEXT,
+    description TEXT,
+    photos TEXT[],
     ncm TEXT,
-    origem_material TEXT,
-    estoque INTEGER DEFAULT 0,
-    criado_em TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    CONSTRAINT fk_fornecedor
-      FOREIGN KEY(codigo_fornecedor)
-        REFERENCES fornecedores(id)
+    material_origin TEXT,
+    stock INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    CONSTRAINT fk_supplier
+      FOREIGN KEY(supplier_id)
+        REFERENCES suppliers(id)
         ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_produtos_codigo_fornecedor ON produtos(codigo_fornecedor);
+CREATE INDEX idx_products_supplier_id ON products(supplier_id);
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS produtos CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
 -- +goose StatementEnd

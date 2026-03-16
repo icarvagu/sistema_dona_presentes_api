@@ -1,57 +1,57 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TABLE clientes (
+CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
-    tipo_cliente VARCHAR(20) NOT NULL CHECK (tipo_cliente IN ('PF', 'PJ')),
-    situacao VARCHAR(20) NOT NULL CHECK (situacao IN ('Ativo', 'Inativo')),
-    nome_empresa_pessoa TEXT NOT NULL,
+    customer_type VARCHAR(20) NOT NULL CHECK (customer_type IN ('PF', 'PJ')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('Ativo', 'Inativo')),
+    name TEXT NOT NULL,
     cnpj VARCHAR(18),
     cpf VARCHAR(14),
     email TEXT,
-    telefone_comercial VARCHAR(20),
-    celular VARCHAR(20),
-    site TEXT,
-    observacoes TEXT,
-    criado_em TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT now()
+    business_phone VARCHAR(20),
+    mobile_phone VARCHAR(20),
+    website TEXT,
+    notes TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
-CREATE TABLE enderecos_cliente (
+CREATE TABLE customer_addresses (
     id SERIAL PRIMARY KEY,
-    cliente_id INTEGER NOT NULL,
-    tipo_endereco VARCHAR(20) NOT NULL CHECK (tipo_endereco IN ('comercial', 'entrega')),
-    endereco TEXT NOT NULL,
-    criado_em TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    CONSTRAINT fk_cliente
-      FOREIGN KEY(cliente_id)
-        REFERENCES clientes(id)
+    customer_id INTEGER NOT NULL,
+    address_type VARCHAR(20) NOT NULL CHECK (address_type IN ('comercial', 'entrega')),
+    address TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    CONSTRAINT fk_customer
+      FOREIGN KEY(customer_id)
+        REFERENCES customers(id)
         ON DELETE CASCADE
 );
 
-CREATE TABLE contatos_adicionais (
+CREATE TABLE additional_contacts (
     id SERIAL PRIMARY KEY,
-    cliente_id INTEGER NOT NULL,
-    nome TEXT NOT NULL,
+    customer_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
     email TEXT,
-    telefone VARCHAR(20),
-    criado_em TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT now(),
-    CONSTRAINT fk_cliente
-      FOREIGN KEY(cliente_id)
-        REFERENCES clientes(id)
+    phone VARCHAR(20),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    CONSTRAINT fk_customer
+      FOREIGN KEY(customer_id)
+        REFERENCES customers(id)
         ON DELETE CASCADE
 );
 
-CREATE INDEX idx_clientes_tipo ON clientes(tipo_cliente);
-CREATE INDEX idx_clientes_situacao ON clientes(situacao);
-CREATE INDEX idx_enderecos_cliente_id ON enderecos_cliente(cliente_id);
-CREATE INDEX idx_contatos_cliente_id ON contatos_adicionais(cliente_id);
+CREATE INDEX idx_customers_type ON customers(customer_type);
+CREATE INDEX idx_customers_status ON customers(status);
+CREATE INDEX idx_customer_addresses_customer_id ON customer_addresses(customer_id);
+CREATE INDEX idx_additional_contacts_customer_id ON additional_contacts(customer_id);
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-DROP TABLE IF EXISTS contatos_adicionais CASCADE;
-DROP TABLE IF EXISTS enderecos_cliente CASCADE;
-DROP TABLE IF EXISTS clientes CASCADE;
+DROP TABLE IF EXISTS additional_contacts CASCADE;
+DROP TABLE IF EXISTS customer_addresses CASCADE;
+DROP TABLE IF EXISTS customers CASCADE;
 -- +goose StatementEnd

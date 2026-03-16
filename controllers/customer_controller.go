@@ -11,19 +11,21 @@ import (
 	"donapresentes/middleware"
 	"donapresentes/models"
 	"donapresentes/repositories"
+	"donapresentes/services"
 
 	"github.com/gorilla/mux"
 )
 
-var customerRepo *repositories.CustomerRepository
+var customerService *services.CustomerService
 
-func InitCustomerRepository() {
-	customerRepo = repositories.NewCustomerRepository(config.DB)
+func InitCustomerService() {
+	customerRepo := repositories.NewCustomerRepository(config.DB)
+	customerService = services.NewCustomerService(customerRepo)
 }
 
 // List clientes
 func GetCustomers(w http.ResponseWriter, r *http.Request) {
-	cs, err := customerRepo.GetAll()
+	cs, err := customerService.GetAll()
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
@@ -40,10 +42,10 @@ func GetCustomer(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
-	c, err := customerRepo.GetByID(id)
+	c, err := customerService.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-				middleware.ErrorHandler(w, apperrors.ErrCustomerNotFound, http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrCustomerNotFound, http.StatusNotFound)
 			return
 		}
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
@@ -61,7 +63,7 @@ func CreateCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := customerRepo.Create(&c); err != nil {
+	if err := customerService.Create(&c); err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
 			middleware.ErrorHandler(w, appErr, appErr.Code)
 			return
@@ -88,9 +90,9 @@ func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := customerRepo.Update(id, &c); err != nil {
+	if err := customerService.Update(id, &c); err != nil {
 		if err == sql.ErrNoRows {
-				middleware.ErrorHandler(w, apperrors.ErrCustomerNotFound, http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrCustomerNotFound, http.StatusNotFound)
 			return
 		}
 		if appErr, ok := err.(*apperrors.AppError); ok {
@@ -113,9 +115,9 @@ func DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
-	if err := customerRepo.Delete(id); err != nil {
+	if err := customerService.Delete(id); err != nil {
 		if err == sql.ErrNoRows {
-				middleware.ErrorHandler(w, apperrors.ErrCustomerNotFound, http.StatusNotFound)
+			middleware.ErrorHandler(w, apperrors.ErrCustomerNotFound, http.StatusNotFound)
 			return
 		}
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)

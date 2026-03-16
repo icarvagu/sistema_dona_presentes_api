@@ -1,18 +1,19 @@
 -- +goose Up
-CREATE TABLE funcionarios (
+CREATE TABLE employees (
     id SERIAL PRIMARY KEY,
-    nome_completo VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
     cpf VARCHAR(14) UNIQUE NOT NULL,
     rg VARCHAR(20),
-    data_nascimento DATE,
-    sexo VARCHAR(10) CHECK (sexo IN ('Masculino', 'Feminino', 'Outro')),
-    situacao VARCHAR(10) NOT NULL CHECK (situacao IN ('Ativo', 'Inativo')),
-    email_contato VARCHAR(255),
-    endereco_completo TEXT,
-    telefones_contato TEXT,
-    observacoes TEXT,
-    criado_em TIMESTAMP DEFAULT NOW()
+    birth_date DATE,
+    gender VARCHAR(10) CHECK (gender IN ('Masculino', 'Feminino', 'Outro')),
+    status VARCHAR(10) NOT NULL CHECK (status IN ('Ativo', 'Inativo')),
+    contact_email VARCHAR(255),
+    full_address TEXT,
+    contact_phone TEXT,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS funcionarios;
+DROP TABLE IF EXISTS employees;

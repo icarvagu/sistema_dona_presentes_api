@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"time"
 
 	"donapresentes/models"
 	"donapresentes/repositories"
@@ -59,21 +60,25 @@ func (s *SyncService) Sincronizar() (*SyncResult, error) {
 		// Verificar se já existe
 		existente, err := s.productRepository.GetByCodigoInterno(produtoLocal.InternalCode)
 		if err == nil && existente != nil {
-			// Atualizar
-			produtoLocal.ID = existente.ID
-			produtoLocal.CreatedAt = existente.CreatedAt
-			_, err := s.productRepository.Update(produtoLocal.ID, produtoLocal)
-			if err != nil {
+			// Atualizar apenas campos vindos da sync: estoque, fotos, preço e last_synced_at
+			syncTime := time.Now()
+			if err := s.productRepository.UpdateFromSync(
+				existente.ID,
+				produtoLocal.Stock,
+				produtoLocal.Photos,
+				produtoLocal.SellingPrice,
+				syncTime,
+			); err != nil {
 				result.Erros++
 				continue
 			}
 			result.Atualizados++
-		} else if err != sql.ErrNoRows {
-			// Erro de BD
+		} else if err != nil && err != sql.ErrNoRows {
+			// Erro de BD diferente de "não encontrado"
 			result.Erros++
 			continue
 		} else {
-			// Criar novo
+			// Criar novo produto (MapToLocalProduct já marcou Source/ImportedAt/LastSyncedAt)
 			_, err := s.productRepository.Create(produtoLocal)
 			if err != nil {
 				result.Erros++

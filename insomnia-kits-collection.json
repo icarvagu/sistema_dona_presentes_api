@@ -1,0 +1,123 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2025-01-16T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2025.1.0",
+  "resources": [
+    {
+      "_id": "wrk_kits_dona",
+      "_type": "workspace",
+      "name": "Dona Presentes - Kits",
+      "description": "Collection for testing kit endpoints with pagination and filtering",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_kits_base",
+      "_type": "environment",
+      "parentId": "wrk_kits_dona",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "kit_id": 1
+      }
+    },
+    {
+      "_id": "req_list_kits",
+      "_type": "request",
+      "parentId": "wrk_kits_dona",
+      "name": "List All Kits",
+      "method": "GET",
+      "url": "{{ base_url }}/kits",
+      "body": {}
+    },
+    {
+      "_id": "req_list_kits_paginated",
+      "_type": "request",
+      "parentId": "wrk_kits_dona",
+      "name": "List Kits (Paginated)",
+      "method": "GET",
+      "url": "{{ base_url }}/kits?page=1&limit=10",
+      "body": {}
+    },
+    {
+      "_id": "req_list_kits_page2",
+      "_type": "request",
+      "parentId": "wrk_kits_dona",
+      "name": "List Kits (Page 2)",
+      "method": "GET",
+      "url": "{{ base_url }}/kits?page=2&limit=10",
+      "body": {}
+    },
+    {
+      "_id": "req_search_kits_filter",
+      "_type": "request",
+      "parentId": "wrk_kits_dona",
+      "name": "Search Kits by Name Filter",
+      "method": "GET",
+      "url": "{{ base_url }}/kits?filter=Promocional",
+      "body": {}
+    },
+    {
+      "_id": "req_search_kits_filter_partial",
+      "_type": "request",
+      "parentId": "wrk_kits_dona",
+      "name": "Search Kits - Partial Name",
+      "method": "GET",
+      "url": "{{ base_url }}/kits?filter=Kit",
+      "body": {}
+    },
+    {
+      "_id": "req_get_kit",
+      "_type": "request",
+      "parentId": "wrk_kits_dona",
+      "name": "Get Kit by ID",
+      "method": "GET",
+      "url": "{{ base_url }}/kits/{{ kit_id }}",
+      "body": {}
+    },
+    {
+      "_id": "req_create_kit",
+      "_type": "request",
+      "parentId": "wrk_kits_dona",
+      "name": "Create Kit",
+      "method": "POST",
+      "url": "{{ base_url }}/kits",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Kit Promocional\",\n  \"description\": \"Kit promocional com produtos selecionados para presente\",\n  \"value\": 99.90,\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 2\n    },\n    {\n      \"product_id\": 3,\n      \"quantity\": 1\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_create_kit_minimal",
+      "_type": "request",
+      "parentId": "wrk_kits_dona",
+      "name": "Create Kit - Minimal",
+      "method": "POST",
+      "url": "{{ base_url }}/kits",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Kit Simples\",\n  \"value\": 49.90,\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 1\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_update_kit",
+      "_type": "request",
+      "parentId": "wrk_kits_dona",
+      "name": "Update Kit",
+      "method": "PUT",
+      "url": "{{ base_url }}/kits/{{ kit_id }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Kit Promocional Atualizado\",\n  \"description\": \"Kit promocional atualizado com novos produtos e melhor valor\",\n  \"value\": 129.90,\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 3\n    },\n    {\n      \"product_id\": 2,\n      \"quantity\": 1\n    },\n    {\n      \"product_id\": 5,\n      \"quantity\": 2\n    }\n  ]\n}"
+      }
+    },
+    {
+      "_id": "req_delete_kit",
+      "_type": "request",
+      "parentId": "wrk_kits_dona",
+      "name": "Delete Kit",
+      "method": "DELETE",
+      "url": "{{ base_url }}/kits/{{ kit_id }}",
+      "body": {}
+    }
+  ]
+}

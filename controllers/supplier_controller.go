@@ -11,18 +11,21 @@ import (
 	"donapresentes/middleware"
 	"donapresentes/models"
 	"donapresentes/repositories"
+	"donapresentes/services"
 
 	"github.com/gorilla/mux"
 )
 
-var supplierRepo *repositories.SupplierRepository
-func InitSupplierRepository() {
-	supplierRepo = repositories.NewSupplierRepository(config.DB)
+var supplierService *services.SupplierService
+
+func InitSupplierService() {
+	supplierRepo := repositories.NewSupplierRepository(config.DB)
+	supplierService = services.NewSupplierService(supplierRepo)
 }
 
 // GetSuppliers retrieves all suppliers
 func GetSuppliers(w http.ResponseWriter, r *http.Request) {
-	suppliers, err := supplierRepo.GetAll()
+	suppliers, err := supplierService.GetAll()
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
@@ -41,7 +44,7 @@ func GetSupplier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, err := supplierRepo.GetByID(id)
+	s, err := supplierService.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrSupplierNotFound, http.StatusNotFound)
@@ -64,7 +67,7 @@ func CreateSupplier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = supplierRepo.Create(&s)
+	err = supplierService.Create(&s)
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
@@ -91,7 +94,7 @@ func UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = supplierRepo.Update(id, &s)
+	err = supplierService.Update(id, &s)
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
@@ -111,7 +114,7 @@ func DeleteSupplier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = supplierRepo.Delete(id)
+	err = supplierService.Delete(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrSupplierNotFound, http.StatusNotFound)

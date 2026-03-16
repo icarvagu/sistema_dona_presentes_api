@@ -60,7 +60,7 @@
       "url": "{{ base_url }}/employees",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"nome_completo\": \"João Silva Santos\",\n  \"cpf\": \"123.456.789-00\",\n  \"rg\": \"12.345.678-9\",\n  \"data_nascimento\": \"1990-05-15T00:00:00Z\",\n  \"sexo\": \"Masculino\",\n  \"situacao\": \"Ativo\",\n  \"email_contato\": \"joao.silva@example.com\",\n  \"endereco_completo\": \"Rua Principal, 100, São Paulo, SP\",\n  \"telefones_contato\": \"+55 11 3000-0000, +55 11 99999-0000\",\n  \"observacoes\": \"Employee in probation period\"\n}"
+        "text": "{\n  \"full_name\": \"João Silva Santos\",\n  \"cpf\": \"123.456.789-00\",\n  \"rg\": \"12.345.678-9\",\n  \"birth_date\": \"1990-05-15T00:00:00Z\",\n  \"gender\": \"Masculino\",\n  \"status\": \"Ativo\",\n  \"contact_email\": \"joao.silva@example.com\",\n  \"full_address\": \"Rua Principal, 100, São Paulo, SP\",\n  \"contact_phone\": \"+55 11 3000-0000\",\n  \"notes\": \"Employee in probation period\"\n}"
       },
       "headers": [
         { "name": "Content-Type", "value": "application/json" }
@@ -75,7 +75,7 @@
       "url": "{{ base_url }}/employees/{{ employee_id }}",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"nome_completo\": \"João Silva Santos Updated\",\n  \"cpf\": \"123.456.789-00\",\n  \"rg\": \"12.345.678-9\",\n  \"data_nascimento\": \"1990-05-15T00:00:00Z\",\n  \"sexo\": \"Masculino\",\n  \"situacao\": \"Ativo\",\n  \"email_contato\": \"joao.silva.atualizado@example.com\",\n  \"endereco_completo\": \"Avenida Atualizada, 200, São Paulo, SP\",\n  \"telefones_contato\": \"+55 11 3001-0000, +55 11 99999-1111\",\n  \"observacoes\": \"Employee confirmed after probation period\"\n}"
+        "text": "{\n  \"full_name\": \"João Silva Santos Updated\",\n  \"cpf\": \"123.456.789-00\",\n  \"rg\": \"12.345.678-9\",\n  \"birth_date\": \"1990-05-15T00:00:00Z\",\n  \"gender\": \"Masculino\",\n  \"status\": \"Ativo\",\n  \"contact_email\": \"joao.silva.atualizado@example.com\",\n  \"full_address\": \"Avenida Atualizada, 200, São Paulo, SP\",\n  \"contact_phone\": \"+55 11 3001-0000\",\n  \"notes\": \"Employee confirmed after probation period\"\n}"
       },
       "headers": [
         { "name": "Content-Type", "value": "application/json" }

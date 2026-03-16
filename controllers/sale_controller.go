@@ -11,19 +11,25 @@ import (
 	"donapresentes/middleware"
 	"donapresentes/models"
 	"donapresentes/repositories"
+	"donapresentes/services"
 
 	"github.com/gorilla/mux"
 )
 
-var saleRepo *repositories.SaleRepository
+var saleService *services.SaleService
 
-func InitSaleRepository() {
-	saleRepo = repositories.NewSaleRepository(config.DB)
+func InitSaleService() {
+	saleRepo := repositories.NewSaleRepository(config.DB)
+	userRepo := repositories.NewUserRepository(config.DB)
+	productRepo := repositories.NewProductRepository(config.DB)
+	customerRepo := repositories.NewCustomerRepository(config.DB)
+	carrierRepo := repositories.NewCarrierRepository(config.DB)
+	saleService = services.NewSaleService(saleRepo, userRepo, productRepo, customerRepo, carrierRepo)
 }
 
 // List vendas
 func GetSales(w http.ResponseWriter, r *http.Request) {
-	vs, err := saleRepo.GetAll()
+	vs, err := saleService.GetAll()
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
@@ -40,7 +46,7 @@ func GetSale(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
-	v, err := saleRepo.GetByID(id)
+	v, err := saleService.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrSaleNotFound, http.StatusNotFound)
@@ -61,7 +67,7 @@ func CreateSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, err := saleRepo.Create(&input)
+	v, err := saleService.Create(&input)
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
 			middleware.ErrorHandler(w, appErr, appErr.Code)
@@ -89,7 +95,7 @@ func UpdateSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, err := saleRepo.Update(id, &input)
+	v, err := saleService.Update(id, &input)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrSaleNotFound, http.StatusNotFound)
@@ -114,7 +120,7 @@ func DeleteSale(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
-	if err := saleRepo.Delete(id); err != nil {
+	if err := saleService.Delete(id); err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrSaleNotFound, http.StatusNotFound)
 			return

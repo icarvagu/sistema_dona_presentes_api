@@ -47,7 +47,7 @@
       "url": "{{ base_url }}/customers",
       "body": {
         "mimeType": "application/json",
-        "text": "{ \"tipo_cliente\": \"PF\", \"situacao\": \"Ativo\", \"nome_empresa_pessoa\": \"João Silva\", \"cpf\": \"123.456.789-00\", \"email\": \"joao@example.com\", \"telefone_comercial\": \"(11) 3000-0000\", \"celular\": \"(11) 99999-0000\", \"site\": null, \"observacoes\": \"Preferred customer\", \"enderecos\": [{ \"tipo_endereco\": \"comercial\", \"endereco\": \"Rua A, 123, São Paulo, SP\" }], \"contatos_adicionais\": [{ \"nome\": \"Maria Silva\", \"email\": \"maria@example.com\", \"telefone\": \"(11) 98888-0000\" }] }"
+        "text": "{ \"customer_type\": \"PF\", \"status\": \"Ativo\", \"name\": \"João Silva\", \"cpf\": \"123.456.789-00\", \"email\": \"joao@example.com\", \"business_phone\": \"(11) 3000-0000\", \"mobile_phone\": \"(11) 99999-0000\", \"website\": null, \"notes\": \"Preferred customer\", \"addresses\": [{ \"address_type\": \"comercial\", \"address\": \"Rua A, 123, São Paulo, SP\" }], \"additional_contacts\": [{ \"name\": \"Maria Silva\", \"email\": \"maria@example.com\", \"phone\": \"(11) 98888-0000\" }] }"
       }
     },
     {
@@ -59,7 +59,7 @@
       "url": "{{ base_url }}/customers",
       "body": {
         "mimeType": "application/json",
-        "text": "{ \"tipo_cliente\": \"PJ\", \"situacao\": \"Ativo\", \"nome_empresa_pessoa\": \"Tech Solutions Ltda\", \"cnpj\": \"12.345.678/0001-99\", \"email\": \"contato@techsolutions.com\", \"telefone_comercial\": \"(11) 3000-1234\", \"celular\": \"(11) 99999-5678\", \"site\": \"https://techsolutions.com\", \"observacoes\": \"Large customer\", \"enderecos\": [{ \"tipo_endereco\": \"comercial\", \"endereco\": \"Av. Paulista, 1000, São Paulo, SP\" }, { \"tipo_endereco\": \"entrega\", \"endereco\": \"Rua B, 456, São Paulo, SP\" }], \"contatos_adicionais\": [{ \"nome\": \"Pedro Costa\", \"email\": \"pedro@techsolutions.com\", \"telefone\": \"(11) 97777-0000\" }, { \"nome\": \"Ana Garcia\", \"email\": \"ana@techsolutions.com\", \"telefone\": \"(11) 96666-0000\" }] }"
+        "text": "{ \"customer_type\": \"PJ\", \"status\": \"Ativo\", \"name\": \"Tech Solutions Ltda\", \"cnpj\": \"12.345.678/0001-99\", \"email\": \"contato@techsolutions.com\", \"business_phone\": \"(11) 3000-1234\", \"mobile_phone\": \"(11) 99999-5678\", \"website\": \"https://techsolutions.com\", \"notes\": \"Large customer\", \"addresses\": [{ \"address_type\": \"comercial\", \"address\": \"Av. Paulista, 1000, São Paulo, SP\" }, { \"address_type\": \"entrega\", \"address\": \"Rua B, 456, São Paulo, SP\" }], \"additional_contacts\": [{ \"name\": \"Pedro Costa\", \"email\": \"pedro@techsolutions.com\", \"phone\": \"(11) 97777-0000\" }, { \"name\": \"Ana Garcia\", \"email\": \"ana@techsolutions.com\", \"phone\": \"(11) 96666-0000\" }] }"
       }
     },
     {
@@ -71,7 +71,7 @@
       "url": "{{ base_url }}/customers/{{ customer_id }}",
       "body": {
         "mimeType": "application/json",
-        "text": "{ \"tipo_cliente\": \"PJ\", \"situacao\": \"Inativo\", \"nome_empresa_pessoa\": \"Tech Solutions Ltda (Updated)\", \"cnpj\": \"12.345.678/0001-99\", \"email\": \"novo.email@techsolutions.com\", \"telefone_comercial\": \"(11) 3000-5678\", \"celular\": \"(11) 99999-9999\", \"site\": \"https://newtechsolutions.com\", \"observacoes\": \"Customer updated in December\" }"
+        "text": "{ \"customer_type\": \"PJ\", \"status\": \"Inativo\", \"name\": \"Tech Solutions Ltda (Updated)\", \"cnpj\": \"12.345.678/0001-99\", \"email\": \"novo.email@techsolutions.com\", \"business_phone\": \"(11) 3000-5678\", \"mobile_phone\": \"(11) 99999-9999\", \"website\": \"https://newtechsolutions.com\", \"notes\": \"Customer updated in December\" }"
       }
     },
     {
