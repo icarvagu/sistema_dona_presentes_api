@@ -242,7 +242,29 @@ func (r *SaleRepository) GetCustomer(customerID int) (*models.Customer, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Load addresses for PDF generation
+	addresses, _ := r.GetCustomerAddresses(customerID)
+	c.Addresses = addresses
 	return &c, nil
+}
+
+// GetCustomerAddresses returns addresses for a customer (entrega first, then comercial)
+func (r *SaleRepository) GetCustomerAddresses(customerID int) ([]models.Address, error) {
+	rows, err := r.db.Query(`SELECT id, customer_id, address_type, address, created_at, updated_at FROM customer_addresses WHERE customer_id=$1 ORDER BY CASE WHEN address_type='entrega' THEN 0 ELSE 1 END`, customerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var addrs []models.Address
+	for rows.Next() {
+		var a models.Address
+		err := rows.Scan(&a.ID, &a.CustomerID, &a.AddressType, &a.AddressLine, &a.CreatedAt, &a.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		addrs = append(addrs, a)
+	}
+	return addrs, nil
 }
 
 func (r *SaleRepository) GetItems(saleID int) ([]models.SaleItem, error) {

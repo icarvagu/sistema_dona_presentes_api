@@ -3,35 +3,39 @@
 # ---------------------
 FROM golang:1.24-alpine AS builder
 
-# Instala git e certificados
 RUN apk add --no-cache git ca-certificates
 
 WORKDIR /app
 
-# Copia os arquivos de dependência e baixa módulos
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copia TODO o código fonte (inclui db/migrations)
 COPY . .
+RUN go mod tidy
 
-# Compila o binário
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # ---------------------
-# 2️⃣ Etapa Final
+# 2️⃣ Etapa Final (com Chromium para PDF)
 # ---------------------
-FROM alpine:latest
+FROM debian:bookworm-slim
 
-RUN apk --no-cache add ca-certificates
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    chromium \
+    fonts-liberation \
+    && rm -rf /var/lib/apt/lists/*
+
+# Chromium sem sandbox (necessário em container)
+ENV CHROME_BIN=/usr/bin/chromium
+ENV CHROMEDP_SKIP_CHROMIUM_DOWNLOAD=1
+ENV CHROMEDP_HEADLESS=1
 
 WORKDIR /root/
 
-# Copia o binário compilado
 COPY --from=builder /app/main .
-
-# ⚠️ Copia as migrations para o container final
 COPY --from=builder /app/db ./db
+COPY --from=builder /app/templates ./templates
 
 EXPOSE 8080
 

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Pedido {{.SaleID}}</title>
+  <style>
+    @page { size: A4; margin: 12mm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 9pt;
+      line-height: 1.3;
+      color: #000;
+      padding: 12mm;
+      max-width: 210mm;
+    }
+    /* Header - empresa */
+    .empresa { font-weight: bold; font-size: 11pt; margin-bottom: 2px; }
+    .empresa-info { font-size: 8pt; margin: 1px 0; }
+    .topo { margin-bottom: 8px; }
+
+    /* Vendedor / Pedido - duas colunas */
+    .pedido-cabecalho { font-size: 8pt; }
+    .pedido-cabecalho div { margin: 1px 0; }
+
+    /* Seções */
+    .secao { font-weight: bold; font-size: 9pt; margin: 8px 0 4px 0; }
+    .secao::after { content: ""; display: block; border-bottom: 1px solid #000; margin-top: 2px; }
+
+    /* Dados do cliente - tabela label | valor */
+    .cliente-tabela {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8pt;
+      margin-bottom: 8px;
+    }
+    .cliente-tabela td {
+      padding: 1px 8px 1px 0;
+      vertical-align: top;
+    }
+    .cliente-tabela .label { width: 90px; font-weight: 500; }
+    .cliente-tabela .valor { }
+
+    /* Disclaimers */
+    .disclaimers { font-size: 7pt; line-height: 1.25; margin: 6px 0; }
+    .disclaimers p { margin: 2px 0; }
+
+    /* Informações gerais - duas colunas lado a lado */
+    .info-gerais {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8pt;
+      margin-bottom: 10px;
+    }
+    .info-gerais td { vertical-align: top; padding: 2px 15px 2px 0; }
+    .info-gerais .titulo { font-weight: bold; margin-bottom: 4px; }
+    .info-gerais .linha { margin: 2px 0; }
+    .info-gerais .linha span:first-child { display: inline-block; min-width: 110px; }
+
+    /* Produtos */
+    .produtos-total { font-size: 8pt; margin-bottom: 6px; }
+    .produto-nome { font-weight: bold; font-size: 9pt; margin: 8px 0 2px 0; }
+    .produto-tabela {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8pt;
+      margin-bottom: 2px;
+    }
+    .produto-tabela th, .produto-tabela td {
+      border: 1px solid #333;
+      padding: 3px 4px;
+    }
+    .produto-tabela th {
+      background: #f5f5f5;
+      font-weight: bold;
+      text-align: center;
+    }
+    .produto-tabela td.num { text-align: right; }
+    .produto-tabela td.cent { text-align: center; }
+    .produto-detalhe { font-size: 7pt; }
+    .produto-detalhe td { border: 1px solid #333; padding: 2px 4px; }
+    .produto-obs { margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <!-- Cabeçalho empresa -->
+  <div class="topo">
+    <div class="empresa">DONNA BRINDES E PRESENTES LTDA</div>
+    <div class="empresa-info">CNPJ: 36.168.035/0001-81</div>
+    <div class="empresa-info">Avenida Deputado Emílio Carlos, 299 - Limão</div>
+    <div class="empresa-info">São Paulo/SP - CEP: 02721-000</div>
+    <div class="empresa-info">(11)3966-2135 / (11) 91713-1001</div>
+    <div class="empresa-info">vendas@donnapresentes.com.br</div>
+    <div class="empresa-info">www.donnapresentes.com.br</div>
+  </div>
+
+  <!-- Vendedor | Pedido | Data -->
+  <table class="pedido-cabecalho" style="width:100%; margin-bottom:10px;">
+    <tr>
+      <td style="width:50%; vertical-align:top;">
+        <div>Vendedor: {{.SellerName}}</div>
+        <div>PEDIDO Nº {{.SaleIDFormatted}}</div>
+        <div>E-mail financeiro:</div>
+        <div>{{.EmailFinanceiro}}</div>
+      </td>
+      <td style="width:50%; vertical-align:top; text-align:right;">
+        <div>{{.DataPedido}}</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- DADOS DO CLIENTE -->
+  <div class="secao">DADOS DO CLIENTE:</div>
+  <table class="cliente-tabela">
+    {{if .IsPF}}
+    <tr><td class="label">Cliente:</td><td class="valor">{{.ClienteNome}}</td></tr>
+    <tr><td class="label">Endereço:</td><td class="valor">{{.ClienteEndereco}}</td></tr>
+    <tr><td class="label">Cidade:</td><td class="valor">{{.ClienteCidade}}</td></tr>
+    <tr><td class="label">Telefone:</td><td class="valor">{{.ClienteTelefone}}</td></tr>
+    <tr><td class="label">CNPJ/CPF:</td><td class="valor">{{.ClienteDoc}}</td></tr>
+    <tr><td class="label">CEP:</td><td class="valor">{{.ClienteCEP}}</td></tr>
+    <tr><td class="label">Estado:</td><td class="valor">{{.ClienteEstado}}</td></tr>
+    <tr><td class="label">E-mail:</td><td class="valor">{{.ClienteEmail}}</td></tr>
+    {{else}}
+    <tr><td class="label">Razão Social:</td><td class="valor">{{.ClienteNome}}</td></tr>
+    <tr><td class="label">CNPJ/CPF:</td><td class="valor">{{.ClienteDoc}}</td></tr>
+    <tr><td class="label">CEP:</td><td class="valor">{{.ClienteCEP}}</td></tr>
+    <tr><td class="label">Telefone:</td><td class="valor">{{.ClienteTelefone}}</td></tr>
+    <tr><td class="label">Nome Fantasia:</td><td class="valor">{{.ClienteNomeFantasia}}</td></tr>
+    <tr><td class="label">Endereço:</td><td class="valor">{{.ClienteEndereco}}</td></tr>
+    <tr><td class="label">Cidade/UF:</td><td class="valor">{{.ClienteCidade}}</td></tr>
+    <tr><td class="label">E-mail:</td><td class="valor">{{.ClienteEmail}}</td></tr>
+    {{end}}
+  </table>
+
+  <!-- Disclaimers -->
+  <div class="disclaimers">
+    <p>- Após a aprovação do cliente não nos responsabilizamos por possíveis erros nos descritos anteriormente.</p>
+    <p>- Não aceitaremos cancelamento após aprovação do pedido de compra e layout virtual caso o material já esteja em processo de personalização.</p>
+    <p>- Caso o processo de personalização não tenha iniciado, o cancelamento será aceito mediante o pagamento de multa de 10% sob o valor do pedido para cobrir custos de logística, tela de impressão e outros fatores pertinentes ao processo de produção.</p>
+    <p>- Nos reservamos ao direito de uso da imagem do produto confeccionado como apoio para divulgação em nossas mídias sociais. Caso o projeto não possa ser usado por sigilo de marca é obrigatório que o cliente informe no ato da aprovação.</p>
+  </div>
+
+  <!-- INFORMAÇÕES GERAIS - duas colunas -->
+  <div class="secao">INFORMAÇÕES GERAIS:</div>
+  <table class="info-gerais">
+    <tr>
+      <td style="width:50%">
+        <div class="titulo">DADOS DO PAGAMENTO</div>
+        <div class="linha"><span>VENCIMENTO:</span> {{.Vencimento}}</div>
+        <div class="linha"><span>VALOR:</span> {{.ValorTotal}}</div>
+        <div class="linha"><span>PRODUTOS:</span> {{.ValorProdutos}}</div>
+        <div class="linha"><span>TOTAL:</span> {{.ValorTotal}}</div>
+        <div class="linha"><span>FRETE:</span> {{.ValorFrete}}</div>
+      </td>
+      <td style="width:50%">
+        <div class="titulo">OBSERVAÇÕES</div>
+        <div class="linha"><span>FORMA DE PAGTO:</span> {{.FormaPagamento}}</div>
+        <div class="linha"><span>Aos cuidados de:</span> {{.AosCuidadosDe}}</div>
+        <div class="linha"><span>TRANSPORTADORA:</span> {{.Transportadora}}</div>
+        <div class="linha"><span>PRAZO DE ENTREGA:</span> {{.PrazoEntrega}}</div>
+        <div class="linha"><span>OBSERVAÇÕES:</span> {{.Observacoes}}</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- PRODUTOS -->
+  <div class="secao">PRODUTOS</div>
+  <div class="produtos-total">{{.ValorProdutos}} &nbsp;&nbsp; TOTAL: {{.ValorTotal}}</div>
+
+  {{range .Items}}
+  <div class="produto-nome">{{.ProductName}}</div>
+  <table class="produto-tabela">
+    <thead>
+      <tr>
+        <th>QTD.</th>
+        <th>UNID.</th>
+        <th>VALOR UNIT.</th>
+        <th>SUBTOTAL:</th>
+        <th>LOGO:</th>
+        <th>CORES:</th>
+        <th>GRAV:</th>
+        <th>LOCAL:</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="cent">{{.QuantityFormatted}}</td>
+        <td class="cent">UN</td>
+        <td class="num">{{.UnitPriceFormatted}}</td>
+        <td class="num">{{.TotalPriceFormatted}}</td>
+        <td class="cent">{{.Logo}}</td>
+        <td class="cent">{{.Cores}}</td>
+        <td class="cent">{{.Grav}}</td>
+        <td class="cent">{{.Local}}</td>
+      </tr>
+    </tbody>
+  </table>
+  <table class="produto-tabela produto-detalhe">
+    <tr>
+      <td style="width:50px"><strong>CÓD:</strong></td>
+      <td style="width:80px">{{.InternalCode}}</td>
+      <td style="width:50px"><strong>NCM:</strong></td>
+      <td style="width:80px">{{.NCM}}</td>
+      <td style="width:80px"><strong>COR DO ITEM:</strong></td>
+      <td>{{.CorItem}}</td>
+    </tr>
+  </table>
+  <table class="produto-tabela produto-detalhe produto-obs">
+    <tr>
+      <td style="width:50px"><strong>OBS:</strong></td>
+      <td>{{.Obs}}</td>
+    </tr>
+  </table>
+  {{end}}
+</body>
+</html>
