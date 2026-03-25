@@ -36,6 +36,7 @@ type PDFService struct {
 type pedidoTemplateData struct {
 	SaleID           int
 	SaleIDFormatted  string
+	LogoDataURI      template.URL
 	SellerName       string
 	DataPedido       string
 	EmailFinanceiro  string
@@ -145,6 +146,7 @@ func (s *PDFService) buildTemplateData(sale *models.Sale) pedidoTemplateData {
 	data := pedidoTemplateData{
 		SaleID:          sale.ID,
 		SaleIDFormatted: fmt.Sprintf("%04d", sale.ID),
+		LogoDataURI:     loadLogoDataURI(),
 		SellerName:      "-",
 		DataPedido:      sale.CreatedAt.Format("02/01/2006"),
 		EmailFinanceiro: "-",
@@ -235,4 +237,12 @@ func formatQty(qty int) string {
 		return fmt.Sprintf("%d.%03d", qty/1000, qty%1000)
 	}
 	return strconv.Itoa(qty)
+}
+
+func loadLogoDataURI() template.URL {
+	logoBytes, err := os.ReadFile("templates/img/logo-donna.png")
+	if err != nil {
+		return ""
+	}
+	return template.URL("data:image/png;base64," + base64.StdEncoding.EncodeToString(logoBytes))
 }
