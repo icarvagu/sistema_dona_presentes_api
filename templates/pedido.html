@@ -4,214 +4,457 @@
   <meta charset="UTF-8">
   <title>Pedido {{.SaleID}}</title>
   <style>
-    @page { size: A4; margin: 12mm; }
+    @page { size: A4; margin: 10mm; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --cream: #FEF9E7;
+      --border: #d8d8d8;
+      --text: #111;
+      --muted: #555;
+    }
     body {
       font-family: Arial, Helvetica, sans-serif;
-      font-size: 9pt;
-      line-height: 1.3;
-      color: #000;
-      padding: 12mm;
-      max-width: 210mm;
+      font-size: 8.5pt;
+      line-height: 1.35;
+      color: var(--text);
+      padding: 0;
+      max-width: 190mm;
+      margin: 0 auto;
     }
-    /* Header - empresa */
-    .empresa { font-weight: bold; font-size: 11pt; margin-bottom: 2px; }
-    .empresa-info { font-size: 8pt; margin: 1px 0; }
-    .topo { margin-bottom: 8px; }
 
-    /* Vendedor / Pedido - duas colunas */
-    .pedido-cabecalho { font-size: 8pt; }
-    .pedido-cabecalho div { margin: 1px 0; }
-
-    /* Seções */
-    .secao { font-weight: bold; font-size: 9pt; margin: 8px 0 4px 0; }
-    .secao::after { content: ""; display: block; border-bottom: 1px solid #000; margin-top: 2px; }
-
-    /* Dados do cliente - tabela label | valor */
-    .cliente-tabela {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 8pt;
-      margin-bottom: 8px;
-    }
-    .cliente-tabela td {
-      padding: 1px 8px 1px 0;
-      vertical-align: top;
-    }
-    .cliente-tabela .label { width: 90px; font-weight: 500; }
-    .cliente-tabela .valor { }
-
-    /* Disclaimers */
-    .disclaimers { font-size: 7pt; line-height: 1.25; margin: 6px 0; }
-    .disclaimers p { margin: 2px 0; }
-
-    /* Informações gerais - duas colunas lado a lado */
-    .info-gerais {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 8pt;
+    /* ----- Topo: marca + contatos ----- */
+    .topo {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px 24px;
+      align-items: start;
       margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
     }
-    .info-gerais td { vertical-align: top; padding: 2px 15px 2px 0; }
-    .info-gerais .titulo { font-weight: bold; margin-bottom: 4px; }
-    .info-gerais .linha { margin: 2px 0; }
-    .info-gerais .linha span:first-child { display: inline-block; min-width: 110px; }
+    .marca-linha {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .logo-marca {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #e8c76a, #c9a227);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .empresa-bloco .empresa { font-weight: bold; font-size: 11pt; letter-spacing: 0.02em; }
+    .empresa-info { font-size: 7.5pt; color: var(--muted); margin-top: 2px; }
+    .contatos-topo {
+      text-align: right;
+      font-size: 7.5pt;
+      line-height: 1.5;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .contatos-topo .linha { display: block; }
+    .contatos-topo .ico { margin-right: 4px; opacity: 0.85; }
 
-    /* Produtos */
-    .produtos-total { font-size: 8pt; margin-bottom: 6px; }
-    .produto-nome { font-weight: bold; font-size: 9pt; margin: 8px 0 2px 0; }
-    .produto-tabela {
-      width: 100%;
-      border-collapse: collapse;
+    /* ----- Meta pedido ----- */
+    .meta-pedido {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 4px 16px;
+      align-items: start;
+      margin-bottom: 8px;
       font-size: 8pt;
-      margin-bottom: 2px;
     }
-    .produto-tabela th, .produto-tabela td {
-      border: 1px solid #333;
-      padding: 3px 4px;
-    }
-    .produto-tabela th {
-      background: #f5f5f5;
+    .vendedor-linha { grid-column: 1 / -1; }
+    .titulo-pedido {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
       font-weight: bold;
+      font-size: 10pt;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--border);
+      margin-top: 2px;
+    }
+    .campos-duo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .campo-box {
+      border: 1px solid var(--border);
+      padding: 4px 8px;
+      min-height: 28px;
+      background: #fafafa;
+    }
+    .campo-box .lbl { font-size: 7pt; color: var(--muted); display: block; margin-bottom: 2px; }
+    .campo-box .val { font-size: 8.5pt; }
+
+    /* ----- Seções com faixa creme ----- */
+    .secao-titulo {
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      font-weight: bold;
+      font-size: 9pt;
+      padding: 5px 10px;
+      margin-top: 10px;
+    }
+    .secao-titulo.primeira { margin-top: 0; }
+    .secao-corpo {
+      border: 1px solid var(--border);
+      padding: 8px 10px;
+      background: #fff;
+    }
+
+    /* ----- Dados do cliente: 2 colunas ----- */
+    .cliente-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 24px;
+      font-size: 8pt;
+    }
+    .cliente-grid .linha { display: grid; grid-template-columns: 100px 1fr; gap: 6px; align-items: baseline; }
+    .cliente-grid .lbl { font-weight: bold; }
+    .cliente-grid .pf-linha { grid-column: 1 / -1; display: grid; grid-template-columns: 100px 1fr; gap: 6px; }
+
+    /* ----- Produtos ----- */
+    .produto-card {
+      border: 1px solid var(--border);
+      margin-top: 8px;
+      page-break-inside: avoid;
+    }
+    .produto-card:first-of-type { margin-top: 0; }
+    .produto-corpo {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      gap: 10px;
+      padding: 8px;
+      align-items: start;
+    }
+    .produto-thumb {
+      width: 72px;
+      height: 72px;
+      border: 1px solid var(--border);
+      background: #f3f3f3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7pt;
+      color: #999;
+    }
+    .produto-direita { min-width: 0; }
+    .produto-nome-bar {
+      background: #eaeaea;
+      border: 1px solid var(--border);
+      font-weight: bold;
+      font-size: 9pt;
+      padding: 5px 8px;
+      margin-bottom: 6px;
+    }
+    .produto-mid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px 12px;
+      align-items: start;
+    }
+    .cod-ncm {
+      display: grid;
+      gap: 3px;
+      font-size: 7.5pt;
+    }
+    .cod-ncm .r { display: grid; grid-template-columns: 72px 1fr; gap: 4px; }
+    .cod-ncm .lbl { font-weight: bold; }
+    .tabela-custom {
+      border-collapse: collapse;
+      font-size: 7pt;
+      width: 100%;
+      max-width: 280px;
+    }
+    .tabela-custom th,
+    .tabela-custom td {
+      border: 1px solid var(--border);
+      padding: 3px 5px;
       text-align: center;
     }
-    .produto-tabela td.num { text-align: right; }
-    .produto-tabela td.cent { text-align: center; }
-    .produto-detalhe { font-size: 7pt; }
-    .produto-detalhe td { border: 1px solid #333; padding: 2px 4px; }
-    .produto-obs { margin-bottom: 10px; }
+    .tabela-custom th {
+      background: var(--cream);
+      font-weight: bold;
+    }
+    .precos-box {
+      text-align: right;
+      font-size: 7.5pt;
+      white-space: nowrap;
+    }
+    .precos-box table { border-collapse: collapse; margin-left: auto; }
+    .precos-box td { padding: 2px 0 2px 10px; }
+    .precos-box .lbl { font-weight: bold; text-align: left; padding-right: 8px; }
+    .precos-box .num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .produto-obs-bar {
+      grid-column: 1 / -1;
+      border-top: 1px solid var(--border);
+      margin: 0 -8px -8px;
+      padding: 6px 8px;
+      background: #fafafa;
+      font-size: 7.5pt;
+    }
+    .produto-obs-bar .lbl { font-weight: bold; margin-right: 6px; }
+
+    .barra-total-produtos {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--cream);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      font-weight: bold;
+      font-size: 9pt;
+      margin-top: 8px;
+    }
+
+    /* ----- Resumo à direita ----- */
+    .resumo-pedido {
+      max-width: 220px;
+      margin-left: auto;
+      margin-top: 8px;
+      border: 1px solid var(--border);
+      font-size: 8.5pt;
+    }
+    .resumo-pedido .r {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .resumo-pedido .r:last-child { border-bottom: none; }
+    .resumo-pedido .r.total {
+      font-weight: bold;
+      background: var(--cream);
+    }
+
+    /* ----- Pagamento + observações ----- */
+    .pagamento-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+      align-items: stretch;
+    }
+    .bloco-pagamento .secao-corpo { min-height: 90px; }
+    .bloco-pagamento .linha { margin: 4px 0; font-size: 8pt; }
+    .bloco-pagamento .linha span:first-child { font-weight: bold; display: inline-block; min-width: 120px; }
+    .obs-grande {
+      border: 1px solid var(--border);
+      padding: 8px;
+      min-height: 90px;
+      font-size: 8pt;
+      background: #fafafa;
+    }
+    .obs-grande .tit { font-weight: bold; margin-bottom: 6px; font-size: 8.5pt; }
+
+    .campo-largo {
+      margin-top: 8px;
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      min-height: 32px;
+      font-size: 8pt;
+      background: #fff;
+    }
+    .campo-largo .tit { font-weight: bold; margin-bottom: 4px; font-size: 8pt; }
+    .obs-final {
+      margin-top: 8px;
+      border: 1px solid var(--border);
+      padding: 8px;
+      min-height: 48px;
+      font-size: 8pt;
+    }
+    .obs-final .tit { font-weight: bold; margin-bottom: 4px; }
+
+    /* ----- Informações gerais (rodapé legal) ----- */
+    .info-gerais-texto {
+      font-size: 7pt;
+      line-height: 1.35;
+      color: var(--muted);
+    }
+    .info-gerais-texto p { margin: 4px 0; }
   </style>
 </head>
 <body>
-  <!-- Cabeçalho empresa -->
-  <div class="topo">
-    <div class="empresa">DONNA BRINDES E PRESENTES LTDA</div>
-    <div class="empresa-info">CNPJ: 36.168.035/0001-81</div>
-    <div class="empresa-info">Avenida Deputado Emílio Carlos, 299 - Limão</div>
-    <div class="empresa-info">São Paulo/SP - CEP: 02721-000</div>
-    <div class="empresa-info">(11)3966-2135 / (11) 91713-1001</div>
-    <div class="empresa-info">vendas@donnapresentes.com.br</div>
-    <div class="empresa-info">www.donnapresentes.com.br</div>
+
+  <!-- Cabeçalho -->
+  <header class="topo">
+    <div class="marca-linha">
+      <div class="logo-marca">Donna</div>
+      <div class="empresa-bloco">
+        <div class="empresa">DONNA BRINDES E PRESENTES LTDA</div>
+        <div class="empresa-info">CNPJ: 36.168.035/0001-81</div>
+        <div class="empresa-info">Avenida Deputado Emílio Carlos, 299 - Limão</div>
+        <div class="empresa-info">São Paulo/SP - CEP: 02721-000</div>
+      </div>
+    </div>
+    <div class="contatos-topo">
+      <span class="linha"><span class="ico">☎</span>(11)3966-2135 / (11) 91713-1001</span>
+      <span class="linha"><span class="ico">✉</span>vendas@donnapresentes.com.br</span>
+      <span class="linha"><span class="ico">🌐</span>www.donnapresentes.com.br</span>
+    </div>
+  </header>
+
+  <div class="meta-pedido">
+    <div class="vendedor-linha">Vendedor: {{.SellerName}}</div>
+    <div class="titulo-pedido" style="grid-column: 1 / -1;">
+      <span>PEDIDO Nº {{.SaleIDFormatted}}</span>
+      <span>{{.DataPedido}}</span>
+    </div>
+    <div class="campos-duo" style="grid-column: 1 / -1;">
+      <div class="campo-box">
+        <span class="lbl">E-mail financeiro:</span>
+        <span class="val">{{.EmailFinanceiro}}</span>
+      </div>
+      <div class="campo-box">
+        <span class="lbl">Aos cuidados de:</span>
+        <span class="val">{{.AosCuidadosDe}}</span>
+      </div>
+    </div>
   </div>
 
-  <!-- Vendedor | Pedido | Data -->
-  <table class="pedido-cabecalho" style="width:100%; margin-bottom:10px;">
-    <tr>
-      <td style="width:50%; vertical-align:top;">
-        <div>Vendedor: {{.SellerName}}</div>
-        <div>PEDIDO Nº {{.SaleIDFormatted}}</div>
-        <div>E-mail financeiro:</div>
-        <div>{{.EmailFinanceiro}}</div>
-      </td>
-      <td style="width:50%; vertical-align:top; text-align:right;">
-        <div>{{.DataPedido}}</div>
-      </td>
-    </tr>
-  </table>
-
   <!-- DADOS DO CLIENTE -->
-  <div class="secao">DADOS DO CLIENTE:</div>
-  <table class="cliente-tabela">
+  <div class="secao-titulo primeira">DADOS DO CLIENTE</div>
+  <div class="secao-corpo">
     {{if .IsPF}}
-    <tr><td class="label">Cliente:</td><td class="valor">{{.ClienteNome}}</td></tr>
-    <tr><td class="label">Endereço:</td><td class="valor">{{.ClienteEndereco}}</td></tr>
-    <tr><td class="label">Cidade:</td><td class="valor">{{.ClienteCidade}}</td></tr>
-    <tr><td class="label">Telefone:</td><td class="valor">{{.ClienteTelefone}}</td></tr>
-    <tr><td class="label">CNPJ/CPF:</td><td class="valor">{{.ClienteDoc}}</td></tr>
-    <tr><td class="label">CEP:</td><td class="valor">{{.ClienteCEP}}</td></tr>
-    <tr><td class="label">Estado:</td><td class="valor">{{.ClienteEstado}}</td></tr>
-    <tr><td class="label">E-mail:</td><td class="valor">{{.ClienteEmail}}</td></tr>
+    <div class="cliente-grid">
+      <div class="pf-linha"><span class="lbl">Cliente:</span><span>{{.ClienteNome}}</span></div>
+      <div class="pf-linha"><span class="lbl">Endereço:</span><span>{{.ClienteEndereco}}</span></div>
+      <div class="linha"><span class="lbl">Cidade:</span><span>{{.ClienteCidade}}</span></div>
+      <div class="linha"><span class="lbl">Estado:</span><span>{{.ClienteEstado}}</span></div>
+      <div class="linha"><span class="lbl">Telefone:</span><span>{{.ClienteTelefone}}</span></div>
+      <div class="linha"><span class="lbl">E-mail:</span><span>{{.ClienteEmail}}</span></div>
+      <div class="linha"><span class="lbl">CNPJ/CPF:</span><span>{{.ClienteDoc}}</span></div>
+      <div class="linha"><span class="lbl">CEP:</span><span>{{.ClienteCEP}}</span></div>
+    </div>
     {{else}}
-    <tr><td class="label">Razão Social:</td><td class="valor">{{.ClienteNome}}</td></tr>
-    <tr><td class="label">CNPJ/CPF:</td><td class="valor">{{.ClienteDoc}}</td></tr>
-    <tr><td class="label">CEP:</td><td class="valor">{{.ClienteCEP}}</td></tr>
-    <tr><td class="label">Telefone:</td><td class="valor">{{.ClienteTelefone}}</td></tr>
-    <tr><td class="label">Nome Fantasia:</td><td class="valor">{{.ClienteNomeFantasia}}</td></tr>
-    <tr><td class="label">Endereço:</td><td class="valor">{{.ClienteEndereco}}</td></tr>
-    <tr><td class="label">Cidade/UF:</td><td class="valor">{{.ClienteCidade}}</td></tr>
-    <tr><td class="label">E-mail:</td><td class="valor">{{.ClienteEmail}}</td></tr>
+    <div class="cliente-grid">
+      <div class="linha"><span class="lbl">Razão Social:</span><span>{{.ClienteNome}}</span></div>
+      <div class="linha"><span class="lbl">Nome Fantasia:</span><span>{{.ClienteNomeFantasia}}</span></div>
+      <div class="linha"><span class="lbl">CNPJ/CPF:</span><span>{{.ClienteDoc}}</span></div>
+      <div class="linha"><span class="lbl">Endereço:</span><span>{{.ClienteEndereco}}</span></div>
+      <div class="linha"><span class="lbl">CEP:</span><span>{{.ClienteCEP}}</span></div>
+      <div class="linha"><span class="lbl">Cidade/UF:</span><span>{{.ClienteCidade}}</span></div>
+      <div class="linha"><span class="lbl">Telefone:</span><span>{{.ClienteTelefone}}</span></div>
+      <div class="linha"><span class="lbl">E-mail:</span><span>{{.ClienteEmail}}</span></div>
+    </div>
     {{end}}
-  </table>
+  </div>
 
-  <!-- Disclaimers -->
-  <div class="disclaimers">
+  <!-- PRODUTOS -->
+  <div class="secao-titulo">PRODUTOS</div>
+  <div class="secao-corpo" style="padding: 8px;">
+
+  {{range .Items}}
+  <div class="produto-card">
+    <div class="produto-corpo">
+      <div class="produto-thumb">IMG</div>
+      <div class="produto-direita">
+        <div class="produto-nome-bar">{{.ProductName}}</div>
+        <div class="produto-mid">
+          <div>
+            <div class="cod-ncm">
+              <div class="r"><span class="lbl">CÓD</span><span>{{.InternalCode}}</span></div>
+              <div class="r"><span class="lbl">NCM</span><span>{{.NCM}}</span></div>
+              <div class="r"><span class="lbl">COR DO ITEM</span><span>{{.CorItem}}</span></div>
+            </div>
+            <table class="tabela-custom" style="margin-top:6px;">
+              <thead>
+                <tr>
+                  <th>LOGO</th>
+                  <th>SÍMBOLO</th>
+                  <th>GRAV</th>
+                  <th>LOCAL</th>
+                  <th>CORES</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{.Logo}}</td>
+                  <td>—</td>
+                  <td>{{.Grav}}</td>
+                  <td>{{.Local}}</td>
+                  <td>{{.Cores}}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="precos-box">
+            <table>
+              <tr><td class="lbl">QTD</td><td class="num">{{.QuantityFormatted}}</td></tr>
+              <tr><td class="lbl">UNID</td><td class="num">UN</td></tr>
+              <tr><td class="lbl">VALOR UNIT.</td><td class="num">{{.UnitPriceFormatted}}</td></tr>
+              <tr><td class="lbl">SUBTOTAL</td><td class="num">{{.TotalPriceFormatted}}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="produto-obs-bar">
+        <span class="lbl">OBS:</span>{{.Obs}}
+      </div>
+    </div>
+  </div>
+  {{end}}
+
+  <div class="barra-total-produtos">
+    <span>TOTAL</span>
+    <span>{{.ValorTotal}}</span>
+  </div>
+
+  <div class="resumo-pedido">
+    <div class="r"><span>PRODUTOS:</span><span>{{.ValorProdutos}}</span></div>
+    <div class="r"><span>FRETE:</span><span>{{.ValorFrete}}</span></div>
+    <div class="r total"><span>TOTAL:</span><span>{{.ValorTotal}}</span></div>
+  </div>
+
+  </div>
+
+  <!-- Pagamento e observações -->
+  <div class="pagamento-grid">
+    <div class="bloco-pagamento">
+      <div class="secao-titulo" style="margin-top:0;">DADOS DO PAGAMENTO</div>
+      <div class="secao-corpo">
+        <div class="linha"><span>VENCIMENTO:</span> {{.Vencimento}}</div>
+        <div class="linha"><span>VALOR:</span> {{.ValorTotal}}</div>
+        <div class="linha"><span>FORMA DE PAGTO:</span> {{.FormaPagamento}}</div>
+      </div>
+    </div>
+    <div>
+      <div class="secao-titulo" style="margin-top:0;">OBSERVAÇÕES</div>
+      <div class="obs-grande">{{.Observacoes}}</div>
+    </div>
+  </div>
+
+  <div class="campo-largo">
+    <div class="tit">TRANSPORTADORA</div>
+    {{.Transportadora}}
+  </div>
+  <div class="campo-largo">
+    <div class="tit">PRAZO DE ENTREGA</div>
+    {{.PrazoEntrega}}
+  </div>
+
+  <!-- INFORMAÇÕES GERAIS -->
+  <div class="secao-titulo" style="margin-top:12px;">INFORMAÇÕES GERAIS</div>
+  <div class="secao-corpo info-gerais-texto">
     <p>- Após a aprovação do cliente não nos responsabilizamos por possíveis erros nos descritos anteriormente.</p>
     <p>- Não aceitaremos cancelamento após aprovação do pedido de compra e layout virtual caso o material já esteja em processo de personalização.</p>
     <p>- Caso o processo de personalização não tenha iniciado, o cancelamento será aceito mediante o pagamento de multa de 10% sob o valor do pedido para cobrir custos de logística, tela de impressão e outros fatores pertinentes ao processo de produção.</p>
     <p>- Nos reservamos ao direito de uso da imagem do produto confeccionado como apoio para divulgação em nossas mídias sociais. Caso o projeto não possa ser usado por sigilo de marca é obrigatório que o cliente informe no ato da aprovação.</p>
   </div>
 
-  <!-- INFORMAÇÕES GERAIS - duas colunas -->
-  <div class="secao">INFORMAÇÕES GERAIS:</div>
-  <table class="info-gerais">
-    <tr>
-      <td style="width:50%">
-        <div class="titulo">DADOS DO PAGAMENTO</div>
-        <div class="linha"><span>VENCIMENTO:</span> {{.Vencimento}}</div>
-        <div class="linha"><span>VALOR:</span> {{.ValorTotal}}</div>
-        <div class="linha"><span>PRODUTOS:</span> {{.ValorProdutos}}</div>
-        <div class="linha"><span>TOTAL:</span> {{.ValorTotal}}</div>
-        <div class="linha"><span>FRETE:</span> {{.ValorFrete}}</div>
-      </td>
-      <td style="width:50%">
-        <div class="titulo">OBSERVAÇÕES</div>
-        <div class="linha"><span>FORMA DE PAGTO:</span> {{.FormaPagamento}}</div>
-        <div class="linha"><span>Aos cuidados de:</span> {{.AosCuidadosDe}}</div>
-        <div class="linha"><span>TRANSPORTADORA:</span> {{.Transportadora}}</div>
-        <div class="linha"><span>PRAZO DE ENTREGA:</span> {{.PrazoEntrega}}</div>
-        <div class="linha"><span>OBSERVAÇÕES:</span> {{.Observacoes}}</div>
-      </td>
-    </tr>
-  </table>
-
-  <!-- PRODUTOS -->
-  <div class="secao">PRODUTOS</div>
-  <div class="produtos-total">{{.ValorProdutos}} &nbsp;&nbsp; TOTAL: {{.ValorTotal}}</div>
-
-  {{range .Items}}
-  <div class="produto-nome">{{.ProductName}}</div>
-  <table class="produto-tabela">
-    <thead>
-      <tr>
-        <th>QTD.</th>
-        <th>UNID.</th>
-        <th>VALOR UNIT.</th>
-        <th>SUBTOTAL:</th>
-        <th>LOGO:</th>
-        <th>CORES:</th>
-        <th>GRAV:</th>
-        <th>LOCAL:</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td class="cent">{{.QuantityFormatted}}</td>
-        <td class="cent">UN</td>
-        <td class="num">{{.UnitPriceFormatted}}</td>
-        <td class="num">{{.TotalPriceFormatted}}</td>
-        <td class="cent">{{.Logo}}</td>
-        <td class="cent">{{.Cores}}</td>
-        <td class="cent">{{.Grav}}</td>
-        <td class="cent">{{.Local}}</td>
-      </tr>
-    </tbody>
-  </table>
-  <table class="produto-tabela produto-detalhe">
-    <tr>
-      <td style="width:50px"><strong>CÓD:</strong></td>
-      <td style="width:80px">{{.InternalCode}}</td>
-      <td style="width:50px"><strong>NCM:</strong></td>
-      <td style="width:80px">{{.NCM}}</td>
-      <td style="width:80px"><strong>COR DO ITEM:</strong></td>
-      <td>{{.CorItem}}</td>
-    </tr>
-  </table>
-  <table class="produto-tabela produto-detalhe produto-obs">
-    <tr>
-      <td style="width:50px"><strong>OBS:</strong></td>
-      <td>{{.Obs}}</td>
-    </tr>
-  </table>
-  {{end}}
 </body>
 </html>
