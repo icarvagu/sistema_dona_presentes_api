@@ -255,6 +255,10 @@ func (s *ProductService) UpsertPriceFormation(productID int, input *models.Produ
 	}
 
 	input.ProductID = productID
+	existing, err := s.productRepo.GetPriceFormationByProductID(productID)
+	if err != nil {
+		return nil, err
+	}
 
 	totalPercent := input.TaxesPercent + input.OverheadPercent + input.CommissionPercent + input.DesiredMarginPercent
 	divisor := 1 - (totalPercent / 100)
@@ -262,9 +266,13 @@ func (s *ProductService) UpsertPriceFormation(productID int, input *models.Produ
 		return nil, apperrors.NewValidationError("a soma dos percentuais deve ser menor que 100")
 	}
 
-	input.SuggestedSelling = product.CostPrice / divisor
+	if existing != nil && existing.SuggestedSelling > 0 {
+		input.SuggestedSelling = existing.SuggestedSelling
+	} else if input.SuggestedSelling <= 0 {
+		input.SuggestedSelling = product.SellingPrice
+	}
 	if input.FinalSelling <= 0 {
-		input.FinalSelling = input.SuggestedSelling
+		input.FinalSelling = product.CostPrice / divisor
 	}
 
 	if err := s.productRepo.UpsertPriceFormation(input); err != nil {
