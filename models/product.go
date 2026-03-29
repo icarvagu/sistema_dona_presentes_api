@@ -13,9 +13,12 @@ type Product struct {
 	Photos         []string      `json:"photos"`
 	NCM            string        `json:"ncm,omitempty"`
 	MaterialOrigin string        `json:"material_origin,omitempty"`
-	Stock          int           `json:"stock"`
-	SellingPrice   float64       `json:"selling_price"`
-	IsComposition  bool          `json:"is_composition"`           // true = produto é composição (tem filhos)
+	Stock             int           `json:"stock"`
+	MovesStock        bool          `json:"moves_stock"`
+	EnabledForInvoice bool          `json:"enabled_for_invoice"`
+	CostPrice         float64       `json:"cost_price"`
+	SellingPrice      float64       `json:"selling_price"`
+	IsComposition     bool          `json:"is_composition"`           // true = produto é composição (tem filhos)
 	Items          []ProductItem `json:"items,omitempty"`          // produtos filhos (quando is_composition = true)
 	Source         string        `json:"source,omitempty"`         // origem do cadastro, ex: "xbz" ou vazio/manual
 	ImportedAt     *time.Time    `json:"imported_at,omitempty"`    // data da primeira importação (se houver)
@@ -34,7 +37,10 @@ type ProductInput struct {
 	Photos         []string           `json:"photos"`
 	NCM            string             `json:"ncm,omitempty"`
 	MaterialOrigin string             `json:"material_origin,omitempty"`
-	Stock          int                `json:"stock"`
-	SellingPrice   float64            `json:"selling_price"`
-	Items          []ProductItemInput `json:"items,omitempty"` // composição (produtos filhos)
+	Stock             int                `json:"stock"`
+	MovesStock        bool               `json:"moves_stock"`
+	EnabledForInvoice bool               `json:"enabled_for_invoice"`
+	CostPrice         float64            `json:"cost_price"`
+	SellingPrice      float64            `json:"selling_price"`
+	Items             []ProductItemInput `json:"items,omitempty"` // composição (produtos filhos)
 }
