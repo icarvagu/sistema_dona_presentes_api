@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Orçamento {{.QuoteNumber}}</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #222;
+      margin: 20px;
+      font-size: 12px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      border-bottom: 2px solid #d9b36b;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+    }
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #8e6823;
+      margin-bottom: 6px;
+    }
+    .meta, .customer {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 18px;
+    }
+    .meta td, .customer td {
+      border: 1px solid #ead6aa;
+      padding: 8px;
+      vertical-align: top;
+    }
+    .label {
+      display: block;
+      font-weight: 700;
+      color: #6a4e17;
+      margin-bottom: 4px;
+    }
+    .items {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .item {
+      border: 1px solid #ead6aa;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .item-head {
+      background: #fbf2de;
+      padding: 10px 12px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .item-body {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 14px;
+      padding: 12px;
+    }
+    .thumb {
+      width: 120px;
+      height: 120px;
+      border: 1px solid #ead6aa;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: #888;
+      background: #fff;
+    }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 14px;
+    }
+    .block {
+      border: 1px solid #f0e0bb;
+      border-radius: 8px;
+      padding: 8px;
+      background: #fffdfa;
+      min-height: 52px;
+    }
+    .total {
+      margin-top: 20px;
+      text-align: right;
+      font-size: 18px;
+      font-weight: 700;
+      color: #6a4e17;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="title">ORÇAMENTO {{.QuoteNumber}}</div>
+      <div>Data de emissão: {{.CreatedAt}}</div>
+    </div>
+    <div>
+      <div><strong>Vendedor:</strong> {{.SellerName}}</div>
+      <div><strong>Responsável:</strong> {{.ResponsibleName}}</div>
+      <div><strong>Validade:</strong> {{.QuoteValidUntil}}</div>
+      <div><strong>Prazo de produção:</strong> {{.ProductionLeadTime}}</div>
+    </div>
+  </div>
+
+  <table class="customer">
+    <tr>
+      <td><span class="label">Cliente</span>{{.CustomerName}}</td>
+      <td><span class="label">Documento</span>{{.CustomerDocument}}</td>
+    </tr>
+    <tr>
+      <td><span class="label">E-mail</span>{{.CustomerEmail}}</td>
+      <td><span class="label">Telefone</span>{{.CustomerPhone}}</td>
+    </tr>
+    <tr>
+      <td colspan="2"><span class="label">Endereço</span>{{.CustomerAddress}}</td>
+    </tr>
+  </table>
+
+  <div class="items">
+    {{range .Items}}
+    <div class="item">
+      <div class="item-head">
+        <span>Código interno: {{.InternalCode}}</span>
+        <span>NCM: {{.NCM}}</span>
+      </div>
+      <div class="item-body">
+        <div class="thumb">
+          {{if .ImageURL}}
+          <img src="{{.ImageURL}}" alt="{{.ProductName}}">
+          {{else}}
+          Sem foto
+          {{end}}
+        </div>
+        <div class="grid">
+          <div class="block">
+            <span class="label">Produto</span>
+            {{.ProductName}}
+          </div>
+          <div class="block">
+            <span class="label">Descrição</span>
+            {{.Description}}
+          </div>
+          <div class="block">
+            <span class="label">Personalização</span>
+            {{.Personalization}}
+          </div>
+          <div class="block">
+            <span class="label">Quantidade</span>
+            {{.Quantity}}
+          </div>
+          <div class="block">
+            <span class="label">Valor unitário</span>
+            R$ {{.UnitPrice}}
+          </div>
+          <div class="block">
+            <span class="label">Subtotal</span>
+            R$ {{.TotalPrice}}
+          </div>
+        </div>
+      </div>
+    </div>
+    {{end}}
+  </div>
+
+  <div class="total">Total do orçamento: R$ {{.TotalValue}}</div>
+</body>
+</html>

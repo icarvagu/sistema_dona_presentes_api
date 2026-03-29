@@ -97,6 +97,11 @@ var (
 		Message: "Sale not found",
 	}
 
+	ErrQuoteNotFound = &AppError{
+		Code:    http.StatusNotFound,
+		Message: "Quote not found",
+	}
+
 	// Erros de conflito
 	ErrDuplicateEntry = &AppError{
 		Code:    http.StatusConflict,

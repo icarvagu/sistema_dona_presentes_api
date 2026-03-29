@@ -54,6 +54,7 @@ func main() {
 	controllers.InitProductService()
 	controllers.InitCustomerService()
 	controllers.InitSaleService()
+	controllers.InitQuoteService()
 
 	// Initialize services and scheduler
 	productRepo := repositories.NewProductRepository(config.DB)
@@ -100,6 +101,9 @@ func main() {
 
 	// Register sales routes
 	routes.RegisterSalesRoutes(protectedRouter)
+
+	// Register quotes routes
+	routes.RegisterQuotesRoutes(protectedRouter)
 
 	// Criar router para rotas administrativas (apenas admin)
 	adminRouter := protectedRouter.PathPrefix("").Subrouter()
