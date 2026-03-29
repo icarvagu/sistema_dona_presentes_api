@@ -147,6 +147,12 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_, _, role := middleware.GetUserFromRequest(r)
+	if role != "admin" && p.CostPrice > 0 {
+		middleware.ErrorHandler(w, apperrors.NewValidationError("apenas admin pode definir preço de custo"), http.StatusForbidden)
+		return
+	}
+
 	created, err := productService.Create(&p)
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
@@ -174,6 +180,21 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
+
+	_, _, role := middleware.GetUserFromRequest(r)
+	if role != "admin" {
+		existing, getErr := productService.GetByID(id)
+		if getErr != nil {
+			if getErr == sql.ErrNoRows {
+				middleware.ErrorHandler(w, apperrors.ErrProductNotFound, http.StatusNotFound)
+				return
+			}
+			middleware.ErrorHandler(w, apperrors.NewDatabaseError(getErr), http.StatusInternalServerError)
+			return
+		}
+		p.CostPrice = existing.CostPrice
+	}
+
 	updated, err := productService.Update(id, &p)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -209,4 +230,69 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func GetPriceFormation(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	productID, err := strconv.Atoi(params["id"])
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+
+	pf, err := productService.GetPriceFormation(productID)
+	if err != nil {
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(pf)
+}
+
+func UpsertPriceFormation(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	productID, err := strconv.Atoi(params["id"])
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+
+	var input models.ProductPriceFormation
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
+		return
+	}
+
+	pf, err := productService.UpsertPriceFormation(productID, &input)
+	if err != nil {
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(pf)
+}
+
+func GetProductsFinancialReport(w http.ResponseWriter, r *http.Request) {
+	report, err := productService.GetFinancialReport()
+	if err != nil {
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(report)
 }

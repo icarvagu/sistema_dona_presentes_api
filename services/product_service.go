@@ -64,6 +64,26 @@ func (s *ProductService) validateSupplier(p *models.Product) error {
 
 // validateItems valida os itens de composição do produto
 func (s *ProductService) validateItems(p *models.Product) error {
+	if p.KitType == "" {
+		p.KitType = "none"
+	}
+
+	if p.KitType != "none" && p.KitType != "internal_composition" && p.KitType != "supplier_ready" {
+		return apperrors.NewValidationError("kit_type inválido. Use: none, internal_composition ou supplier_ready")
+	}
+
+	if p.KitType == "internal_composition" && len(p.Items) == 0 {
+		return apperrors.NewValidationError("kits com composição interna precisam ter ao menos 1 item")
+	}
+
+	if p.KitType == "supplier_ready" && len(p.Items) > 0 {
+		return apperrors.NewValidationError("kit pronto de fornecedor não pode ter composição interna")
+	}
+
+	if p.KitType == "none" && len(p.Items) > 0 {
+		return apperrors.NewValidationError("produto com composição deve ser do tipo internal_composition")
+	}
+
 	if len(p.Items) == 0 {
 		return nil
 	}
@@ -188,4 +208,72 @@ func (s *ProductService) Delete(id int) error {
 // GetNewlyImported returns products imported in the last 7 days from XBZ
 func (s *ProductService) GetNewlyImported() ([]models.Product, error) {
 	return s.productRepo.GetNewlyImported()
+}
+
+func (s *ProductService) GetPriceFormation(productID int) (*models.ProductPriceFormation, error) {
+	if _, err := s.productRepo.GetByID(productID); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, apperrors.ErrProductNotFound
+		}
+		return nil, err
+	}
+
+	pf, err := s.productRepo.GetPriceFormationByProductID(productID)
+	if err != nil {
+		return nil, err
+	}
+
+	if pf != nil {
+		return pf, nil
+	}
+
+	product, err := s.productRepo.GetByID(productID)
+	if err != nil {
+		return nil, err
+	}
+
+	defaultPF := &models.ProductPriceFormation{
+		ProductID:            productID,
+		TaxesPercent:         0,
+		OverheadPercent:      0,
+		CommissionPercent:    0,
+		DesiredMarginPercent: 0,
+		SuggestedSelling:     product.SellingPrice,
+		FinalSelling:         product.SellingPrice,
+	}
+
+	return defaultPF, nil
+}
+
+func (s *ProductService) UpsertPriceFormation(productID int, input *models.ProductPriceFormation) (*models.ProductPriceFormation, error) {
+	product, err := s.productRepo.GetByID(productID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, apperrors.ErrProductNotFound
+		}
+		return nil, err
+	}
+
+	input.ProductID = productID
+
+	totalPercent := input.TaxesPercent + input.OverheadPercent + input.CommissionPercent + input.DesiredMarginPercent
+	divisor := 1 - (totalPercent / 100)
+	if divisor <= 0 {
+		return nil, apperrors.NewValidationError("a soma dos percentuais deve ser menor que 100")
+	}
+
+	input.SuggestedSelling = product.CostPrice / divisor
+	if input.FinalSelling <= 0 {
+		input.FinalSelling = input.SuggestedSelling
+	}
+
+	if err := s.productRepo.UpsertPriceFormation(input); err != nil {
+		return nil, err
+	}
+
+	return s.productRepo.GetPriceFormationByProductID(productID)
+}
+
+func (s *ProductService) GetFinancialReport() ([]models.FinancialReportItem, error) {
+	return s.productRepo.GetFinancialReport()
 }

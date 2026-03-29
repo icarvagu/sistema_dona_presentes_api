@@ -26,7 +26,7 @@ const productSelectWithSupplier = `
 	       f.landline_phone, f.mobile_phone, f.responsible_email, f.commercial_address, 
 	       f.created_at, f.updated_at, 
 	       p.product_group, p.description, p.photos, p.ncm, COALESCE(p.material_origin, ''), 
-	       p.stock, p.selling_price, p.is_composition, 
+	       p.stock, p.selling_price, p.kit_type, p.is_composition, 
 	       p.moves_stock, p.enabled_for_invoice, p.cost_price, 
 	       p.source, p.imported_at, p.last_synced_at, 
 	       p.created_at, p.updated_at 
@@ -48,7 +48,7 @@ func (r *ProductRepository) GetAll() ([]models.Product, error) {
 		var fotos pq.StringArray
 		var importedAt, lastSyncedAt sql.NullTime
 		var source sql.NullString
-		err := rows.Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
+		err := rows.Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +108,7 @@ func (r *ProductRepository) GetAllPaginated(page, limit int) ([]models.Product, 
 		var fotos pq.StringArray
 		var importedAt, lastSyncedAt sql.NullTime
 		var source sql.NullString
-		err := rows.Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
+		err := rows.Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
 		if err != nil {
 			return nil, 0, err
 		}
@@ -147,7 +147,7 @@ func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
 	var importedAt, lastSyncedAt sql.NullTime
 	var source sql.NullString
 	err := r.db.QueryRow(productSelectWithSupplier+` WHERE p.id=$1`, id).
-		Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
+		Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +196,7 @@ func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, err
 		var fotos pq.StringArray
 		var importedAt, lastSyncedAt sql.NullTime
 		var source sql.NullString
-		err := rows.Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
+		err := rows.Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -234,9 +234,9 @@ func (r *ProductRepository) GetByCodigoInterno(codigoInterno string) (*models.Pr
 	var importedAt, lastSyncedAt sql.NullTime
 	var source sql.NullString
 	err := r.db.QueryRow(
-		`SELECT id, product_name, internal_code, supplier_id, product_group, description, photos, ncm, COALESCE(material_origin, ''), stock, selling_price, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, created_at, updated_at FROM products WHERE internal_code=$1`,
+		`SELECT id, product_name, internal_code, supplier_id, product_group, description, photos, ncm, COALESCE(material_origin, ''), stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, created_at, updated_at FROM products WHERE internal_code=$1`,
 		codigoInterno,
-	).Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
+	).Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -272,8 +272,11 @@ func (r *ProductRepository) Create(p *models.Product) (*models.Product, error) {
 
 	// Determinar is_composition baseado na quantidade de items
 	isComposition := len(p.Items) > 0
-	err := r.db.QueryRow(`INSERT INTO products (product_name, internal_code, supplier_id, product_group, description, photos, ncm, material_origin, stock, selling_price, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING id, created_at, updated_at`,
-		p.ProductName, p.InternalCode, p.SupplierID, p.ProductGroup, p.Description, pq.Array(p.Photos), p.NCM, p.MaterialOrigin, p.Stock, p.SellingPrice, isComposition, p.MovesStock, p.EnabledForInvoice, p.CostPrice, p.Source, p.ImportedAt, p.LastSyncedAt).
+	if p.KitType == "" {
+		p.KitType = "none"
+	}
+	err := r.db.QueryRow(`INSERT INTO products (product_name, internal_code, supplier_id, product_group, description, photos, ncm, material_origin, stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id, created_at, updated_at`,
+		p.ProductName, p.InternalCode, p.SupplierID, p.ProductGroup, p.Description, pq.Array(p.Photos), p.NCM, p.MaterialOrigin, p.Stock, p.SellingPrice, p.KitType, isComposition, p.MovesStock, p.EnabledForInvoice, p.CostPrice, p.Source, p.ImportedAt, p.LastSyncedAt).
 		Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
@@ -295,8 +298,11 @@ func (r *ProductRepository) Update(id int, p *models.Product) (*models.Product, 
 
 	// Determinar is_composition baseado na quantidade de items
 	isComposition := len(p.Items) > 0
-	_, err := r.db.Exec(`UPDATE products SET product_name=$1, internal_code=$2, supplier_id=$3, product_group=$4, description=$5, photos=$6, ncm=$7, material_origin=$8, stock=$9, selling_price=$10, is_composition=$11, moves_stock=$12, enabled_for_invoice=$13, cost_price=$14, updated_at=NOW() WHERE id=$15`,
-		p.ProductName, p.InternalCode, p.SupplierID, p.ProductGroup, p.Description, pq.Array(p.Photos), p.NCM, p.MaterialOrigin, p.Stock, p.SellingPrice, isComposition, p.MovesStock, p.EnabledForInvoice, p.CostPrice, id)
+	if p.KitType == "" {
+		p.KitType = "none"
+	}
+	_, err := r.db.Exec(`UPDATE products SET product_name=$1, internal_code=$2, supplier_id=$3, product_group=$4, description=$5, photos=$6, ncm=$7, material_origin=$8, stock=$9, selling_price=$10, kit_type=$11, is_composition=$12, moves_stock=$13, enabled_for_invoice=$14, cost_price=$15, updated_at=NOW() WHERE id=$16`,
+		p.ProductName, p.InternalCode, p.SupplierID, p.ProductGroup, p.Description, pq.Array(p.Photos), p.NCM, p.MaterialOrigin, p.Stock, p.SellingPrice, p.KitType, isComposition, p.MovesStock, p.EnabledForInvoice, p.CostPrice, id)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +423,7 @@ func (r *ProductRepository) GetNewlyImported() ([]models.Product, error) {
 			&f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress,
 			&f.CreatedAt, &f.UpdatedAt,
 			&p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin,
-			&p.Stock, &p.SellingPrice, &p.IsComposition,
+			&p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition,
 			&p.MovesStock, &p.EnabledForInvoice, &p.CostPrice,
 			&source, &importedAt, &lastSyncedAt,
 			&p.CreatedAt, &p.UpdatedAt)
@@ -471,4 +477,103 @@ func (r *ProductRepository) UpdateFromSync(id int, stock int, photos []string, s
 		return apperrors.NewDatabaseError(err)
 	}
 	return nil
+}
+
+func (r *ProductRepository) GetPriceFormationByProductID(productID int) (*models.ProductPriceFormation, error) {
+	var pf models.ProductPriceFormation
+	err := r.db.QueryRow(`
+		SELECT product_id, taxes_percent, overhead_percent, commission_percent,
+		       desired_margin_percent, suggested_selling_price, final_selling_price,
+		       COALESCE(notes, ''), created_at, updated_at
+		FROM product_price_formations
+		WHERE product_id = $1`, productID,
+	).Scan(
+		&pf.ProductID, &pf.TaxesPercent, &pf.OverheadPercent, &pf.CommissionPercent,
+		&pf.DesiredMarginPercent, &pf.SuggestedSelling, &pf.FinalSelling,
+		&pf.Notes, &pf.CreatedAt, &pf.UpdatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, apperrors.NewDatabaseError(err)
+	}
+	return &pf, nil
+}
+
+func (r *ProductRepository) UpsertPriceFormation(input *models.ProductPriceFormation) error {
+	_, err := r.db.Exec(`
+		INSERT INTO product_price_formations (
+			product_id, taxes_percent, overhead_percent, commission_percent,
+			desired_margin_percent, suggested_selling_price, final_selling_price, notes
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+		ON CONFLICT (product_id)
+		DO UPDATE SET
+			taxes_percent = EXCLUDED.taxes_percent,
+			overhead_percent = EXCLUDED.overhead_percent,
+			commission_percent = EXCLUDED.commission_percent,
+			desired_margin_percent = EXCLUDED.desired_margin_percent,
+			suggested_selling_price = EXCLUDED.suggested_selling_price,
+			final_selling_price = EXCLUDED.final_selling_price,
+			notes = EXCLUDED.notes,
+			updated_at = NOW()`,
+		input.ProductID,
+		input.TaxesPercent,
+		input.OverheadPercent,
+		input.CommissionPercent,
+		input.DesiredMarginPercent,
+		input.SuggestedSelling,
+		input.FinalSelling,
+		input.Notes,
+	)
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+
+	_, err = r.db.Exec(`UPDATE products SET selling_price=$1, updated_at=NOW() WHERE id=$2`, input.FinalSelling, input.ProductID)
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+
+	return nil
+}
+
+func (r *ProductRepository) GetFinancialReport() ([]models.FinancialReportItem, error) {
+	rows, err := r.db.Query(`
+		SELECT p.id, p.product_name, p.internal_code, p.kit_type,
+		       p.cost_price, p.selling_price,
+		       (p.selling_price - p.cost_price) AS margin_value,
+		       CASE
+		         WHEN p.selling_price > 0 THEN ((p.selling_price - p.cost_price) / p.selling_price) * 100
+		         ELSE 0
+		       END AS margin_percent,
+		       p.moves_stock, p.enabled_for_invoice
+		FROM products p
+		ORDER BY p.product_name ASC`)
+	if err != nil {
+		return nil, apperrors.NewDatabaseError(err)
+	}
+	defer rows.Close()
+
+	var items []models.FinancialReportItem
+	for rows.Next() {
+		var item models.FinancialReportItem
+		if err := rows.Scan(
+			&item.ProductID,
+			&item.ProductName,
+			&item.InternalCode,
+			&item.KitType,
+			&item.CostPrice,
+			&item.SellingPrice,
+			&item.MarginValue,
+			&item.MarginPercent,
+			&item.MovesStock,
+			&item.EnabledForInvoice,
+		); err != nil {
+			return nil, apperrors.NewDatabaseError(err)
+		}
+		items = append(items, item)
+	}
+
+	return items, nil
 }
