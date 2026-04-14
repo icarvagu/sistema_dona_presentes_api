@@ -479,65 +479,6 @@ func (r *ProductRepository) UpdateFromSync(id int, stock int, photos []string, s
 	return nil
 }
 
-func (r *ProductRepository) GetPriceFormationByProductID(productID int) (*models.ProductPriceFormation, error) {
-	var pf models.ProductPriceFormation
-	err := r.db.QueryRow(`
-		SELECT product_id, taxes_percent, overhead_percent, commission_percent,
-		       desired_margin_percent, suggested_selling_price, final_selling_price,
-		       COALESCE(notes, ''), created_at, updated_at
-		FROM product_price_formations
-		WHERE product_id = $1`, productID,
-	).Scan(
-		&pf.ProductID, &pf.TaxesPercent, &pf.OverheadPercent, &pf.CommissionPercent,
-		&pf.DesiredMarginPercent, &pf.SuggestedSelling, &pf.FinalSelling,
-		&pf.Notes, &pf.CreatedAt, &pf.UpdatedAt,
-	)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, apperrors.NewDatabaseError(err)
-	}
-	return &pf, nil
-}
-
-func (r *ProductRepository) UpsertPriceFormation(input *models.ProductPriceFormation) error {
-	_, err := r.db.Exec(`
-		INSERT INTO product_price_formations (
-			product_id, taxes_percent, overhead_percent, commission_percent,
-			desired_margin_percent, suggested_selling_price, final_selling_price, notes
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-		ON CONFLICT (product_id)
-		DO UPDATE SET
-			taxes_percent = EXCLUDED.taxes_percent,
-			overhead_percent = EXCLUDED.overhead_percent,
-			commission_percent = EXCLUDED.commission_percent,
-			desired_margin_percent = EXCLUDED.desired_margin_percent,
-			suggested_selling_price = EXCLUDED.suggested_selling_price,
-			final_selling_price = EXCLUDED.final_selling_price,
-			notes = EXCLUDED.notes,
-			updated_at = NOW()`,
-		input.ProductID,
-		input.TaxesPercent,
-		input.OverheadPercent,
-		input.CommissionPercent,
-		input.DesiredMarginPercent,
-		input.SuggestedSelling,
-		input.FinalSelling,
-		input.Notes,
-	)
-	if err != nil {
-		return apperrors.NewDatabaseError(err)
-	}
-
-	_, err = r.db.Exec(`UPDATE products SET selling_price=$1, updated_at=NOW() WHERE id=$2`, input.FinalSelling, input.ProductID)
-	if err != nil {
-		return apperrors.NewDatabaseError(err)
-	}
-
-	return nil
-}
-
 func (r *ProductRepository) GetFinancialReport() ([]models.FinancialReportItem, error) {
 	rows, err := r.db.Query(`
 		SELECT p.id, p.product_name, p.internal_code, p.kit_type,

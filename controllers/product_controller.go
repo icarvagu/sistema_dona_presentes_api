@@ -232,56 +232,6 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func GetPriceFormation(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	productID, err := strconv.Atoi(params["id"])
-	if err != nil {
-		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
-		return
-	}
-
-	pf, err := productService.GetPriceFormation(productID)
-	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			middleware.ErrorHandler(w, appErr, appErr.Code)
-			return
-		}
-		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(pf)
-}
-
-func UpsertPriceFormation(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	productID, err := strconv.Atoi(params["id"])
-	if err != nil {
-		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
-		return
-	}
-
-	var input models.ProductPriceFormation
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
-		return
-	}
-
-	pf, err := productService.UpsertPriceFormation(productID, &input)
-	if err != nil {
-		if appErr, ok := err.(*apperrors.AppError); ok {
-			middleware.ErrorHandler(w, appErr, appErr.Code)
-			return
-		}
-		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(pf)
-}
-
 func GetProductsFinancialReport(w http.ResponseWriter, r *http.Request) {
 	report, err := productService.GetFinancialReport()
 	if err != nil {

@@ -15,6 +15,4 @@ func RegisterProductsRoutes(r *mux.Router) {
 	r.HandleFunc("/products", controllers.CreateProduct).Methods(http.MethodPost)
 	r.HandleFunc("/products/{id}", controllers.UpdateProduct).Methods(http.MethodPut)
 	r.HandleFunc("/products/{id}", controllers.DeleteProduct).Methods(http.MethodDelete)
-	r.HandleFunc("/products/{id}/price-formation", controllers.GetPriceFormation).Methods(http.MethodGet)
-	r.HandleFunc("/products/{id}/price-formation", controllers.UpsertPriceFormation).Methods(http.MethodPut)
 }

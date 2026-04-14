@@ -87,12 +87,45 @@ func (r *QuoteRepository) Create(input *models.QuoteInput) (*models.Quote, error
 
 	for _, itemInput := range input.Items {
 		item := models.QuoteItem{
-			QuoteID:             quote.ID,
-			ProductID:           itemInput.ProductID,
-			Quantity:            itemInput.Quantity,
-			UnitPrice:           itemInput.UnitPrice,
-			TotalPrice:          float64(itemInput.Quantity) * itemInput.UnitPrice,
-			PersonalizationType: itemInput.PersonalizationType,
+			QuoteID:                 quote.ID,
+			ProductID:               itemInput.ProductID,
+			Quantity:                itemInput.Quantity,
+			UnitPrice:               itemInput.UnitPrice,
+			TotalPrice:              float64(itemInput.Quantity) * itemInput.UnitPrice,
+			PersonalizationType:     itemInput.PersonalizationType,
+			DNCode:                  itemInput.DNCode,
+			DescriptionSummary:      itemInput.DescriptionSummary,
+			IsKit:                   itemInput.IsKit,
+			BaseCostUnit:            itemInput.BaseCostUnit,
+			LaborCost:               itemInput.LaborCost,
+			ExtraUnitCost1:          itemInput.ExtraUnitCost1,
+			ExtraUnitCost2:          itemInput.ExtraUnitCost2,
+			EngravingCost:           itemInput.EngravingCost,
+			UrgencyFee:              itemInput.UrgencyFee,
+			LogisticsCost:           itemInput.LogisticsCost,
+			FreightCost:             itemInput.FreightCost,
+			TaxPercent:              itemInput.TaxPercent,
+			StPercent:               itemInput.StPercent,
+			LossIndexPercent:        itemInput.LossIndexPercent,
+			ImportedLaborPercent:    itemInput.ImportedLaborPercent,
+			MgmtCommissionPercent:   itemInput.MgmtCommissionPercent,
+			SellerCommissionPercent: itemInput.SellerCommissionPercent,
+			AgencyCommissionPercent: itemInput.AgencyCommissionPercent,
+			PublicityPercent:        itemInput.PublicityPercent,
+			ScrapIndex:              itemInput.ScrapIndex,
+			OverPercent:             itemInput.OverPercent,
+			FinancialFactor:         itemInput.FinancialFactor,
+			FinancialPercent:        itemInput.FinancialPercent,
+			SaleUnitValue:           itemInput.SaleUnitValue,
+			TransportApart:          itemInput.TransportApart,
+			ProductionCostCalc:      itemInput.ProductionCostCalc,
+			TransportCostCalc:       itemInput.TransportCostCalc,
+			AdditionalCostsCalc:     itemInput.AdditionalCostsCalc,
+			ProfitCalc:              itemInput.ProfitCalc,
+			MarginPercentCalc:       itemInput.MarginPercentCalc,
+			CostUnitCalc:            itemInput.CostUnitCalc,
+			Engravings:              itemInput.Engravings,
+			HasPriceFormation:       itemInput.HasPriceFormation,
 		}
 		if err := r.CreateItem(&item); err != nil {
 			return nil, apperrors.NewDatabaseError(err)
@@ -120,12 +153,45 @@ func (r *QuoteRepository) Update(id int, input *models.QuoteInput) (*models.Quot
 
 	for _, itemInput := range input.Items {
 		item := models.QuoteItem{
-			QuoteID:             id,
-			ProductID:           itemInput.ProductID,
-			Quantity:            itemInput.Quantity,
-			UnitPrice:           itemInput.UnitPrice,
-			TotalPrice:          float64(itemInput.Quantity) * itemInput.UnitPrice,
-			PersonalizationType: itemInput.PersonalizationType,
+			QuoteID:                 id,
+			ProductID:               itemInput.ProductID,
+			Quantity:                itemInput.Quantity,
+			UnitPrice:               itemInput.UnitPrice,
+			TotalPrice:              float64(itemInput.Quantity) * itemInput.UnitPrice,
+			PersonalizationType:     itemInput.PersonalizationType,
+			DNCode:                  itemInput.DNCode,
+			DescriptionSummary:      itemInput.DescriptionSummary,
+			IsKit:                   itemInput.IsKit,
+			BaseCostUnit:            itemInput.BaseCostUnit,
+			LaborCost:               itemInput.LaborCost,
+			ExtraUnitCost1:          itemInput.ExtraUnitCost1,
+			ExtraUnitCost2:          itemInput.ExtraUnitCost2,
+			EngravingCost:           itemInput.EngravingCost,
+			UrgencyFee:              itemInput.UrgencyFee,
+			LogisticsCost:           itemInput.LogisticsCost,
+			FreightCost:             itemInput.FreightCost,
+			TaxPercent:              itemInput.TaxPercent,
+			StPercent:               itemInput.StPercent,
+			LossIndexPercent:        itemInput.LossIndexPercent,
+			ImportedLaborPercent:    itemInput.ImportedLaborPercent,
+			MgmtCommissionPercent:   itemInput.MgmtCommissionPercent,
+			SellerCommissionPercent: itemInput.SellerCommissionPercent,
+			AgencyCommissionPercent: itemInput.AgencyCommissionPercent,
+			PublicityPercent:        itemInput.PublicityPercent,
+			ScrapIndex:              itemInput.ScrapIndex,
+			OverPercent:             itemInput.OverPercent,
+			FinancialFactor:         itemInput.FinancialFactor,
+			FinancialPercent:        itemInput.FinancialPercent,
+			SaleUnitValue:           itemInput.SaleUnitValue,
+			TransportApart:          itemInput.TransportApart,
+			ProductionCostCalc:      itemInput.ProductionCostCalc,
+			TransportCostCalc:       itemInput.TransportCostCalc,
+			AdditionalCostsCalc:     itemInput.AdditionalCostsCalc,
+			ProfitCalc:              itemInput.ProfitCalc,
+			MarginPercentCalc:       itemInput.MarginPercentCalc,
+			CostUnitCalc:            itemInput.CostUnitCalc,
+			Engravings:              itemInput.Engravings,
+			HasPriceFormation:       itemInput.HasPriceFormation,
 		}
 		if err := r.CreateItem(&item); err != nil {
 			return nil, apperrors.NewDatabaseError(err)
@@ -156,7 +222,27 @@ func (r *QuoteRepository) Delete(id int) error {
 }
 
 func (r *QuoteRepository) GetItems(quoteID int) ([]models.QuoteItem, error) {
-	rows, err := r.db.Query(`SELECT id, quote_id, product_id, quantity, unit_price, total_price, personalization_type, created_at, updated_at FROM quote_items WHERE quote_id=$1 ORDER BY id ASC`, quoteID)
+	rows, err := r.db.Query(`
+		SELECT id, quote_id, product_id, quantity, unit_price, total_price,
+		       COALESCE(personalization_type,''),
+		       COALESCE(dn_code,''), COALESCE(description_summary,''), COALESCE(is_kit,false),
+		       COALESCE(base_cost_unit,0), COALESCE(labor_cost,0),
+		       COALESCE(extra_unit_cost1,0), COALESCE(extra_unit_cost2,0),
+		       COALESCE(engraving_cost,0), COALESCE(urgency_fee,0),
+		       COALESCE(logistics_cost,0), COALESCE(freight_cost,0),
+		       COALESCE(tax_percent,0), COALESCE(st_percent,0),
+		       COALESCE(loss_index_percent,0), COALESCE(imported_labor_percent,0),
+		       COALESCE(mgmt_commission_percent,0), COALESCE(seller_commission_percent,0),
+		       COALESCE(agency_commission_percent,0), COALESCE(publicity_percent,0),
+		       COALESCE(scrap_index,0), COALESCE(over_percent,0),
+		       COALESCE(financial_factor,1), COALESCE(financial_percent,0),
+		       COALESCE(sale_unit_value,0), COALESCE(transport_apart,0),
+		       COALESCE(production_cost_calc,0), COALESCE(transport_cost_calc,0),
+		       COALESCE(additional_costs_calc,0), COALESCE(profit_calc,0),
+		       COALESCE(margin_percent_calc,0), COALESCE(cost_unit_calc,0),
+		       COALESCE(engravings,'[]'::jsonb), COALESCE(has_price_formation,false),
+		       created_at, updated_at
+		FROM quote_items WHERE quote_id=$1 ORDER BY id ASC`, quoteID)
 	if err != nil {
 		return nil, err
 	}
@@ -165,9 +251,33 @@ func (r *QuoteRepository) GetItems(quoteID int) ([]models.QuoteItem, error) {
 	var items []models.QuoteItem
 	for rows.Next() {
 		var item models.QuoteItem
-		err := rows.Scan(&item.ID, &item.QuoteID, &item.ProductID, &item.Quantity, &item.UnitPrice, &item.TotalPrice, &item.PersonalizationType, &item.CreatedAt, &item.UpdatedAt)
+		var engravingsBytes []byte
+		err := rows.Scan(
+			&item.ID, &item.QuoteID, &item.ProductID, &item.Quantity, &item.UnitPrice, &item.TotalPrice,
+			&item.PersonalizationType,
+			&item.DNCode, &item.DescriptionSummary, &item.IsKit,
+			&item.BaseCostUnit, &item.LaborCost,
+			&item.ExtraUnitCost1, &item.ExtraUnitCost2,
+			&item.EngravingCost, &item.UrgencyFee,
+			&item.LogisticsCost, &item.FreightCost,
+			&item.TaxPercent, &item.StPercent,
+			&item.LossIndexPercent, &item.ImportedLaborPercent,
+			&item.MgmtCommissionPercent, &item.SellerCommissionPercent,
+			&item.AgencyCommissionPercent, &item.PublicityPercent,
+			&item.ScrapIndex, &item.OverPercent,
+			&item.FinancialFactor, &item.FinancialPercent,
+			&item.SaleUnitValue, &item.TransportApart,
+			&item.ProductionCostCalc, &item.TransportCostCalc,
+			&item.AdditionalCostsCalc, &item.ProfitCalc,
+			&item.MarginPercentCalc, &item.CostUnitCalc,
+			&engravingsBytes, &item.HasPriceFormation,
+			&item.CreatedAt, &item.UpdatedAt,
+		)
 		if err != nil {
 			return nil, err
+		}
+		if engravingsBytes != nil {
+			item.Engravings = engravingsBytes
 		}
 		item.Product, _ = r.GetProductBasic(item.ProductID)
 		items = append(items, item)
@@ -177,9 +287,39 @@ func (r *QuoteRepository) GetItems(quoteID int) ([]models.QuoteItem, error) {
 }
 
 func (r *QuoteRepository) CreateItem(item *models.QuoteItem) error {
-	return r.db.QueryRow(
-		`INSERT INTO quote_items (quote_id, product_id, quantity, unit_price, total_price, personalization_type) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, created_at, updated_at`,
+	engravingsJSON := []byte("[]")
+	if item.Engravings != nil && len(item.Engravings) > 0 {
+		engravingsJSON = item.Engravings
+	}
+	return r.db.QueryRow(`
+		INSERT INTO quote_items (
+			quote_id, product_id, quantity, unit_price, total_price, personalization_type,
+			dn_code, description_summary, is_kit,
+			base_cost_unit, labor_cost, extra_unit_cost1, extra_unit_cost2,
+			engraving_cost, urgency_fee, logistics_cost, freight_cost,
+			tax_percent, st_percent, loss_index_percent, imported_labor_percent,
+			mgmt_commission_percent, seller_commission_percent, agency_commission_percent,
+			publicity_percent, scrap_index, over_percent,
+			financial_factor, financial_percent, sale_unit_value, transport_apart,
+			production_cost_calc, transport_cost_calc, additional_costs_calc,
+			profit_calc, margin_percent_calc, cost_unit_calc,
+			engravings, has_price_formation
+		) VALUES (
+			$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,
+			$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,
+			$32,$33,$34,$35,$36,$37,$38,$39
+		) RETURNING id, created_at, updated_at`,
 		item.QuoteID, item.ProductID, item.Quantity, item.UnitPrice, item.TotalPrice, item.PersonalizationType,
+		item.DNCode, item.DescriptionSummary, item.IsKit,
+		item.BaseCostUnit, item.LaborCost, item.ExtraUnitCost1, item.ExtraUnitCost2,
+		item.EngravingCost, item.UrgencyFee, item.LogisticsCost, item.FreightCost,
+		item.TaxPercent, item.StPercent, item.LossIndexPercent, item.ImportedLaborPercent,
+		item.MgmtCommissionPercent, item.SellerCommissionPercent, item.AgencyCommissionPercent,
+		item.PublicityPercent, item.ScrapIndex, item.OverPercent,
+		item.FinancialFactor, item.FinancialPercent, item.SaleUnitValue, item.TransportApart,
+		item.ProductionCostCalc, item.TransportCostCalc, item.AdditionalCostsCalc,
+		item.ProfitCalc, item.MarginPercentCalc, item.CostUnitCalc,
+		engravingsJSON, item.HasPriceFormation,
 	).Scan(&item.ID, &item.CreatedAt, &item.UpdatedAt)
 }
 
