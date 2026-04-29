@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"net/http"
 
@@ -47,9 +48,13 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	userID, _, _ := middleware.GetUserFromRequest(r)
-	
+
 	user, err := authService.GetUserByID(userID)
 	if err != nil {
+		if err == sql.ErrNoRows || apperrors.IsNotFound(err) {
+			middleware.ErrorHandler(w, apperrors.NewUnauthorizedError("Token inválido ou usuário não encontrado"), http.StatusUnauthorized)
+			return
+		}
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
