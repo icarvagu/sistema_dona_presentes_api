@@ -17,6 +17,7 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
 
 ### P1 (próximos ciclos)
 - Padronizar inicialização da aplicação para evitar `panic` em `init()` e centralizar fail-fast com logs estruturados no `main()`.
+  - Status: concluído neste ciclo.
   - Arquivo: `main.go`
 - Reduzir ruído de logs de infraestrutura (`middleware/error_handler.go` e `services/xbz_service.go`), definindo nível e formato padrão.
   - Arquivos: `middleware/error_handler.go`, `services/xbz_service.go`
@@ -29,5 +30,5 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
 - Criar guideline curto de convenções (nomes, erros, logs) para evitar regressão de padrão.
 
 ## Próxima ação proposta
-1. Refatorar bootstrap do app (`main.go`) removendo `panic` do `init()` e retornando erro controlado de inicialização.
-2. Em seguida, padronizar logs XBZ para evitar exposição de payload desnecessário e excesso de verbosidade.
+1. Padronizar logs XBZ para evitar exposição de payload desnecessário e excesso de verbosidade.
+2. Padronizar logs de middleware para reduzir ruído e facilitar observabilidade.

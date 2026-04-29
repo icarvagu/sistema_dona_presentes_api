@@ -21,25 +21,28 @@ import (
 
 const port = ":8080"
 
-func init() {
+func bootstrap() error {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		panic("DATABASE_URL environment variable is required")
+		return fmt.Errorf("DATABASE_URL environment variable is required")
 	}
 
-	var err error
-	err = config.Connect(dsn)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to connect to database: %v", err))
+	if err := config.Connect(dsn); err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
 	if err := goose.Up(config.DB, "./db/migrations"); err != nil {
-		panic(fmt.Sprintf("Failed to run migrations: %v", err))
+		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 	log.Println("Connected to the database successfully!")
+	return nil
 }
 
 func main() {
+	if err := bootstrap(); err != nil {
+		log.Fatalf("server bootstrap failed: %v", err)
+	}
+
 	defer config.DB.Close()
 
 	controllers.InitAuthService()
