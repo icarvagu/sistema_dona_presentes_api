@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"donapresentes/controllers"
 	"donapresentes/controllers/config"
@@ -18,12 +19,14 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-const (
-	dsn  = "postgres://postgres:123456@postgres:5432/crud?sslmode=disable"
-	port = ":8080"
-)
+const port = ":8080"
 
 func init() {
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		panic("DATABASE_URL environment variable is required")
+	}
+
 	var err error
 	err = config.Connect(dsn)
 	if err != nil {
@@ -50,7 +53,7 @@ func main() {
 
 	productRepo := repositories.NewProductRepository(config.DB)
 	supplierRepo := repositories.NewSupplierRepository(config.DB)
-	xbzService := services.NewXBZService("36168035000181", "X142AA979C")
+	xbzService := services.NewXBZService(os.Getenv("XBZ_CNPJ"), os.Getenv("XBZ_TOKEN"))
 	syncService := services.NewSyncService(xbzService, productRepo, supplierRepo)
 
 	scheduler := jobs.NewScheduler(syncService, xbzService)
