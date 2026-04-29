@@ -31,8 +31,8 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
   - Status: concluído (`insomnia-employees-collection.json`, `insomnia-customers-collection.zip` e duplicatas frontend de kits/products/sales removidas; inventário final sem duplicidade direta remanescente).
   - Observação: migrations históricas devem ser preservadas; limpeza focada em artefatos operacionais/documentais.
 - Criar guideline curto de convenções (nomes, erros, logs) para evitar regressão de padrão.
-  - Status: pendente.
+  - Status: concluído (documentado em `docs/conventions.md`).
 
 ## Próxima ação proposta
 1. Concluir padronização de nomenclatura no restante do domínio (não-XBZ) em `controllers/`, `services/`, `repositories/`.
-2. Criar guideline curto de convenções para nomes, tratamento de erro e logging.
+2. Planejar remoção futura dos aliases de compatibilidade já migrados (após validação do PR).
