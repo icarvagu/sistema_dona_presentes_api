@@ -14,7 +14,6 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
-// GetByUsername busca um usuário pelo username
 func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
@@ -34,7 +33,7 @@ func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 		return nil, apperrors.NewDatabaseError(err)
 	}
 	
-	// Converter campos nullable
+
 	if rg.Valid {
 		u.RG = &rg.String
 	}
@@ -60,7 +59,6 @@ func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 	return &u, nil
 }
 
-// GetByID busca um usuário pelo ID
 func (r *UserRepository) GetByID(id int) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
@@ -80,7 +78,7 @@ func (r *UserRepository) GetByID(id int) (*models.User, error) {
 		return nil, apperrors.NewDatabaseError(err)
 	}
 	
-	// Converter campos nullable
+
 	if rg.Valid {
 		u.RG = &rg.String
 	}
@@ -106,7 +104,6 @@ func (r *UserRepository) GetByID(id int) (*models.User, error) {
 	return &u, nil
 }
 
-// Create cria um novo usuário
 func (r *UserRepository) Create(u *models.User) (*models.User, error) {
 	err := r.db.QueryRow(
 		`INSERT INTO users (username, password_hash, role, full_name, cpf, rg, birth_date, gender, status, 
@@ -122,7 +119,6 @@ func (r *UserRepository) Create(u *models.User) (*models.User, error) {
 	return u, nil
 }
 
-// GetAll retorna todos os usuários (sem senha)
 func (r *UserRepository) GetAll() ([]models.User, error) {
 	rows, err := r.db.Query(
 		`SELECT id, username, role, full_name, cpf, rg, birth_date, gender, status, 
@@ -146,7 +142,7 @@ func (r *UserRepository) GetAll() ([]models.User, error) {
 			return nil, err
 		}
 		
-		// Converter campos nullable
+
 		if rg.Valid {
 			u.RG = &rg.String
 		}
@@ -174,7 +170,6 @@ func (r *UserRepository) GetAll() ([]models.User, error) {
 	return users, nil
 }
 
-// Update atualiza um usuário existente
 func (r *UserRepository) Update(id int, u *models.User) (*models.User, error) {
 	err := r.db.QueryRow(
 		`UPDATE users SET username=$1, role=$2, full_name=$3, cpf=$4, rg=$5, birth_date=$6, gender=$7, 
@@ -193,7 +188,6 @@ func (r *UserRepository) Update(id int, u *models.User) (*models.User, error) {
 	return u, nil
 }
 
-// UpdatePassword atualiza apenas a senha do usuário
 func (r *UserRepository) UpdatePassword(id int, passwordHash string) error {
 	_, err := r.db.Exec(`UPDATE users SET password_hash=$1, updated_at=NOW() WHERE id=$2`, passwordHash, id)
 	if err != nil {
@@ -202,7 +196,6 @@ func (r *UserRepository) UpdatePassword(id int, passwordHash string) error {
 	return nil
 }
 
-// Delete remove um usuário
 func (r *UserRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM users WHERE id=$1", id)
 	if err != nil {
@@ -218,7 +211,6 @@ func (r *UserRepository) Delete(id int) error {
 	return nil
 }
 
-// GetByCPF busca um usuário pelo CPF
 func (r *UserRepository) GetByCPF(cpf string) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
@@ -238,7 +230,7 @@ func (r *UserRepository) GetByCPF(cpf string) (*models.User, error) {
 		return nil, apperrors.NewDatabaseError(err)
 	}
 	
-	// Converter campos nullable
+
 	if rg.Valid {
 		u.RG = &rg.String
 	}
@@ -264,7 +256,6 @@ func (r *UserRepository) GetByCPF(cpf string) (*models.User, error) {
 	return &u, nil
 }
 
-// SearchByFilter busca usuários por filtro (nome, CPF, username)
 func (r *UserRepository) SearchByFilter(filter string) ([]models.User, error) {
 	filterPattern := "%" + filter + "%"
 	rows, err := r.db.Query(
@@ -294,7 +285,7 @@ func (r *UserRepository) SearchByFilter(filter string) ([]models.User, error) {
 			return nil, err
 		}
 		
-		// Converter campos nullable
+
 		if rg.Valid {
 			u.RG = &rg.String
 		}

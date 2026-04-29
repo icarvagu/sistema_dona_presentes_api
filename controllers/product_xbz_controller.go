@@ -29,7 +29,6 @@ func InitProductXBZController() {
 	xbzService = services.NewXBZService(cnpj, token)
 }
 
-// SyncProductsFromXBZHandler starts async product sync from XBZ API.
 func SyncProductsFromXBZHandler(w http.ResponseWriter, r *http.Request) {
 	if xbzService == nil {
 		w.Header().Set("Content-Type", "application/json")
@@ -41,7 +40,6 @@ func SyncProductsFromXBZHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verificar se já existe uma sincronização em andamento
 	syncMutex.Lock()
 	if syncInProgress {
 		syncMutex.Unlock()
@@ -56,7 +54,6 @@ func SyncProductsFromXBZHandler(w http.ResponseWriter, r *http.Request) {
 	syncInProgress = true
 	syncMutex.Unlock()
 
-	// Executar sincronização em goroutine
 	go func() {
 		defer func() {
 			syncMutex.Lock()
@@ -79,7 +76,6 @@ func SyncProductsFromXBZHandler(w http.ResponseWriter, r *http.Request) {
 			result.Total, result.Criados, result.Atualizados, result.Erros)
 	}()
 
-	// Retornar resposta imediata
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
 	json.NewEncoder(w).Encode(map[string]string{

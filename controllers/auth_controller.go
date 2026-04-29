@@ -19,7 +19,6 @@ func InitAuthService() {
 	authService = services.NewAuthService(userRepo)
 }
 
-// Login autentica um usuário e retorna um token JWT
 func Login(w http.ResponseWriter, r *http.Request) {
 	var input models.LoginInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -27,7 +26,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validar campos obrigatórios
 	if input.Username == "" || input.Password == "" {
 		middleware.ErrorHandler(w, apperrors.NewMissingFieldError("username e password são obrigatórios"), http.StatusBadRequest)
 		return
@@ -47,7 +45,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// GetCurrentUser retorna informações do usuário atual
 func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	userID, _, _ := middleware.GetUserFromRequest(r)
 	

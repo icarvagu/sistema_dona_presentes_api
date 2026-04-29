@@ -5,7 +5,6 @@ import (
 	"net/http"
 )
 
-// AppError representa um erro da aplicação com contexto HTTP
 type AppError struct {
 	Code       int
 	Message    string
@@ -13,19 +12,16 @@ type AppError struct {
 	LogMessage string
 }
 
-// Error implementa a interface error
 func (e *AppError) Error() string {
 	return e.Message
 }
 
-// StatusCode retorna o código HTTP apropriado
 func (e *AppError) StatusCode() int {
 	return e.Code
 }
 
-// Mensagens de erro predefinidas
 var (
-	// Erros de validação
+
 	ErrInvalidInput = &AppError{
 		Code:    http.StatusBadRequest,
 		Message: "Dados de entrada inválidos",
@@ -61,7 +57,6 @@ var (
 		Message: "JSON inválido na requisição",
 	}
 
-	// Erros de recurso não encontrado
 	ErrNotFound = &AppError{
 		Code:    http.StatusNotFound,
 		Message: "Recurso não encontrado",
@@ -97,13 +92,11 @@ var (
 		Message: "Orçamento não encontrado",
 	}
 
-	// Erros de conflito
 	ErrDuplicateEntry = &AppError{
 		Code:    http.StatusConflict,
 		Message: "Registro duplicado",
 	}
 
-	// Erros de servidor
 	ErrInternalServer = &AppError{
 		Code:    http.StatusInternalServerError,
 		Message: "Erro interno do servidor",
@@ -115,7 +108,6 @@ var (
 	}
 )
 
-// NewValidationError cria um erro de validação customizado
 func NewValidationError(field string) *AppError {
 	return &AppError{
 		Code:    http.StatusBadRequest,
@@ -123,7 +115,6 @@ func NewValidationError(field string) *AppError {
 	}
 }
 
-// NewNotFoundError cria um erro de recurso não encontrado
 func NewNotFoundError(resource string) *AppError {
 	return &AppError{
 		Code:    http.StatusNotFound,
@@ -131,7 +122,6 @@ func NewNotFoundError(resource string) *AppError {
 	}
 }
 
-// NewInvalidFieldError cria um erro para campo inválido
 func NewInvalidFieldError(field, reason string) *AppError {
 	return &AppError{
 		Code:    http.StatusBadRequest,
@@ -139,7 +129,6 @@ func NewInvalidFieldError(field, reason string) *AppError {
 	}
 }
 
-// NewMissingFieldError cria um erro para campo obrigatório
 func NewMissingFieldError(fields ...string) *AppError {
 	fieldStr := ""
 	for i, f := range fields {
@@ -154,7 +143,6 @@ func NewMissingFieldError(fields ...string) *AppError {
 	}
 }
 
-// NewDatabaseError cria um erro de banco de dados
 func NewDatabaseError(err error) *AppError {
 	return &AppError{
 		Code:       http.StatusInternalServerError,
@@ -163,7 +151,6 @@ func NewDatabaseError(err error) *AppError {
 	}
 }
 
-// IsNotFound verifica se é erro de não encontrado
 func IsNotFound(err error) bool {
 	if appErr, ok := err.(*AppError); ok {
 		return appErr.Code == http.StatusNotFound
@@ -171,7 +158,6 @@ func IsNotFound(err error) bool {
 	return false
 }
 
-// IsValidationError verifica se é erro de validação
 func IsValidationError(err error) bool {
 	if appErr, ok := err.(*AppError); ok {
 		return appErr.Code == http.StatusBadRequest
@@ -179,7 +165,6 @@ func IsValidationError(err error) bool {
 	return false
 }
 
-// ErrorResponse representa a resposta JSON de erro
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Details string `json:"details,omitempty"`

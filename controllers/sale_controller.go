@@ -36,7 +36,6 @@ func InitSaleService() {
 	}
 }
 
-// List vendas
 func GetSales(w http.ResponseWriter, r *http.Request) {
 	vs, err := saleService.GetAll()
 	if err != nil {
@@ -47,7 +46,6 @@ func GetSales(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(vs)
 }
 
-// Get venda by id
 func GetSale(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -68,7 +66,6 @@ func GetSale(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(v)
 }
 
-// Create venda with validation
 func CreateSale(w http.ResponseWriter, r *http.Request) {
 	var input models.SaleInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -90,7 +87,6 @@ func CreateSale(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(v)
 }
 
-// Update venda
 func UpdateSale(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -121,7 +117,6 @@ func UpdateSale(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(v)
 }
 
-// GetSalePDF returns the order summary PDF for download
 func GetSalePDF(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -159,7 +154,6 @@ func GetSalePDF(w http.ResponseWriter, r *http.Request) {
 	w.Write(pdfBytes)
 }
 
-// Delete venda
 func DeleteSale(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])

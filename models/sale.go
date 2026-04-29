@@ -25,8 +25,8 @@ type Sale struct {
 	PaymentTermDays       int        `json:"payment_term_days,omitempty"`
 	FirstInstallmentStart *time.Time `json:"first_installment_start,omitempty"`
 	TotalValue            float64    `json:"total"`
-	Items                 []SaleItem `json:"items,omitempty"`    // Apenas produtos (com ou sem composição)
-	Carriers              []Carrier  `json:"carriers,omitempty"` // Transportadoras vinculadas
+	Items                 []SaleItem `json:"items,omitempty"`
+	Carriers              []Carrier  `json:"carriers,omitempty"`
 	CreatedAt             time.Time  `json:"created_at"`
 	UpdatedAt             time.Time  `json:"updated_at"`
 }
@@ -38,8 +38,8 @@ type SaleInput struct {
 	Installments          int             `json:"installments"`
 	PaymentTermDays       int             `json:"payment_term_days,omitempty"`
 	FirstInstallmentStart *time.Time      `json:"first_installment_start,omitempty"`
-	Items                 []SaleItemInput `json:"items,omitempty"`       // Apenas produtos
-	CarrierIDs            []int           `json:"carrier_ids,omitempty"` // IDs das transportadoras
+	Items                 []SaleItemInput `json:"items,omitempty"`
+	CarrierIDs            []int           `json:"carrier_ids,omitempty"`
 }
 
 type SaleItemInput struct {

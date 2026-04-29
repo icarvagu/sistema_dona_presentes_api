@@ -23,7 +23,6 @@ func InitCarrierService() {
 	carrierService = services.NewCarrierService(carrierRepo)
 }
 
-// GetCarriers lists all transportadoras
 func GetCarriers(w http.ResponseWriter, r *http.Request) {
 	items, err := carrierService.GetAll()
 	if err != nil {
@@ -35,7 +34,6 @@ func GetCarriers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(items)
 }
 
-// GetCarrier retrieves one transportadora by ID
 func GetCarrier(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -58,7 +56,6 @@ func GetCarrier(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(t)
 }
 
-// CreateCarrier creates a new transportadora
 func CreateCarrier(w http.ResponseWriter, r *http.Request) {
 	var t models.Carrier
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
@@ -77,7 +74,6 @@ func CreateCarrier(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(t)
 }
 
-// UpdateCarrier updates an existing transportadora
 func UpdateCarrier(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -103,7 +99,6 @@ func UpdateCarrier(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(t)
 }
 
-// DeleteCarrier deletes a transportadora by ID
 func DeleteCarrier(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])

@@ -25,19 +25,16 @@ func NewSaleService(saleRepo *repositories.SaleRepository, userRepo *repositorie
 	}
 }
 
-// GetAll returns all sales
 func (s *SaleService) GetAll() ([]models.Sale, error) {
 	return s.saleRepo.GetAll()
 }
 
-// GetByID returns a sale by ID
 func (s *SaleService) GetByID(id int) (*models.Sale, error) {
 	return s.saleRepo.GetByID(id)
 }
 
-// ValidateSale validates sale input
 func (s *SaleService) ValidateSale(input *models.SaleInput) error {
-	// Validate required fields
+
 	if input.SellerID == 0 {
 		return apperrors.NewMissingFieldError("seller_id")
 	}
@@ -54,7 +51,6 @@ func (s *SaleService) ValidateSale(input *models.SaleInput) error {
 		return apperrors.NewInvalidFieldError("items", "sale must have at least 1 item")
 	}
 
-	// Validate seller exists
 	_, err := s.userRepo.GetByID(input.SellerID)
 	if err != nil {
 		if err == sql.ErrNoRows || apperrors.IsNotFound(err) {
@@ -63,7 +59,6 @@ func (s *SaleService) ValidateSale(input *models.SaleInput) error {
 		return apperrors.NewDatabaseError(err)
 	}
 
-	// Validate customer exists
 	_, err = s.customerRepo.GetByID(input.CustomerID)
 	if err != nil {
 		if err == sql.ErrNoRows || apperrors.IsNotFound(err) {
@@ -72,7 +67,6 @@ func (s *SaleService) ValidateSale(input *models.SaleInput) error {
 		return apperrors.NewDatabaseError(err)
 	}
 
-	// Validate items (produtos - com ou sem composição)
 	for _, item := range input.Items {
 		if item.ProductID == 0 {
 			return apperrors.NewInvalidFieldError("item", "product_id is required")
@@ -84,7 +78,6 @@ func (s *SaleService) ValidateSale(input *models.SaleInput) error {
 			return apperrors.NewInvalidFieldError("item", "unit_price must be > 0")
 		}
 
-		// Validate product exists
 		product, err := s.productRepo.GetByID(item.ProductID)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -92,11 +85,10 @@ func (s *SaleService) ValidateSale(input *models.SaleInput) error {
 			}
 			return apperrors.NewDatabaseError(err)
 		}
-		// Produto com is_composition = true funciona como "kit"
-		_ = product // produto validado
+
+		_ = product
 	}
 
-	// Validate carriers (opcional, mas se fornecido, deve existir)
 	if len(input.CarrierIDs) > 0 {
 		for _, carrierID := range input.CarrierIDs {
 			if carrierID <= 0 {
@@ -115,9 +107,8 @@ func (s *SaleService) ValidateSale(input *models.SaleInput) error {
 	return nil
 }
 
-// Create creates a new sale with validation
 func (s *SaleService) Create(input *models.SaleInput) (*models.Sale, error) {
-	// Validate sale
+
 	if err := s.ValidateSale(input); err != nil {
 		return nil, err
 	}
@@ -125,9 +116,8 @@ func (s *SaleService) Create(input *models.SaleInput) (*models.Sale, error) {
 	return s.saleRepo.Create(input)
 }
 
-// Update updates an existing sale with validation
 func (s *SaleService) Update(id int, input *models.SaleInput) (*models.Sale, error) {
-	// Validate sale exists
+
 	_, err := s.saleRepo.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -136,7 +126,6 @@ func (s *SaleService) Update(id int, input *models.SaleInput) (*models.Sale, err
 		return nil, err
 	}
 
-	// Validate sale
 	if err := s.ValidateSale(input); err != nil {
 		return nil, err
 	}
@@ -144,7 +133,6 @@ func (s *SaleService) Update(id int, input *models.SaleInput) (*models.Sale, err
 	return s.saleRepo.Update(id, input)
 }
 
-// Delete deletes a sale
 func (s *SaleService) Delete(id int) error {
 	return s.saleRepo.Delete(id)
 }

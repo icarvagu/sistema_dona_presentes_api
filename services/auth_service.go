@@ -22,7 +22,7 @@ type AuthService struct {
 func NewAuthService(userRepo *repositories.UserRepository) *AuthService {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
-		secret = "dona-presentes-secret-key-change-in-production" // Default, deve ser alterado em produção
+		secret = "dona-presentes-secret-key-change-in-production"
 	}
 	return &AuthService{
 		userRepo:  userRepo,
@@ -30,7 +30,6 @@ func NewAuthService(userRepo *repositories.UserRepository) *AuthService {
 	}
 }
 
-// HashPassword cria um hash da senha usando bcrypt
 func (s *AuthService) HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -39,15 +38,13 @@ func (s *AuthService) HashPassword(password string) (string, error) {
 	return string(bytes), nil
 }
 
-// CheckPassword verifica se a senha corresponde ao hash
 func (s *AuthService) CheckPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
-// Login autentica um usuário e retorna um token JWT
 func (s *AuthService) Login(input *models.LoginInput) (*models.LoginResponse, error) {
-	// Buscar usuário pelo username
+
 	user, err := s.userRepo.GetByUsername(input.Username)
 	if err != nil {
 		if err == sql.ErrNoRows || apperrors.IsNotFound(err) {
@@ -56,18 +53,15 @@ func (s *AuthService) Login(input *models.LoginInput) (*models.LoginResponse, er
 		return nil, err
 	}
 
-	// Verificar senha
 	if !s.CheckPassword(input.Password, user.PasswordHash) {
 		return nil, apperrors.NewValidationError("Usuário ou senha inválidos")
 	}
 
-	// Gerar token JWT
 	token, err := s.GenerateToken(user)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
 	}
 
-	// Remover senha do retorno
 	user.PasswordHash = ""
 
 	return &models.LoginResponse{
@@ -76,9 +70,8 @@ func (s *AuthService) Login(input *models.LoginInput) (*models.LoginResponse, er
 	}, nil
 }
 
-// GenerateToken gera um token JWT para o usuário
 func (s *AuthService) GenerateToken(user *models.User) (string, error) {
-	// Token expira em 24 horas
+
 	expirationTime := time.Now().Add(24 * time.Hour)
 
 	claims := jwt.MapClaims{
@@ -98,10 +91,9 @@ func (s *AuthService) GenerateToken(user *models.User) (string, error) {
 	return tokenString, nil
 }
 
-// ValidateToken valida um token JWT e retorna os claims
 func (s *AuthService) ValidateToken(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		// Verificar método de assinatura
+
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("método de assinatura inválido")
 		}
@@ -119,13 +111,12 @@ func (s *AuthService) ValidateToken(tokenString string) (jwt.MapClaims, error) {
 	return nil, errors.New("token inválido")
 }
 
-// GetUserByID busca um usuário por ID (para GetCurrentUser)
 func (s *AuthService) GetUserByID(id int) (*models.User, error) {
 	user, err := s.userRepo.GetByID(id)
 	if err != nil {
 		return nil, err
 	}
-	// Remover senha do retorno
+
 	user.PasswordHash = ""
 	return user, nil
 }

@@ -23,7 +23,6 @@ func InitUserService() {
 	userService = services.NewUserService(userRepo, authService)
 }
 
-// GetAllUsers retorna todos os usuários (apenas admin)
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := userService.GetAll()
 	if err != nil {
@@ -34,7 +33,6 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }
 
-// GetUser retorna um usuário por ID (admin ou próprio usuário)
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -43,10 +41,9 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verificar se é admin ou próprio usuário
 	userID, _, _ := middleware.GetUserFromRequest(r)
 	if userID != id {
-		// Verificar se é admin
+
 		_, _, role := middleware.GetUserFromRequest(r)
 		if role != "admin" {
 			middleware.ErrorHandler(w, apperrors.NewNotFoundError("Usuário não encontrado"), http.StatusNotFound)
@@ -68,7 +65,6 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
-// CreateUser cria um novo usuário (apenas admin)
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var input models.UserInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -91,7 +87,6 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
-// UpdateUser atualiza um usuário (admin ou próprio usuário)
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -100,10 +95,9 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verificar se é admin ou próprio usuário
 	userID, _, _ := middleware.GetUserFromRequest(r)
 	if userID != id {
-		// Verificar se é admin
+
 		_, _, role := middleware.GetUserFromRequest(r)
 		if role != "admin" {
 			middleware.ErrorHandler(w, apperrors.NewNotFoundError("Usuário não encontrado"), http.StatusNotFound)
@@ -135,7 +129,6 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
-// DeleteUser remove um usuário (apenas admin)
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -157,7 +150,6 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// UpdateProfile atualiza o próprio perfil do usuário logado
 func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID, _, _ := middleware.GetUserFromRequest(r)
 
@@ -167,13 +159,12 @@ func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Não permitir alterar role pelo próprio perfil
 	user, err := userService.GetByID(userID)
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewNotFoundError("Usuário não encontrado"), http.StatusNotFound)
 		return
 	}
-	input.Role = user.Role // Manter role original
+	input.Role = user.Role
 
 	updatedUser, err := userService.Update(userID, &input)
 	if err != nil {

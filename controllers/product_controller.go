@@ -24,9 +24,8 @@ func InitProductService() {
 	productService = services.NewProductService(productRepo, supplierRepo)
 }
 
-// List produtos
 func GetProducts(w http.ResponseWriter, r *http.Request) {
-	// Verifica se há parâmetro only_new na query string
+
 	onlyNew := r.URL.Query().Get("only_new")
 	if onlyNew == "true" || onlyNew == "1" {
 		ps, err := productService.GetNewlyImported()
@@ -39,14 +38,11 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verifica se há parâmetro de filtro na query string
 	filter := r.URL.Query().Get("filter")
 
-	// Verifica parâmetros de paginação
 	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
 
-	// Se houver filtro, não usa paginação (retorna todos os resultados do filtro)
 	if filter != "" {
 		ps, err := productService.SearchByFilter(filter)
 		if err != nil {
@@ -58,10 +54,9 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Se houver parâmetros de paginação, usa paginação
 	if pageStr != "" || limitStr != "" {
 		page := 1
-		limit := 10 // default
+		limit := 10
 
 		if pageStr != "" {
 			if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
@@ -81,7 +76,7 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		totalPages := (total + limit - 1) / limit // arredonda para cima
+		totalPages := (total + limit - 1) / limit
 		if totalPages == 0 {
 			totalPages = 1
 		}
@@ -99,7 +94,6 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Sem filtro e sem paginação - retorna todos (comportamento original)
 	ps, err := productService.GetAll()
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
@@ -109,7 +103,6 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(ps)
 }
 
-// Get produto by id
 func GetProduct(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -130,7 +123,6 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(p)
 }
 
-// Create produto with validation
 func CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var p models.Product
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
@@ -158,7 +150,6 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(created)
 }
 
-// Update produto
 func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -204,7 +195,6 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(updated)
 }
 
-// Delete produto
 func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])

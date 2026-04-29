@@ -14,7 +14,7 @@ type QuoteItem struct {
 	UnitPrice           float64         `json:"unit_price"`
 	TotalPrice          float64         `json:"total_price"`
 	PersonalizationType string          `json:"personalization_type,omitempty"`
-	// Formação de custo
+
 	DNCode                  string          `json:"dn_code,omitempty"`
 	DescriptionSummary      string          `json:"description_summary,omitempty"`
 	IsKit                   bool            `json:"is_kit"`
@@ -83,7 +83,7 @@ type QuoteItemInput struct {
 	Quantity            int             `json:"quantity"`
 	UnitPrice           float64         `json:"unit_price"`
 	PersonalizationType string          `json:"personalization_type,omitempty"`
-	// Formação de custo
+
 	DNCode                  string          `json:"dn_code,omitempty"`
 	DescriptionSummary      string          `json:"description_summary,omitempty"`
 	IsKit                   bool            `json:"is_kit"`

@@ -29,7 +29,6 @@ func NewXBZService(cnpj, token string) *XBZService {
 		Timeout: XBZTimeout,
 	}
 
-	// Validação básica
 	if cnpj == "" || token == "" {
 		log.Printf("[XBZ] Aviso: CNPJ ou Token vazios")
 	}
@@ -41,7 +40,6 @@ func NewXBZService(cnpj, token string) *XBZService {
 	}
 }
 
-// XBZProduto representa a resposta da API XBZ
 type XBZProduto struct {
 	IdPessoa                             int        `json:"IdPessoa"`
 	IdProduto                            int        `json:"IdProduto"`
@@ -75,7 +73,6 @@ type XBZProduto struct {
 	ReposicaoDataPrevista                *time.Time `json:"ReposicaoDataPrevista,omitempty"`
 }
 
-// GetProducts implements ExternalAPIProvider.GetProducts.
 func (s *XBZService) GetProducts() ([]interface{}, error) {
 	endpoint := fmt.Sprintf("%s/api/clientes/GetListaDeProdutos", XBZBaseURL)
 
@@ -220,7 +217,6 @@ func toInterfaceSliceFromGeneric(items []map[string]interface{}) []interface{} {
 	return out
 }
 
-// buildPhotosArray cria um array de fotos a partir do ImageLink
 func buildPhotosArray(imageLink string) []string {
 	if imageLink == "" {
 		return []string{}
@@ -228,11 +224,10 @@ func buildPhotosArray(imageLink string) []string {
 	return []string{imageLink}
 }
 
-// MapToLocalProduct implements ExternalAPIProvider.MapToLocalProduct
 func (s *XBZService) MapToLocalProduct(item interface{}) *models.Product {
-	// Tenta cast direto para o tipo estruturado
+
 	if xbzProd, ok := item.(XBZProduto); ok {
-		// Validação básica de dados essenciais
+
 		if xbzProd.CodigoXbz == "" || xbzProd.Nome == "" {
 			log.Printf("[XBZ] produto ignorado: CodigoXbz ou Nome vazios")
 			return nil
@@ -262,7 +257,6 @@ func (s *XBZService) MapToLocalProduct(item interface{}) *models.Product {
 		return prod
 	}
 
-	// Se for um map[string]interface{} (resposta genérica), faça extração defensiva
 	if m, ok := item.(map[string]interface{}); ok {
 		getString := func(key string) string {
 			if v, found := m[key]; found && v != nil {
@@ -312,7 +306,6 @@ func (s *XBZService) MapToLocalProduct(item interface{}) *models.Product {
 			return 0.0
 		}
 
-		// Validação básica de dados essenciais
 		internalCode := getString("CodigoXbz")
 		nome := getString("Nome")
 		if internalCode == "" || nome == "" {
@@ -347,9 +340,8 @@ func (s *XBZService) MapToLocalProduct(item interface{}) *models.Product {
 	return nil
 }
 
-// MapToSupplier implements ExternalAPIProvider.MapToSupplier
 func (s *XBZService) MapToSupplier(item interface{}) *models.Supplier {
-	// XBZ não retorna dados de fornecedor direto, então retornamos um padrão
+
 	nome := "XBZ Brindes"
 	return &models.Supplier{
 		Name:      nome,
@@ -358,7 +350,6 @@ func (s *XBZService) MapToSupplier(item interface{}) *models.Supplier {
 	}
 }
 
-// GetXBZSupplierName returns the provider supplier display name.
 func (s *XBZService) GetXBZSupplierName() string {
 	return "XBZ Brindes"
 }

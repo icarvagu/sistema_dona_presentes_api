@@ -20,7 +20,6 @@ func (r *statusRecorder) WriteHeader(code int) {
 	r.ResponseWriter.WriteHeader(code)
 }
 
-// ErrorHandler escreve um erro formatado na resposta HTTP
 func ErrorHandler(w http.ResponseWriter, err error, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -29,7 +28,6 @@ func ErrorHandler(w http.ResponseWriter, err error, statusCode int) {
 		Code:  statusCode,
 	}
 
-	// Se for AppError, usar o código do erro, senão usar o statusCode passado
 	finalStatusCode := statusCode
 	if appErr, ok := err.(*errors.AppError); ok {
 		response.Details = appErr.Details
@@ -43,7 +41,6 @@ func ErrorHandler(w http.ResponseWriter, err error, statusCode int) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// LoggingMiddleware registra informações sobre as requisições
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
@@ -55,7 +52,6 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// RecoveryMiddleware recupera de panics
 func RecoveryMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -68,10 +64,9 @@ func RecoveryMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// NormalizePathMiddleware remove barras duplicadas do path
 func NormalizePathMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Remove barras duplicadas do path
+
 		path := r.URL.Path
 		for strings.Contains(path, "//") {
 			path = strings.ReplaceAll(path, "//", "/")
@@ -81,10 +76,9 @@ func NormalizePathMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// CORSMiddleware adiciona headers CORS para permitir requisições do frontend
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Permite todas as origens (em produção, substitua por origens específicas)
+
 		origin := r.Header.Get("Origin")
 		if origin != "" {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -98,8 +92,6 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Max-Age", "3600")
 		w.Header().Set("Access-Control-Allow-Credentials", "false")
 
-		// Responde imediatamente para requisições OPTIONS (preflight)
-		// Isso deve acontecer ANTES de qualquer processamento do router
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusNoContent)
 			return

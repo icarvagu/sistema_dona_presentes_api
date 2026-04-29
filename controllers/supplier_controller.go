@@ -23,7 +23,6 @@ func InitSupplierService() {
 	supplierService = services.NewSupplierService(supplierRepo)
 }
 
-// GetSuppliers retrieves all suppliers
 func GetSuppliers(w http.ResponseWriter, r *http.Request) {
 	suppliers, err := supplierService.GetAll()
 	if err != nil {
@@ -35,7 +34,6 @@ func GetSuppliers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(suppliers)
 }
 
-// GetSupplier retrieves a single supplier by ID
 func GetSupplier(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -58,7 +56,6 @@ func GetSupplier(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s)
 }
 
-// CreateSupplier creates a new supplier
 func CreateSupplier(w http.ResponseWriter, r *http.Request) {
 	var s models.Supplier
 	err := json.NewDecoder(r.Body).Decode(&s)
@@ -78,7 +75,6 @@ func CreateSupplier(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s)
 }
 
-// UpdateSupplier updates an existing supplier
 func UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -105,7 +101,6 @@ func UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s)
 }
 
-// DeleteSupplier deletes a supplier by ID
 func DeleteSupplier(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
