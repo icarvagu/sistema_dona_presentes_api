@@ -28,6 +28,7 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
 
 ### P2 (estrutural)
 - Mapear e remover coleções/artefatos legados que não refletem mais o modelo atual (`insomnia-employees-collection.json` e referências históricas de migration).
+  - Status: em andamento (`insomnia-employees-collection.json` removido neste ciclo).
   - Observação: migrations históricas devem ser preservadas; limpeza focada em artefatos operacionais/documentais.
 - Criar guideline curto de convenções (nomes, erros, logs) para evitar regressão de padrão.
 
