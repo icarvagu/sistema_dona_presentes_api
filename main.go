@@ -85,6 +85,7 @@ func main() {
 	routes.RegisterCustomersRoutes(protectedRouter)
 	routes.RegisterSalesRoutes(protectedRouter)
 	routes.RegisterQuotesRoutes(protectedRouter)
+	protectedRouter.HandleFunc("/auth/me", controllers.GetCurrentUser).Methods("GET", "OPTIONS")
 
 	adminRouter := protectedRouter.PathPrefix("").Subrouter()
 	adminRouter.Use(middleware.AdminOnlyMiddleware())
