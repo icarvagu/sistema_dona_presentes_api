@@ -91,11 +91,6 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 	return result, nil
 }
 
-// Sincronizar is kept for backward compatibility.
-func (s *SyncService) Sincronizar() (*SyncResult, error) {
-	return s.Synchronize()
-}
-
 // ensureSupplier checks whether supplier exists and creates it when needed.
 func (s *SyncService) ensureSupplier(supplier *models.Supplier) (int, error) {
 	existingSuppliers, err := s.supplierRepository.GetAll()
@@ -124,9 +119,4 @@ func (s *SyncService) ensureSupplier(supplier *models.Supplier) (int, error) {
 	}
 
 	return 0, nil
-}
-
-// garantirFornecedor is kept for backward compatibility.
-func (s *SyncService) garantirFornecedor(fornecedor *models.Supplier) (int, error) {
-	return s.ensureSupplier(fornecedor)
 }

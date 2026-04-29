@@ -34,8 +34,8 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
   - Status: concluído (documentado em `docs/conventions.md`).
 
 ## Próxima ação proposta
-1. Executar remoção dos aliases de compatibilidade já migrados, seguindo `docs/alias_deprecation_plan.md` (após validação do PR).
-2. Encerrar PRO-18 após merge e validação final do fluxo XBZ em desenvolvimento.
+1. Encerrar PRO-18 após revisão e merge do PR de remoção de aliases.
+2. Consolidar aprendizados de padronização em issues futuras de manutenção.
 
 ## Blocker Atual
 - Status: aguardando revisão/aprovação do PR `#6` (`https://github.com/IgorAsVI/dona_presentes/pull/6`).

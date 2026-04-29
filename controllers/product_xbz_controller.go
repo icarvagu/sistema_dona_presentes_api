@@ -87,8 +87,3 @@ func SyncProductsFromXBZHandler(w http.ResponseWriter, r *http.Request) {
 		"status":  "started",
 	})
 }
-
-// SyncProductsFromXBZ is kept for backward compatibility.
-func SyncProductsFromXBZ(w http.ResponseWriter, r *http.Request) {
-	SyncProductsFromXBZHandler(w, r)
-}

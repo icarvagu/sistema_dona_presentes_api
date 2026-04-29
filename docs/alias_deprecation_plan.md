@@ -2,21 +2,23 @@
 
 Data: 2026-04-29
 Issue: PRO-18
+Status: executado em 2026-04-29 (branch `feature/pro-18-remove-aliases`)
 
 ## Objetivo
 Remover aliases temporários introduzidos para compatibilidade durante a padronização de nomenclatura, sem regressão funcional.
 
-## Aliases atualmente ativos
+## Aliases removidos
 - `repositories.ProductRepository.GetByCodigoInterno` -> `GetByInternalCode`
 - `services.SyncService.Sincronizar` -> `Synchronize`
 - `services.SyncService.garantirFornecedor` -> `ensureSupplier`
 - `controllers.SyncProductsFromXBZ` -> `SyncProductsFromXBZHandler`
+- `services.XBZService.GetProdutos` -> `GetProducts`
+- `services.XBZService.GetNomeFornecedorXBZ` -> `GetXBZSupplierName`
 
-## Critérios para remoção
+## Critérios de validação aplicados
 1. PR de refatoração aprovado e mergeado.
 2. Nenhuma chamada interna restante aos aliases (`grep` no repositório).
 3. Testes do backend passando (`go test ./...`).
-4. Endpoint de sync XBZ validado em ambiente de desenvolvimento.
 
 ## Passo a passo
 1. Migrar qualquer referência residual para os nomes padrão.

@@ -33,7 +33,7 @@ func (s *Scheduler) RegisterJobs() {
 		go func() {
 			start := time.Now()
 			log.Printf("[scheduler] iniciando sync job em %s", start.Format(time.RFC3339))
-			result, err := s.syncSvc.Sincronizar()
+		result, err := s.syncSvc.Synchronize()
 			duration := time.Since(start)
 			if err != nil {
 				log.Printf("[scheduler] erro na sincronização agendada: %v (duracao=%s)", err, duration)
