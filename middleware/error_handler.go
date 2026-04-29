@@ -10,6 +10,16 @@ import (
 	"donapresentes/errors"
 )
 
+type statusRecorder struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+	r.statusCode = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
 // ErrorHandler escreve um erro formatado na resposta HTTP
 func ErrorHandler(w http.ResponseWriter, err error, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
@@ -37,13 +47,11 @@ func ErrorHandler(w http.ResponseWriter, err error, statusCode int) {
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
-
-		log.Printf("[%s] %s %s", r.Method, r.URL.Path, r.RemoteAddr)
-
-		next.ServeHTTP(w, r)
+		rec := &statusRecorder{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(rec, r)
 
 		duration := time.Since(startTime)
-		log.Printf("[%s] %s completed in %v", r.Method, r.URL.Path, duration)
+		log.Printf("[HTTP] method=%s path=%s status=%d duration=%s remote=%s", r.Method, r.URL.Path, rec.statusCode, duration, r.RemoteAddr)
 	})
 }
 
@@ -93,7 +101,6 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		// Responde imediatamente para requisições OPTIONS (preflight)
 		// Isso deve acontecer ANTES de qualquer processamento do router
 		if r.Method == "OPTIONS" {
-			log.Printf("[CORS] Preflight request para %s", r.URL.Path)
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}

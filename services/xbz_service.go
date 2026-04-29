@@ -110,12 +110,8 @@ func (s *XBZService) GetProdutos() ([]interface{}, error) {
 		return toInterfaceSliceFromGeneric(fromFields), nil
 	}
 
-	trimmed := string(body)
-	if len(trimmed) > 1000 {
-		trimmed = trimmed[:1000]
-	}
-	log.Printf("XBZ API response (trimmed): %s", trimmed)
-	return nil, fmt.Errorf("erro ao fazer decode da resposta da XBZ; amostra: %s", trimmed)
+	log.Printf("[XBZ] erro ao decodificar resposta da API (payload_size=%d)", len(body))
+	return nil, fmt.Errorf("erro ao decodificar resposta da XBZ")
 }
 
 func (s *XBZService) fetch(fullURL string) ([]byte, error) {
@@ -127,7 +123,6 @@ func (s *XBZService) fetch(fullURL string) ([]byte, error) {
 	req.Header.Set("User-Agent", "DonaPresentes/1.0")
 	req.Header.Set("Accept", "application/json")
 
-	log.Printf("[XBZ] iniciando request para API (timeout=%s)", XBZTimeout)
 	resp, err := s.client.Do(req)
 	if err != nil {
 		duration := time.Since(start)
@@ -146,7 +141,7 @@ func (s *XBZService) fetch(fullURL string) ([]byte, error) {
 		return nil, fmt.Errorf("erro ao ler resposta: %w (duracao=%s)", err, duration)
 	}
 	duration := time.Since(start)
-	log.Printf("[XBZ] requisição concluída com sucesso (duracao=%s, tamanho=%d bytes)", duration, len(body))
+	log.Printf("[XBZ] request concluído (duracao=%s, status=%d, payload_size=%d)", duration, resp.StatusCode, len(body))
 	return body, nil
 }
 

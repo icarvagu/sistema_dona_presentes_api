@@ -20,6 +20,7 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
   - Status: concluído neste ciclo.
   - Arquivo: `main.go`
 - Reduzir ruído de logs de infraestrutura (`middleware/error_handler.go` e `services/xbz_service.go`), definindo nível e formato padrão.
+  - Status: concluído neste ciclo.
   - Arquivos: `middleware/error_handler.go`, `services/xbz_service.go`
 - Padronizar nomenclatura de métodos para português ou inglês (evitar mistura: `GetByCodigoInterno`, `SyncProductsFromXBZ`, etc.).
   - Escopo inicial: `controllers/`, `services/`, `repositories/`
@@ -30,5 +31,5 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
 - Criar guideline curto de convenções (nomes, erros, logs) para evitar regressão de padrão.
 
 ## Próxima ação proposta
-1. Padronizar logs XBZ para evitar exposição de payload desnecessário e excesso de verbosidade.
-2. Padronizar logs de middleware para reduzir ruído e facilitar observabilidade.
+1. Padronizar nomenclatura de métodos para português ou inglês em `controllers/`, `services/`, `repositories/`.
+2. Mapear e remover artefatos legados operacionais (coleções insomnia fora de uso).
