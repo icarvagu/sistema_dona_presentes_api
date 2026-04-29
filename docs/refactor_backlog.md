@@ -36,3 +36,8 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
 ## Próxima ação proposta
 1. Executar remoção dos aliases de compatibilidade já migrados, seguindo `docs/alias_deprecation_plan.md` (após validação do PR).
 2. Encerrar PRO-18 após merge e validação final do fluxo XBZ em desenvolvimento.
+
+## Blocker Atual
+- Status: aguardando revisão/aprovação do PR `#6` (`https://github.com/IgorAsVI/dona_presentes/pull/6`).
+- Unblock owner: `IgorAsVI` (reviewer solicitado).
+- Unblock action: aprovar/solicitar ajustes no PR para seguir com remoção de aliases e fechamento da issue.
