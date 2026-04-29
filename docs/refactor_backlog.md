@@ -35,4 +35,4 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
 
 ## Próxima ação proposta
 1. Concluir padronização de nomenclatura no restante do domínio (não-XBZ) em `controllers/`, `services/`, `repositories/`.
-2. Planejar remoção futura dos aliases de compatibilidade já migrados (após validação do PR).
+2. Executar remoção futura dos aliases de compatibilidade já migrados, seguindo `docs/alias_deprecation_plan.md` (após validação do PR).
