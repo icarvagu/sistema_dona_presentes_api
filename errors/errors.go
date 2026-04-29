@@ -77,11 +77,6 @@ var (
 		Message: "Supplier not found",
 	}
 
-	ErrEmployeeNotFound = &AppError{
-		Code:    http.StatusNotFound,
-		Message: "Employee not found",
-	}
-
 	ErrProductNotFound = &AppError{
 		Code:    http.StatusNotFound,
 		Message: "Product not found",

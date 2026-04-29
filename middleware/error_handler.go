@@ -12,13 +12,6 @@ import (
 
 // ErrorHandler escreve um erro formatado na resposta HTTP
 func ErrorHandler(w http.ResponseWriter, err error, statusCode int) {
-	// Garantir que headers CORS estejam presentes mesmo em erros
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-CSRF-Token")
-	w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type")
-	w.Header().Set("Access-Control-Max-Age", "3600")
-
 	w.Header().Set("Content-Type", "application/json")
 
 	response := errors.ErrorResponse{
