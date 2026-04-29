@@ -28,10 +28,11 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
 
 ### P2 (estrutural)
 - Mapear e remover coleções/artefatos legados que não refletem mais o modelo atual (`insomnia-employees-collection.json` e referências históricas de migration).
-  - Status: em andamento (`insomnia-employees-collection.json`, `insomnia-customers-collection.zip` e duplicatas frontend de kits/products/sales removidas).
+  - Status: concluído (`insomnia-employees-collection.json`, `insomnia-customers-collection.zip` e duplicatas frontend de kits/products/sales removidas; inventário final sem duplicidade direta remanescente).
   - Observação: migrations históricas devem ser preservadas; limpeza focada em artefatos operacionais/documentais.
 - Criar guideline curto de convenções (nomes, erros, logs) para evitar regressão de padrão.
+  - Status: pendente.
 
 ## Próxima ação proposta
 1. Concluir padronização de nomenclatura no restante do domínio (não-XBZ) em `controllers/`, `services/`, `repositories/`.
-2. Mapear e remover artefatos legados operacionais (coleções insomnia fora de uso).
+2. Criar guideline curto de convenções para nomes, tratamento de erro e logging.
