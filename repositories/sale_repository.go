@@ -14,7 +14,6 @@ func NewSaleRepository(db *sql.DB) *SaleRepository {
 	return &SaleRepository{db: db}
 }
 
-// GetAll returns all vendas with itens and relacionamentos
 func (r *SaleRepository) GetAll() ([]models.Sale, error) {
 	rows, err := r.db.Query(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, created_at, updated_at FROM sales`)
 	if err != nil {
@@ -28,19 +27,16 @@ func (r *SaleRepository) GetAll() ([]models.Sale, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Fetch seller
+
 		seller, _ := r.GetSeller(v.SellerID)
 		v.Seller = seller
 
-		// Fetch customer
 		customer, _ := r.GetCustomer(v.CustomerID)
 		v.Customer = customer
 
-		// Fetch items
 		items, _ := r.GetItems(v.ID)
 		v.Items = items
 
-		// Fetch carriers
 		carriers, _ := r.GetCarriers(v.ID)
 		v.Carriers = carriers
 
@@ -49,7 +45,6 @@ func (r *SaleRepository) GetAll() ([]models.Sale, error) {
 	return sales, nil
 }
 
-// GetByID returns a single venda by ID with itens and relacionamentos
 func (r *SaleRepository) GetByID(id int) (*models.Sale, error) {
 	var v models.Sale
 	err := r.db.QueryRow(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, created_at, updated_at FROM sales WHERE id=$1`, id).
@@ -70,19 +65,16 @@ func (r *SaleRepository) GetByID(id int) (*models.Sale, error) {
 	items, _ := r.GetItems(v.ID)
 	v.Items = items
 
-	// Fetch carriers
 	carriers, _ := r.GetCarriers(v.ID)
 	v.Carriers = carriers
 
 	return &v, nil
 }
 
-// Create inserts a new venda with itens
 func (r *SaleRepository) Create(input *models.SaleInput) (*models.Sale, error) {
-	// Calculate total value from items
+
 	totalValue := 0.0
 
-	// Sum from items
 	for _, itemInput := range input.Items {
 		totalValue += float64(itemInput.Quantity) * itemInput.UnitPrice
 	}
@@ -103,7 +95,6 @@ func (r *SaleRepository) Create(input *models.SaleInput) (*models.Sale, error) {
 	v.PaymentTermDays = input.PaymentTermDays
 	v.FirstInstallmentStart = input.FirstInstallmentStart
 
-	// Insert items
 	for _, itemInput := range input.Items {
 		item := models.SaleItem{
 			SaleID:     v.ID,
@@ -115,24 +106,20 @@ func (r *SaleRepository) Create(input *models.SaleInput) (*models.Sale, error) {
 		_ = r.CreateItem(&item)
 	}
 
-	// Insert carriers
 	if len(input.CarrierIDs) > 0 {
 		for _, carrierID := range input.CarrierIDs {
 			_ = r.CreateCarrierLink(v.ID, carrierID)
 		}
 	}
 
-	// Fetch complete data
 	completeSale, _ := r.GetByID(v.ID)
 	return completeSale, nil
 }
 
-// Update updates an existing venda and its itens
 func (r *SaleRepository) Update(id int, input *models.SaleInput) (*models.Sale, error) {
-	// Calculate total value from items
+
 	totalValue := 0.0
 
-	// Sum from items
 	for _, itemInput := range input.Items {
 		totalValue += float64(itemInput.Quantity) * itemInput.UnitPrice
 	}
@@ -144,10 +131,8 @@ func (r *SaleRepository) Update(id int, input *models.SaleInput) (*models.Sale, 
 		return nil, apperrors.NewDatabaseError(err)
 	}
 
-	// Delete existing items
 	r.db.Exec("DELETE FROM sale_items WHERE sale_id=$1", id)
 
-	// Insert new items
 	for _, itemInput := range input.Items {
 		item := models.SaleItem{
 			SaleID:     id,
@@ -159,21 +144,17 @@ func (r *SaleRepository) Update(id int, input *models.SaleInput) (*models.Sale, 
 		_ = r.CreateItem(&item)
 	}
 
-	// Delete existing carrier links
 	r.DeleteCarrierLinks(id)
 
-	// Insert new carrier links
 	if len(input.CarrierIDs) > 0 {
 		for _, carrierID := range input.CarrierIDs {
 			_ = r.CreateCarrierLink(id, carrierID)
 		}
 	}
 
-	// Fetch complete data
 	return r.GetByID(id)
 }
 
-// Delete removes a venda (itens removed by cascade)
 func (r *SaleRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM sales WHERE id=$1", id)
 	if err != nil {
@@ -189,7 +170,6 @@ func (r *SaleRepository) Delete(id int) error {
 	return nil
 }
 
-// Helper methods
 func (r *SaleRepository) GetSeller(sellerID int) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
@@ -206,7 +186,7 @@ func (r *SaleRepository) GetSeller(sellerID int) (*models.User, error) {
 		return nil, err
 	}
 	
-	// Converter campos nullable
+
 	if rg.Valid {
 		u.RG = &rg.String
 	}
@@ -242,13 +222,12 @@ func (r *SaleRepository) GetCustomer(customerID int) (*models.Customer, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Load addresses for PDF generation
+
 	addresses, _ := r.GetCustomerAddresses(customerID)
 	c.Addresses = addresses
 	return &c, nil
 }
 
-// GetCustomerAddresses returns addresses for a customer (entrega first, then comercial)
 func (r *SaleRepository) GetCustomerAddresses(customerID int) ([]models.Address, error) {
 	rows, err := r.db.Query(`SELECT id, customer_id, address_type, address, created_at, updated_at FROM customer_addresses WHERE customer_id=$1 ORDER BY CASE WHEN address_type='entrega' THEN 0 ELSE 1 END`, customerID)
 	if err != nil {
@@ -280,7 +259,7 @@ func (r *SaleRepository) GetItems(saleID int) ([]models.SaleItem, error) {
 		if err != nil {
 			return nil, err
 		}
-		// Fetch product
+
 		product, _ := r.GetProductBasic(item.ProductID)
 		item.Product = product
 
@@ -320,10 +299,6 @@ func (r *SaleRepository) GetProductBasic(productID int) (*models.Product, error)
 	return &p, nil
 }
 
-// GetKits, CreateKitItem e GetKitBasic foram removidos
-// Agora todas as vendas usam apenas produtos (produtos com is_composition = true funcionam como kits)
-
-// GetCarriers retorna todas as transportadoras vinculadas a uma venda
 func (r *SaleRepository) GetCarriers(saleID int) ([]models.Carrier, error) {
 	rows, err := r.db.Query(`
 		SELECT c.id, c.name, c.carrier_type, c.email, c.landline_phone, c.mobile_phone, 
@@ -352,7 +327,6 @@ func (r *SaleRepository) GetCarriers(saleID int) ([]models.Carrier, error) {
 	return carriers, nil
 }
 
-// CreateCarrierLink cria um vínculo entre uma venda e uma transportadora
 func (r *SaleRepository) CreateCarrierLink(saleID, carrierID int) error {
 	_, err := r.db.Exec(
 		`INSERT INTO sale_carriers (sale_id, carrier_id) VALUES ($1, $2)
@@ -361,7 +335,6 @@ func (r *SaleRepository) CreateCarrierLink(saleID, carrierID int) error {
 	return err
 }
 
-// DeleteCarrierLinks remove todos os vínculos de transportadoras de uma venda
 func (r *SaleRepository) DeleteCarrierLinks(saleID int) error {
 	_, err := r.db.Exec("DELETE FROM sale_carriers WHERE sale_id=$1", saleID)
 	return err

@@ -27,12 +27,10 @@ const (
 	companyWebsite = "www.donnapresentes.com.br"
 )
 
-// PDFService generates order summary PDFs via HTML + chromedp
 type PDFService struct {
 	template *template.Template
 }
 
-// pedidoTemplateData holds data for the HTML template
 type pedidoTemplateData struct {
 	SaleID           int
 	SaleIDFormatted  string
@@ -85,7 +83,6 @@ func NewPDFService() (*PDFService, error) {
 	return &PDFService{template: tmpl}, nil
 }
 
-// GenerateOrderPDF creates a PDF summary for a sale (PF or PJ template)
 func (s *PDFService) GenerateOrderPDF(sale *models.Sale) ([]byte, error) {
 	data := s.buildTemplateData(sale)
 	var buf bytes.Buffer
@@ -94,7 +91,6 @@ func (s *PDFService) GenerateOrderPDF(sale *models.Sale) ([]byte, error) {
 	}
 	html := buf.String()
 
-	// chromedp options for Docker/headless
 	opts := chromedp.DefaultExecAllocatorOptions[:]
 	if _, err := os.Stat("/usr/bin/chromium"); err == nil {
 		opts = append(opts, chromedp.ExecPath("/usr/bin/chromium"))
@@ -130,7 +126,7 @@ func (s *PDFService) GenerateOrderPDF(sale *models.Sale) ([]byte, error) {
 				WithMarginBottom(0.01).
 				WithMarginLeft(0.01).
 				WithMarginRight(0.01).
-				WithPaperWidth(8.27).  // A4 inches
+				WithPaperWidth(8.27).
 				WithPaperHeight(11.69).
 				Do(ctx)
 			return err

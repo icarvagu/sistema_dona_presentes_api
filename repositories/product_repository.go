@@ -19,7 +19,6 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
-// Constante SQL para SELECT de produtos com supplier (usado em múltiplos métodos)
 const productSelectWithSupplier = `
 	SELECT p.id, p.product_name, p.internal_code, p.supplier_id, 
 	       f.id, f.name, f.cnpj, f.state_registration, f.contact_person, f.email, 
@@ -96,7 +95,6 @@ func scanProductRow(scanner rowScanner, withSupplier bool) (models.Product, *mod
 	return p, nil, nil
 }
 
-// GetAll returns all products with nested supplier (without pagination - kept for backward compatibility)
 func (r *ProductRepository) GetAll() ([]models.Product, error) {
 	rows, err := r.db.Query(productSelectWithSupplier)
 	if err != nil {
@@ -111,7 +109,7 @@ func (r *ProductRepository) GetAll() ([]models.Product, error) {
 			return nil, err
 		}
 		p.Supplier = supplier
-		// Buscar items se for composição
+
 		if p.IsComposition {
 			items, _ := r.GetProductItems(p.ID)
 			p.Items = items
@@ -121,19 +119,16 @@ func (r *ProductRepository) GetAll() ([]models.Product, error) {
 	return res, nil
 }
 
-// GetAllPaginated returns paginated products with nested supplier
 func (r *ProductRepository) GetAllPaginated(page, limit int) ([]models.Product, int, error) {
-	// Calcular offset
+
 	offset := (page - 1) * limit
 
-	// Query para contar total de registros
 	var total int
 	err := r.db.QueryRow(`SELECT COUNT(*) FROM products`).Scan(&total)
 	if err != nil {
 		return nil, 0, apperrors.NewDatabaseError(err)
 	}
 
-	// Query paginada
 	rows, err := r.db.Query(productSelectWithSupplier+` 
 		ORDER BY p.id 
 		LIMIT $1 OFFSET $2`,
@@ -150,7 +145,7 @@ func (r *ProductRepository) GetAllPaginated(page, limit int) ([]models.Product, 
 			return nil, 0, err
 		}
 		p.Supplier = supplier
-		// Buscar items se for composição
+
 		if p.IsComposition {
 			items, _ := r.GetProductItems(p.ID)
 			p.Items = items
@@ -160,14 +155,13 @@ func (r *ProductRepository) GetAllPaginated(page, limit int) ([]models.Product, 
 	return res, total, nil
 }
 
-// GetByID returns one product by id with nested supplier
 func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
 	p, supplier, err := scanProductRow(r.db.QueryRow(productSelectWithSupplier+` WHERE p.id=$1`, id), true)
 	if err != nil {
 		return nil, err
 	}
 	p.Supplier = supplier
-	// Buscar items se for composição
+
 	if p.IsComposition {
 		items, _ := r.GetProductItems(p.ID)
 		p.Items = items
@@ -175,7 +169,6 @@ func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
 	return &p, nil
 }
 
-// SearchByFilter searches products by product_name, internal_code, or product_group
 func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, error) {
 	filterPattern := "%" + filter + "%"
 	rows, err := r.db.Query(productSelectWithSupplier+` 
@@ -195,7 +188,7 @@ func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, err
 			return nil, err
 		}
 		p.Supplier = supplier
-		// Buscar items se for composição
+
 		if p.IsComposition {
 			items, _ := r.GetProductItems(p.ID)
 			p.Items = items
@@ -205,7 +198,6 @@ func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, err
 	return res, nil
 }
 
-// GetByInternalCode returns a product by internal code (no supplier nested).
 func (r *ProductRepository) GetByInternalCode(internalCode string) (*models.Product, error) {
 	p, _, err := scanProductRow(r.db.QueryRow(
 		`SELECT id, product_name, internal_code, supplier_id, product_group, description, photos, ncm, COALESCE(material_origin, ''), stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, created_at, updated_at FROM products WHERE internal_code=$1`,
@@ -217,9 +209,8 @@ func (r *ProductRepository) GetByInternalCode(internalCode string) (*models.Prod
 	return &p, nil
 }
 
-// Create inserts a new product.
 func (r *ProductRepository) Create(p *models.Product) (*models.Product, error) {
-	// Determinar is_composition baseado na quantidade de items
+
 	isComposition := len(p.Items) > 0
 	if p.KitType == "" {
 		p.KitType = "none"
@@ -238,9 +229,8 @@ func (r *ProductRepository) Create(p *models.Product) (*models.Product, error) {
 	return p, nil
 }
 
-// Update updates an existing product
 func (r *ProductRepository) Update(id int, p *models.Product) (*models.Product, error) {
-	// Determinar is_composition baseado na quantidade de items
+
 	isComposition := len(p.Items) > 0
 	if p.KitType == "" {
 		p.KitType = "none"
@@ -259,7 +249,6 @@ func (r *ProductRepository) Update(id int, p *models.Product) (*models.Product, 
 	return p, nil
 }
 
-// Delete removes a product
 func (r *ProductRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM products WHERE id=$1", id)
 	if err != nil {
@@ -275,7 +264,6 @@ func (r *ProductRepository) Delete(id int) error {
 	return nil
 }
 
-// GetProductItems returns all items for a product (composition)
 func (r *ProductRepository) GetProductItems(productID int) ([]models.ProductItem, error) {
 	rows, err := r.db.Query(`
 		SELECT pi.id, pi.product_parent_id, pi.product_id, pi.quantity, pi.created_at, pi.updated_at,
@@ -306,7 +294,6 @@ func (r *ProductRepository) GetProductItems(productID int) ([]models.ProductItem
 			return nil, err
 		}
 
-		// Converter campos nullable
 		if productGroup.Valid {
 			product.ProductGroup = productGroup.String
 		}
@@ -320,7 +307,6 @@ func (r *ProductRepository) GetProductItems(productID int) ([]models.ProductItem
 			product.MaterialOrigin = materialOrigin.String
 		}
 
-		// Converter fotos
 		if fotos == nil {
 			product.Photos = []string{}
 		} else {
@@ -333,7 +319,6 @@ func (r *ProductRepository) GetProductItems(productID int) ([]models.ProductItem
 	return items, nil
 }
 
-// CreateProductItem creates a new product item (for composition)
 func (r *ProductRepository) CreateProductItem(item *models.ProductItem, productParentID int) error {
 	err := r.db.QueryRow(
 		`INSERT INTO product_items (product_parent_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING id, created_at, updated_at`,
@@ -342,13 +327,11 @@ func (r *ProductRepository) CreateProductItem(item *models.ProductItem, productP
 	return err
 }
 
-// DeleteProductItems deletes all items for a product
 func (r *ProductRepository) DeleteProductItems(productID int) error {
 	_, err := r.db.Exec("DELETE FROM product_items WHERE product_parent_id=$1", productID)
 	return err
 }
 
-// GetNewlyImported returns products imported in the last 7 days (regardless of source)
 func (r *ProductRepository) GetNewlyImported() ([]models.Product, error) {
 	rows, err := r.db.Query(productSelectWithSupplier + ` 
 		WHERE p.imported_at IS NOT NULL 
@@ -366,7 +349,7 @@ func (r *ProductRepository) GetNewlyImported() ([]models.Product, error) {
 			return nil, err
 		}
 		p.Supplier = supplier
-		// Buscar items se for composição
+
 		if p.IsComposition {
 			items, _ := r.GetProductItems(p.ID)
 			p.Items = items
@@ -376,7 +359,6 @@ func (r *ProductRepository) GetNewlyImported() ([]models.Product, error) {
 	return res, nil
 }
 
-// UpdateFromSync atualiza apenas campos vindos da sincronização externa (estoque, fotos, preço, last_synced_at)
 func (r *ProductRepository) UpdateFromSync(id int, stock int, photos []string, sellingPrice float64, lastSyncedAt time.Time) error {
 	_, err := r.db.Exec(
 		`UPDATE products

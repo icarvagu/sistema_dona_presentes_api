@@ -14,7 +14,6 @@ func NewCustomerRepository(db *sql.DB) *CustomerRepository {
 	return &CustomerRepository{db: db}
 }
 
-// GetAll returns all customers
 func (r *CustomerRepository) GetAll() ([]models.Customer, error) {
 	rows, err := r.db.Query(`SELECT id, customer_type, status, name, cnpj, cpf, email, business_phone, mobile_phone, website, notes, created_at, updated_at FROM customers`)
 	if err != nil {
@@ -34,7 +33,6 @@ func (r *CustomerRepository) GetAll() ([]models.Customer, error) {
 	return customers, nil
 }
 
-// GetByID returns a single customer by ID
 func (r *CustomerRepository) GetByID(id int) (*models.Customer, error) {
 	var c models.Customer
 	err := r.db.QueryRow(`SELECT id, customer_type, status, name, cnpj, cpf, email, business_phone, mobile_phone, website, notes, created_at, updated_at FROM customers WHERE id=$1`, id).
@@ -45,7 +43,6 @@ func (r *CustomerRepository) GetByID(id int) (*models.Customer, error) {
 	return &c, nil
 }
 
-// Create inserts a new customer
 func (r *CustomerRepository) Create(c *models.Customer) error {
 	err := r.db.QueryRow(
 		`INSERT INTO customers (customer_type, status, name, cnpj, cpf, email, business_phone, mobile_phone, website, notes) 
@@ -56,7 +53,6 @@ func (r *CustomerRepository) Create(c *models.Customer) error {
 	return err
 }
 
-// Update updates an existing customer
 func (r *CustomerRepository) Update(id int, c *models.Customer) error {
 	_, err := r.db.Exec(
 		`UPDATE customers SET customer_type=$1, status=$2, name=$3, cnpj=$4, cpf=$5, email=$6, business_phone=$7, mobile_phone=$8, website=$9, notes=$10, updated_at=NOW() WHERE id=$11`,
@@ -64,7 +60,6 @@ func (r *CustomerRepository) Update(id int, c *models.Customer) error {
 	return err
 }
 
-// Delete deletes a customer by ID
 func (r *CustomerRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM customers WHERE id=$1", id)
 	if err != nil {

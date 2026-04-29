@@ -9,7 +9,6 @@ import (
 func RegisterUsersRoutes(router *mux.Router) {
 	controllers.InitUserService()
 
-	// Rotas de usuários
 	router.HandleFunc("/users", controllers.GetAllUsers).Methods("GET", "OPTIONS")
 	router.HandleFunc("/users/{id}", controllers.GetUser).Methods("GET", "OPTIONS")
 	router.HandleFunc("/users/{id}", controllers.UpdateUser).Methods("PUT", "OPTIONS")

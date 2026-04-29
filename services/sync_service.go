@@ -26,11 +26,9 @@ func NewSyncService(
 	}
 }
 
-// Synchronize executes the full synchronization flow.
 func (s *SyncService) Synchronize() (*SyncResult, error) {
 	result := &SyncResult{}
 
-	// Obter produtos da API externa
 	externalItems, err := s.provider.GetProducts()
 	if err != nil {
 		return result, err
@@ -38,7 +36,6 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 
 	result.Total = len(externalItems)
 
-	// Ensure the provider supplier (XBZ) exists.
 	supplier := s.provider.MapToSupplier(nil)
 	supplierID, err := s.ensureSupplier(supplier)
 	if err != nil {
@@ -46,7 +43,6 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 		return result, err
 	}
 
-	// Synchronize each external product.
 	for _, externalItem := range externalItems {
 		localProduct := s.provider.MapToLocalProduct(externalItem)
 		if localProduct == nil {
@@ -54,13 +50,11 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 			continue
 		}
 
-		// Attach provider supplier.
 		localProduct.SupplierID = supplierID
 
-		// Check if it already exists.
 		existing, err := s.productRepository.GetByInternalCode(localProduct.InternalCode)
 		if err == nil && existing != nil {
-			// Update only sync-managed fields.
+
 			syncTime := time.Now()
 			if err := s.productRepository.UpdateFromSync(
 				existing.ID,
@@ -74,11 +68,11 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 			}
 			result.Atualizados++
 		} else if err != nil && err != sql.ErrNoRows {
-			// Database error other than "not found".
+
 			result.Erros++
 			continue
 		} else {
-			// Create new product (MapToLocalProduct already sets sync fields).
+
 			_, err := s.productRepository.Create(localProduct)
 			if err != nil {
 				result.Erros++
@@ -91,7 +85,6 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 	return result, nil
 }
 
-// ensureSupplier checks whether supplier exists and creates it when needed.
 func (s *SyncService) ensureSupplier(supplier *models.Supplier) (int, error) {
 	existingSuppliers, err := s.supplierRepository.GetAll()
 	if err != nil {

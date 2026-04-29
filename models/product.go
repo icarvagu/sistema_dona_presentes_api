@@ -18,12 +18,12 @@ type Product struct {
 	EnabledForInvoice bool          `json:"enabled_for_invoice"`
 	CostPrice         float64       `json:"cost_price"`
 	SellingPrice      float64       `json:"selling_price"`
-	KitType           string        `json:"kit_type"` // none | internal_composition | supplier_ready
-	IsComposition     bool          `json:"is_composition"`           // true = produto é composição (tem filhos)
-	Items             []ProductItem `json:"items,omitempty"`          // produtos filhos (quando is_composition = true)
-	Source            string        `json:"source,omitempty"`         // origem do cadastro, ex: "xbz" ou vazio/manual
-	ImportedAt        *time.Time    `json:"imported_at,omitempty"`    // data da primeira importação (se houver)
-	LastSyncedAt      *time.Time    `json:"last_synced_at,omitempty"` // última sincronização com fonte externa
+	KitType           string        `json:"kit_type"`
+	IsComposition     bool          `json:"is_composition"`
+	Items             []ProductItem `json:"items,omitempty"`
+	Source            string        `json:"source,omitempty"`
+	ImportedAt        *time.Time    `json:"imported_at,omitempty"`
+	LastSyncedAt      *time.Time    `json:"last_synced_at,omitempty"`
 	CreatedAt         time.Time     `json:"created_at"`
 	UpdatedAt         time.Time     `json:"updated_at"`
 }

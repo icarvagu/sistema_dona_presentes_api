@@ -21,12 +21,10 @@ func NewUserService(userRepo *repositories.UserRepository, authService *AuthServ
 	}
 }
 
-// GetAll retorna todos os usuários
 func (s *UserService) GetAll() ([]models.User, error) {
 	return s.userRepo.GetAll()
 }
 
-// GetByID retorna um usuário por ID
 func (s *UserService) GetByID(id int) (*models.User, error) {
 	user, err := s.userRepo.GetByID(id)
 	if err != nil {
@@ -35,25 +33,22 @@ func (s *UserService) GetByID(id int) (*models.User, error) {
 		}
 		return nil, apperrors.NewDatabaseError(err)
 	}
-	// Remover senha do retorno
+
 	user.PasswordHash = ""
 	return user, nil
 }
 
-// Create cria um novo usuário
 func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
-	// Validações
+
 	if err := s.validateUserInput(input, true); err != nil {
 		return nil, err
 	}
 
-	// Verificar se username já existe
 	_, err := s.userRepo.GetByUsername(input.Username)
 	if err == nil {
 		return nil, apperrors.NewValidationError("Username já existe")
 	}
 
-	// Verificar se CPF já existe (se fornecido)
 	if input.CPF != "" {
 		_, err := s.userRepo.GetByCPF(input.CPF)
 		if err == nil {
@@ -61,7 +56,6 @@ func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
 		}
 	}
 
-	// Hash da senha
 	passwordHash, err := s.authService.HashPassword(input.Password)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
@@ -83,7 +77,6 @@ func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
 		Notes:        input.Notes,
 	}
 
-	// Se status não foi fornecido, usar "Ativo" como padrão
 	if user.Status == "" {
 		user.Status = "Ativo"
 	}
@@ -93,14 +86,12 @@ func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
 		return nil, apperrors.NewDatabaseError(err)
 	}
 
-	// Remover senha do retorno
 	created.PasswordHash = ""
 	return created, nil
 }
 
-// Update atualiza um usuário existente
 func (s *UserService) Update(id int, input *models.UserInput) (*models.User, error) {
-	// Verificar se usuário existe
+
 	existingUser, err := s.userRepo.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows || apperrors.IsNotFound(err) {
@@ -109,12 +100,10 @@ func (s *UserService) Update(id int, input *models.UserInput) (*models.User, err
 		return nil, apperrors.NewDatabaseError(err)
 	}
 
-	// Validações (sem validar senha se não fornecida)
 	if err := s.validateUserInput(input, input.Password == ""); err != nil {
 		return nil, err
 	}
 
-	// Verificar se username já existe (se mudou)
 	if input.Username != existingUser.Username {
 		_, err := s.userRepo.GetByUsername(input.Username)
 		if err == nil {
@@ -122,7 +111,6 @@ func (s *UserService) Update(id int, input *models.UserInput) (*models.User, err
 		}
 	}
 
-	// Verificar se CPF já existe (se mudou e foi fornecido)
 	if input.CPF != "" && input.CPF != existingUser.CPF {
 		_, err := s.userRepo.GetByCPF(input.CPF)
 		if err == nil {
@@ -130,7 +118,6 @@ func (s *UserService) Update(id int, input *models.UserInput) (*models.User, err
 		}
 	}
 
-	// Preparar dados para atualização
 	user := &models.User{
 		Username:     input.Username,
 		Role:         input.Role,
@@ -146,12 +133,10 @@ func (s *UserService) Update(id int, input *models.UserInput) (*models.User, err
 		Notes:        input.Notes,
 	}
 
-	// Se status não foi fornecido, manter o existente
 	if user.Status == "" {
 		user.Status = existingUser.Status
 	}
 
-	// Atualizar senha apenas se fornecida
 	if input.Password != "" {
 		passwordHash, err := s.authService.HashPassword(input.Password)
 		if err != nil {
@@ -168,14 +153,12 @@ func (s *UserService) Update(id int, input *models.UserInput) (*models.User, err
 		return nil, apperrors.NewDatabaseError(err)
 	}
 
-	// Remover senha do retorno
 	updated.PasswordHash = ""
 	return updated, nil
 }
 
-// Delete remove um usuário
 func (s *UserService) Delete(id int) error {
-	// Verificar se usuário existe
+
 	_, err := s.userRepo.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows || apperrors.IsNotFound(err) {
@@ -187,14 +170,12 @@ func (s *UserService) Delete(id int) error {
 	return s.userRepo.Delete(id)
 }
 
-// SearchByFilter busca usuários por filtro
 func (s *UserService) SearchByFilter(filter string) ([]models.User, error) {
 	return s.userRepo.SearchByFilter(filter)
 }
 
-// validateUserInput valida os dados de entrada do usuário
 func (s *UserService) validateUserInput(input *models.UserInput, requirePassword bool) error {
-	// Validar username
+
 	if strings.TrimSpace(input.Username) == "" {
 		return apperrors.NewValidationError("Username é obrigatório")
 	}
@@ -202,7 +183,6 @@ func (s *UserService) validateUserInput(input *models.UserInput, requirePassword
 		return apperrors.NewValidationError("Username deve ter pelo menos 3 caracteres")
 	}
 
-	// Validar senha (se necessário)
 	if requirePassword {
 		if strings.TrimSpace(input.Password) == "" {
 			return apperrors.NewValidationError("Senha é obrigatória")
@@ -212,22 +192,18 @@ func (s *UserService) validateUserInput(input *models.UserInput, requirePassword
 		}
 	}
 
-	// Validar role
 	if input.Role != "admin" && input.Role != "standard" {
 		return apperrors.NewValidationError("Role deve ser 'admin' ou 'standard'")
 	}
 
-	// Validar status
 	if input.Status != "" && input.Status != "Ativo" && input.Status != "Inativo" {
 		return apperrors.NewValidationError("Status deve ser 'Ativo' ou 'Inativo'")
 	}
 
-	// Validar gender
 	if input.Gender != nil && *input.Gender != "Masculino" && *input.Gender != "Feminino" && *input.Gender != "Outro" {
 		return apperrors.NewValidationError("Gender deve ser 'Masculino', 'Feminino' ou 'Outro'")
 	}
 
-	// Validar CPF (formato básico)
 	if input.CPF != "" && len(input.CPF) < 11 {
 		return apperrors.NewValidationError("CPF inválido")
 	}

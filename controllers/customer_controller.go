@@ -23,7 +23,6 @@ func InitCustomerService() {
 	customerService = services.NewCustomerService(customerRepo)
 }
 
-// List clientes
 func GetCustomers(w http.ResponseWriter, r *http.Request) {
 	cs, err := customerService.GetAll()
 	if err != nil {
@@ -34,7 +33,6 @@ func GetCustomers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(cs)
 }
 
-// Get cliente by id
 func GetCustomer(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -55,7 +53,6 @@ func GetCustomer(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(c)
 }
 
-// Create cliente with validation
 func CreateCustomer(w http.ResponseWriter, r *http.Request) {
 	var c models.Customer
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
@@ -76,7 +73,6 @@ func CreateCustomer(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(c)
 }
 
-// Update cliente
 func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -107,7 +103,6 @@ func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(c)
 }
 
-// Delete cliente
 func DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])

@@ -4,25 +4,20 @@ import (
 	"donapresentes/models"
 )
 
-// ExternalAPIProvider define a interface para integração com APIs externas
 type ExternalAPIProvider interface {
-	// GetProducts fetches the product list from the external API provider.
+
 	GetProducts() ([]interface{}, error)
 
-	// MapToLocalProduct maps the external object to the local Product model
 	MapToLocalProduct(interface{}) *models.Product
 
-	// MapToSupplier maps the external provider info to the local Supplier model if needed
 	MapToSupplier(interface{}) *models.Supplier
 }
 
-// SyncConfig contém configurações para sincronização
 type SyncConfig struct {
 	Provider ExternalAPIProvider
-	Database interface{} // Será injetado pelo controller
+	Database interface{}
 }
 
-// SyncResult resultado da sincronização
 type SyncResult struct {
 	Total       int `json:"total"`
 	Criados     int `json:"criados"`
