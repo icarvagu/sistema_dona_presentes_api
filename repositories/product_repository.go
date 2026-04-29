@@ -2,7 +2,7 @@ package repositories
 
 import (
 	"database/sql"
-	"fmt"
+	"errors"
 	"time"
 
 	apperrors "donapresentes/errors"
@@ -33,6 +33,69 @@ const productSelectWithSupplier = `
 	FROM products p 
 	JOIN suppliers f ON p.supplier_id = f.id`
 
+type rowScanner interface {
+	Scan(dest ...interface{}) error
+}
+
+func scanProductRow(scanner rowScanner, withSupplier bool) (models.Product, *models.Supplier, error) {
+	var p models.Product
+	var f models.Supplier
+	var fotos pq.StringArray
+	var importedAt, lastSyncedAt sql.NullTime
+	var source sql.NullString
+
+	if withSupplier {
+		err := scanner.Scan(
+			&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID,
+			&f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email,
+			&f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress,
+			&f.CreatedAt, &f.UpdatedAt,
+			&p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin,
+			&p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition,
+			&p.MovesStock, &p.EnabledForInvoice, &p.CostPrice,
+			&source, &importedAt, &lastSyncedAt,
+			&p.CreatedAt, &p.UpdatedAt,
+		)
+		if err != nil {
+			return models.Product{}, nil, err
+		}
+	} else {
+		err := scanner.Scan(
+			&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID,
+			&p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin,
+			&p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition,
+			&p.MovesStock, &p.EnabledForInvoice, &p.CostPrice,
+			&source, &importedAt, &lastSyncedAt,
+			&p.CreatedAt, &p.UpdatedAt,
+		)
+		if err != nil {
+			return models.Product{}, nil, err
+		}
+	}
+
+	if fotos == nil {
+		p.Photos = []string{}
+	} else {
+		p.Photos = []string(fotos)
+	}
+	if source.Valid {
+		p.Source = source.String
+	} else {
+		p.Source = "manual"
+	}
+	if importedAt.Valid {
+		p.ImportedAt = &importedAt.Time
+	}
+	if lastSyncedAt.Valid {
+		p.LastSyncedAt = &lastSyncedAt.Time
+	}
+
+	if withSupplier {
+		return p, &f, nil
+	}
+	return p, nil, nil
+}
+
 // GetAll returns all products with nested supplier (without pagination - kept for backward compatibility)
 func (r *ProductRepository) GetAll() ([]models.Product, error) {
 	rows, err := r.db.Query(productSelectWithSupplier)
@@ -43,32 +106,11 @@ func (r *ProductRepository) GetAll() ([]models.Product, error) {
 
 	var res []models.Product
 	for rows.Next() {
-		var p models.Product
-		var f models.Supplier
-		var fotos pq.StringArray
-		var importedAt, lastSyncedAt sql.NullTime
-		var source sql.NullString
-		err := rows.Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
+		p, supplier, err := scanProductRow(rows, true)
 		if err != nil {
 			return nil, err
 		}
-		if fotos == nil {
-			p.Photos = []string{}
-		} else {
-			p.Photos = []string(fotos)
-		}
-		if source.Valid {
-			p.Source = source.String
-		} else {
-			p.Source = "manual"
-		}
-		if importedAt.Valid {
-			p.ImportedAt = &importedAt.Time
-		}
-		if lastSyncedAt.Valid {
-			p.LastSyncedAt = &lastSyncedAt.Time
-		}
-		p.Supplier = &f
+		p.Supplier = supplier
 		// Buscar items se for composição
 		if p.IsComposition {
 			items, _ := r.GetProductItems(p.ID)
@@ -103,32 +145,11 @@ func (r *ProductRepository) GetAllPaginated(page, limit int) ([]models.Product, 
 
 	var res []models.Product
 	for rows.Next() {
-		var p models.Product
-		var f models.Supplier
-		var fotos pq.StringArray
-		var importedAt, lastSyncedAt sql.NullTime
-		var source sql.NullString
-		err := rows.Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
+		p, supplier, err := scanProductRow(rows, true)
 		if err != nil {
 			return nil, 0, err
 		}
-		if fotos == nil {
-			p.Photos = []string{}
-		} else {
-			p.Photos = []string(fotos)
-		}
-		if source.Valid {
-			p.Source = source.String
-		} else {
-			p.Source = "manual"
-		}
-		if importedAt.Valid {
-			p.ImportedAt = &importedAt.Time
-		}
-		if lastSyncedAt.Valid {
-			p.LastSyncedAt = &lastSyncedAt.Time
-		}
-		p.Supplier = &f
+		p.Supplier = supplier
 		// Buscar items se for composição
 		if p.IsComposition {
 			items, _ := r.GetProductItems(p.ID)
@@ -141,33 +162,11 @@ func (r *ProductRepository) GetAllPaginated(page, limit int) ([]models.Product, 
 
 // GetByID returns one product by id with nested supplier
 func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
-	var p models.Product
-	var f models.Supplier
-	var fotos pq.StringArray
-	var importedAt, lastSyncedAt sql.NullTime
-	var source sql.NullString
-	err := r.db.QueryRow(productSelectWithSupplier+` WHERE p.id=$1`, id).
-		Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
+	p, supplier, err := scanProductRow(r.db.QueryRow(productSelectWithSupplier+` WHERE p.id=$1`, id), true)
 	if err != nil {
 		return nil, err
 	}
-	if fotos == nil {
-		p.Photos = []string{}
-	} else {
-		p.Photos = []string(fotos)
-	}
-	if source.Valid {
-		p.Source = source.String
-	} else {
-		p.Source = "manual"
-	}
-	if importedAt.Valid {
-		p.ImportedAt = &importedAt.Time
-	}
-	if lastSyncedAt.Valid {
-		p.LastSyncedAt = &lastSyncedAt.Time
-	}
-	p.Supplier = &f
+	p.Supplier = supplier
 	// Buscar items se for composição
 	if p.IsComposition {
 		items, _ := r.GetProductItems(p.ID)
@@ -191,32 +190,11 @@ func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, err
 
 	var res []models.Product
 	for rows.Next() {
-		var p models.Product
-		var f models.Supplier
-		var fotos pq.StringArray
-		var importedAt, lastSyncedAt sql.NullTime
-		var source sql.NullString
-		err := rows.Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email, &f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress, &f.CreatedAt, &f.UpdatedAt, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
+		p, supplier, err := scanProductRow(rows, true)
 		if err != nil {
 			return nil, err
 		}
-		if fotos == nil {
-			p.Photos = []string{}
-		} else {
-			p.Photos = []string(fotos)
-		}
-		if source.Valid {
-			p.Source = source.String
-		} else {
-			p.Source = "manual"
-		}
-		if importedAt.Valid {
-			p.ImportedAt = &importedAt.Time
-		}
-		if lastSyncedAt.Valid {
-			p.LastSyncedAt = &lastSyncedAt.Time
-		}
-		p.Supplier = &f
+		p.Supplier = supplier
 		// Buscar items se for composição
 		if p.IsComposition {
 			items, _ := r.GetProductItems(p.ID)
@@ -229,47 +207,18 @@ func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, err
 
 // GetByCodigoInterno returns a product by internal code (no supplier nested)
 func (r *ProductRepository) GetByCodigoInterno(codigoInterno string) (*models.Product, error) {
-	var p models.Product
-	var fotos pq.StringArray
-	var importedAt, lastSyncedAt sql.NullTime
-	var source sql.NullString
-	err := r.db.QueryRow(
+	p, _, err := scanProductRow(r.db.QueryRow(
 		`SELECT id, product_name, internal_code, supplier_id, product_group, description, photos, ncm, COALESCE(material_origin, ''), stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, created_at, updated_at FROM products WHERE internal_code=$1`,
 		codigoInterno,
-	).Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin, &p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition, &p.MovesStock, &p.EnabledForInvoice, &p.CostPrice, &source, &importedAt, &lastSyncedAt, &p.CreatedAt, &p.UpdatedAt)
+	), false)
 	if err != nil {
 		return nil, err
-	}
-	if fotos == nil {
-		p.Photos = []string{}
-	} else {
-		p.Photos = []string(fotos)
-	}
-	if source.Valid {
-		p.Source = source.String
-	} else {
-		p.Source = "manual"
-	}
-	if importedAt.Valid {
-		p.ImportedAt = &importedAt.Time
-	}
-	if lastSyncedAt.Valid {
-		p.LastSyncedAt = &lastSyncedAt.Time
 	}
 	return &p, nil
 }
 
-// Create inserts a new product. Validates supplier existence.
+// Create inserts a new product.
 func (r *ProductRepository) Create(p *models.Product) (*models.Product, error) {
-	// check supplier exists
-	var tmp int
-	if err := r.db.QueryRow("SELECT id FROM suppliers WHERE id=$1", p.SupplierID).Scan(&tmp); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, apperrors.ErrSupplierNotFound
-		}
-		return nil, apperrors.NewDatabaseError(err)
-	}
-
 	// Determinar is_composition baseado na quantidade de items
 	isComposition := len(p.Items) > 0
 	if p.KitType == "" {
@@ -279,6 +228,10 @@ func (r *ProductRepository) Create(p *models.Product) (*models.Product, error) {
 		p.ProductName, p.InternalCode, p.SupplierID, p.ProductGroup, p.Description, pq.Array(p.Photos), p.NCM, p.MaterialOrigin, p.Stock, p.SellingPrice, p.KitType, isComposition, p.MovesStock, p.EnabledForInvoice, p.CostPrice, p.Source, p.ImportedAt, p.LastSyncedAt).
 		Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
+		var pqErr *pq.Error
+		if ok := errors.As(err, &pqErr); ok && pqErr.Code == "23503" {
+			return nil, apperrors.ErrSupplierNotFound
+		}
 		return nil, err
 	}
 	p.IsComposition = isComposition
@@ -287,15 +240,6 @@ func (r *ProductRepository) Create(p *models.Product) (*models.Product, error) {
 
 // Update updates an existing product
 func (r *ProductRepository) Update(id int, p *models.Product) (*models.Product, error) {
-	// ensure supplier exists
-	var tmp int
-	if err := r.db.QueryRow("SELECT id FROM suppliers WHERE id=$1", p.SupplierID).Scan(&tmp); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("supplier not found")
-		}
-		return nil, err
-	}
-
 	// Determinar is_composition baseado na quantidade de items
 	isComposition := len(p.Items) > 0
 	if p.KitType == "" {
@@ -304,6 +248,10 @@ func (r *ProductRepository) Update(id int, p *models.Product) (*models.Product, 
 	_, err := r.db.Exec(`UPDATE products SET product_name=$1, internal_code=$2, supplier_id=$3, product_group=$4, description=$5, photos=$6, ncm=$7, material_origin=$8, stock=$9, selling_price=$10, kit_type=$11, is_composition=$12, moves_stock=$13, enabled_for_invoice=$14, cost_price=$15, updated_at=NOW() WHERE id=$16`,
 		p.ProductName, p.InternalCode, p.SupplierID, p.ProductGroup, p.Description, pq.Array(p.Photos), p.NCM, p.MaterialOrigin, p.Stock, p.SellingPrice, p.KitType, isComposition, p.MovesStock, p.EnabledForInvoice, p.CostPrice, id)
 	if err != nil {
+		var pqErr *pq.Error
+		if ok := errors.As(err, &pqErr); ok && pqErr.Code == "23503" {
+			return nil, apperrors.ErrSupplierNotFound
+		}
 		return nil, err
 	}
 	p.IsComposition = isComposition
@@ -413,40 +361,11 @@ func (r *ProductRepository) GetNewlyImported() ([]models.Product, error) {
 
 	var res []models.Product
 	for rows.Next() {
-		var p models.Product
-		var f models.Supplier
-		var fotos pq.StringArray
-		var importedAt, lastSyncedAt sql.NullTime
-		var source sql.NullString
-		err := rows.Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID,
-			&f.ID, &f.Name, &f.CNPJ, &f.StateRegistration, &f.ContactPerson, &f.Email,
-			&f.LandlinePhone, &f.MobilePhone, &f.ResponsibleEmail, &f.CommercialAddress,
-			&f.CreatedAt, &f.UpdatedAt,
-			&p.ProductGroup, &p.Description, &fotos, &p.NCM, &p.MaterialOrigin,
-			&p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition,
-			&p.MovesStock, &p.EnabledForInvoice, &p.CostPrice,
-			&source, &importedAt, &lastSyncedAt,
-			&p.CreatedAt, &p.UpdatedAt)
+		p, supplier, err := scanProductRow(rows, true)
 		if err != nil {
 			return nil, err
 		}
-		if fotos == nil {
-			p.Photos = []string{}
-		} else {
-			p.Photos = []string(fotos)
-		}
-		if source.Valid {
-			p.Source = source.String
-		} else {
-			p.Source = "manual"
-		}
-		if importedAt.Valid {
-			p.ImportedAt = &importedAt.Time
-		}
-		if lastSyncedAt.Valid {
-			p.LastSyncedAt = &lastSyncedAt.Time
-		}
-		p.Supplier = &f
+		p.Supplier = supplier
 		// Buscar items se for composição
 		if p.IsComposition {
 			items, _ := r.GetProductItems(p.ID)
