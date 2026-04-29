@@ -71,7 +71,7 @@
       "url": "{{ base_url }}/suppliers",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"nome_fantasia_ou_razao_social\": \"ACME Corporation\",\n  \"cnpj\": \"12.345.678/0001-99\",\n  \"inscricao_estadual\": \"123.456.789.012\",\n  \"responsavel_atendimento\": \"João Silva\",\n  \"email_geral\": \"contato@acme.com\",\n  \"telefone_fixo\": \"+55 11 3000-0000\",\n  \"celular\": \"+55 11 99999-8888\",\n  \"email_responsavel\": \"joao@acme.com\",\n  \"endereco_comercial\": \"Rua das Flores, 123, São Paulo, SP\"\n}"
+        "text": "{\n  \"name\": \"ACME Corporation\",\n  \"cnpj\": \"12.345.678/0001-99\",\n  \"state_registration\": \"123.456.789.012\",\n  \"contact_person\": \"João Silva\",\n  \"email\": \"contato@acme.com\",\n  \"landline_phone\": \"+55 11 3000-0000\",\n  \"mobile_phone\": \"+55 11 99999-8888\",\n  \"responsible_email\": \"joao@acme.com\",\n  \"commercial_address\": \"Rua das Flores, 123, São Paulo, SP\"\n}"
       },
       "headers": [
         {
@@ -89,7 +89,7 @@
       "url": "{{ base_url }}/suppliers",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"nome_fantasia_ou_razao_social\": \"Maria de Souza\",\n  \"email_geral\": \"maria@exemplo.com\",\n  \"telefone_fixo\": \"+55 11 3000-1111\",\n  \"celular\": \"+55 11 99999-7777\",\n  \"email_responsavel\": \"maria@exemplo.com\",\n  \"endereco_comercial\": \"Rua Principal, 456, Rio de Janeiro, RJ\"\n}"
+        "text": "{\n  \"name\": \"Maria de Souza\",\n  \"email\": \"maria@exemplo.com\",\n  \"landline_phone\": \"+55 11 3000-1111\",\n  \"mobile_phone\": \"+55 11 99999-7777\",\n  \"responsible_email\": \"maria@exemplo.com\",\n  \"commercial_address\": \"Rua Principal, 456, Rio de Janeiro, RJ\"\n}"
       },
       "headers": [
         {
@@ -107,7 +107,7 @@
       "url": "{{ base_url }}/suppliers/{{ supplier_id }}",
       "body": {
         "mimeType": "application/json",
-        "text": "{\n  \"nome_fantasia_ou_razao_social\": \"ACME Corporation Updated\",\n  \"cnpj\": \"12.345.678/0001-99\",\n  \"inscricao_estadual\": \"123.456.789.012\",\n  \"responsavel_atendimento\": \"João Silva Updated\",\n  \"email_geral\": \"updated@acme.com\",\n  \"telefone_fixo\": \"+55 11 3001-0000\",\n  \"celular\": \"+55 11 99999-9999\",\n  \"email_responsavel\": \"joao.updated@acme.com\",\n  \"endereco_comercial\": \"Avenida Paulista, 1000, São Paulo, SP\"\n}"
+        "text": "{\n  \"name\": \"ACME Corporation Updated\",\n  \"cnpj\": \"12.345.678/0001-99\",\n  \"state_registration\": \"123.456.789.012\",\n  \"contact_person\": \"João Silva Updated\",\n  \"email\": \"updated@acme.com\",\n  \"landline_phone\": \"+55 11 3001-0000\",\n  \"mobile_phone\": \"+55 11 99999-9999\",\n  \"responsible_email\": \"joao.updated@acme.com\",\n  \"commercial_address\": \"Avenida Paulista, 1000, São Paulo, SP\"\n}"
       },
       "headers": [
         {

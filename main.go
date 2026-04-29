@@ -1,10 +1,10 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"donapresentes/controllers"
 	"donapresentes/controllers/config"
@@ -19,45 +19,44 @@ import (
 	"github.com/pressly/goose/v3"
 )
 
-const (
-	dsn  = "postgres://postgres:123456@postgres:5432/crud?sslmode=disable"
-	port = ":8080"
-)
+const port = ":8080"
 
-var db *sql.DB
-
-func init() {
-	// Initialize database connection
-	var err error
-	err = config.Connect(dsn)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to connect to database: %v", err))
+func bootstrap() error {
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		return fmt.Errorf("DATABASE_URL environment variable is required")
 	}
 
-	// Run migrations
+	if err := config.Connect(dsn); err != nil {
+		return fmt.Errorf("failed to connect to database: %w", err)
+	}
+
 	if err := goose.Up(config.DB, "./db/migrations"); err != nil {
-		panic(fmt.Sprintf("Failed to run migrations: %v", err))
+		return fmt.Errorf("failed to run migrations: %w", err)
 	}
-	fmt.Println("Connected to the database successfully!")
-	log.Printf("Connected to the database successfully! log")
-
+	log.Println("Connected to the database successfully!")
+	return nil
 }
 
 func main() {
+	if err := bootstrap(); err != nil {
+		log.Fatalf("server bootstrap failed: %v", err)
+	}
+
 	defer config.DB.Close()
 
-	// Initialize repositories after database is connected
-	controllers.InitSupplierRepository()
-	controllers.InitCarrierRepository()
-	controllers.InitEmployeeRepository()
-	controllers.InitProductRepository()
-	controllers.InitCustomerRepository()
-	controllers.InitSaleRepository()
+	controllers.InitAuthService()
+	controllers.InitSupplierService()
+	controllers.InitCarrierService()
+	controllers.InitUserService()
+	controllers.InitProductService()
+	controllers.InitCustomerService()
+	controllers.InitSaleService()
+	controllers.InitQuoteService()
 
-	// Initialize services and scheduler
 	productRepo := repositories.NewProductRepository(config.DB)
 	supplierRepo := repositories.NewSupplierRepository(config.DB)
-	xbzService := services.NewXBZService("36168035000181", "X142AA979C")
+	xbzService := services.NewXBZService(os.Getenv("XBZ_CNPJ"), os.Getenv("XBZ_TOKEN"))
 	syncService := services.NewSyncService(xbzService, productRepo, supplierRepo)
 
 	scheduler := jobs.NewScheduler(syncService, xbzService)
@@ -66,31 +65,35 @@ func main() {
 	defer scheduler.Stop()
 
 	r := mux.NewRouter()
+	r.StrictSlash(true)
 
-	// Aplicar middlewares globais
+	r.Use(middleware.CORSMiddleware)
+	r.Use(middleware.NormalizePathMiddleware)
 	r.Use(middleware.LoggingMiddleware)
 	r.Use(middleware.RecoveryMiddleware)
 
-	// Register suppliers routes
-	routes.RegisterSuppliersRoutes(r)
+	routes.RegisterAuthRoutes(r)
 
-	// Register carriers routes
-	routes.RegisterCarriersRoutes(r)
+	authService := services.NewAuthService(repositories.NewUserRepository(config.DB))
+	protectedRouter := r.PathPrefix("").Subrouter()
+	protectedRouter.Use(middleware.AuthMiddleware(authService))
 
-	// Register employees routes
-	routes.RegisterEmployeesRoutes(r)
+	routes.RegisterSuppliersRoutes(protectedRouter)
+	routes.RegisterCarriersRoutes(protectedRouter)
+	routes.RegisterUsersRoutes(protectedRouter)
+	routes.RegisterProductsRoutes(protectedRouter)
+	routes.RegisterCustomersRoutes(protectedRouter)
+	routes.RegisterSalesRoutes(protectedRouter)
+	routes.RegisterQuotesRoutes(protectedRouter)
 
-	// Register products routes
-	routes.RegisterProductsRoutes(r)
+	adminRouter := protectedRouter.PathPrefix("").Subrouter()
+	adminRouter.Use(middleware.AdminOnlyMiddleware())
 
-	// Register customers routes
-	routes.RegisterCustomersRoutes(r)
+	controllers.InitProductXBZController()
 
-	// Register sales routes
-	routes.RegisterSalesRoutes(r)
-
-	// Register products XBZ routes
-	routes.RegisterProductsXBZRoutes(r)
+	adminRouter.HandleFunc("/users", controllers.CreateUser).Methods("POST", "OPTIONS")
+	adminRouter.HandleFunc("/users/{id}", controllers.DeleteUser).Methods("DELETE", "OPTIONS")
+	adminRouter.HandleFunc("/products-xbz/sync", controllers.SyncProductsFromXBZHandler).Methods("POST", "OPTIONS")
 
 	log.Printf("Server starting on %s\n", port)
 	log.Fatal(http.ListenAndServe(port, r))

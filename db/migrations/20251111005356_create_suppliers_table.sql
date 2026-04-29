@@ -1,23 +1,23 @@
 -- +goose Up
-CREATE TABLE fornecedores (
+CREATE TABLE suppliers (
     id SERIAL PRIMARY KEY,
-    nome_fantasia_ou_razao_social VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
     cnpj VARCHAR(18),
-    inscricao_estadual VARCHAR(50),
-    responsavel_atendimento VARCHAR(255),
-    email_geral VARCHAR(255),
-    telefone_fixo VARCHAR(20),
-    celular VARCHAR(20),
-    email_responsavel VARCHAR(255),
-    endereco_comercial TEXT,
-    criado_em TIMESTAMP DEFAULT NOW(),
-    atualizado_em TIMESTAMP DEFAULT NOW()
+    state_registration VARCHAR(50),
+    contact_person VARCHAR(255),
+    email VARCHAR(255),
+    landline_phone VARCHAR(20),
+    mobile_phone VARCHAR(20),
+    responsible_email VARCHAR(255),
+    commercial_address TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Evita duplicidade de CNPJ para fornecedores PJ
-CREATE UNIQUE INDEX idx_fornecedores_cnpj_unico
-ON fornecedores (cnpj)
+CREATE UNIQUE INDEX idx_suppliers_cnpj_unique
+ON suppliers (cnpj)
 WHERE cnpj IS NOT NULL;
 
 -- +goose Down
-DROP TABLE IF EXISTS fornecedores;
+DROP TABLE IF EXISTS suppliers;

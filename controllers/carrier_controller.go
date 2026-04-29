@@ -11,19 +11,21 @@ import (
 	"donapresentes/middleware"
 	"donapresentes/models"
 	"donapresentes/repositories"
+	"donapresentes/services"
 
 	"github.com/gorilla/mux"
 )
 
-var carrierRepo *repositories.CarrierRepository
+var carrierService *services.CarrierService
 
-func InitCarrierRepository() {
-	carrierRepo = repositories.NewCarrierRepository(config.DB)
+func InitCarrierService() {
+	carrierRepo := repositories.NewCarrierRepository(config.DB)
+	carrierService = services.NewCarrierService(carrierRepo)
 }
 
 // GetCarriers lists all transportadoras
 func GetCarriers(w http.ResponseWriter, r *http.Request) {
-	items, err := carrierRepo.GetAll()
+	items, err := carrierService.GetAll()
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
@@ -42,7 +44,7 @@ func GetCarrier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t, err := carrierRepo.GetByID(id)
+	t, err := carrierService.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrCarrierNotFound, http.StatusNotFound)
@@ -64,7 +66,7 @@ func CreateCarrier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := carrierRepo.Create(&t)
+	err := carrierService.Create(&t)
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
@@ -90,7 +92,7 @@ func UpdateCarrier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = carrierRepo.Update(id, &t)
+	err = carrierService.Update(id, &t)
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
@@ -110,7 +112,7 @@ func DeleteCarrier(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = carrierRepo.Delete(id)
+	err = carrierService.Delete(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrCarrierNotFound, http.StatusNotFound)

@@ -6,8 +6,8 @@ import (
 
 // ExternalAPIProvider define a interface para integração com APIs externas
 type ExternalAPIProvider interface {
-	// GetProdutos busca a lista de produtos da API externa
-	GetProdutos() ([]interface{}, error)
+	// GetProducts fetches the product list from the external API provider.
+	GetProducts() ([]interface{}, error)
 
 	// MapToLocalProduct maps the external object to the local Product model
 	MapToLocalProduct(interface{}) *models.Product

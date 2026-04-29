@@ -1,7 +1,7 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2025-12-08T00:00:00.000Z",
+  "__export_date": "2025-01-15T00:00:00.000Z",
   "__export_source": "insomnia.desktop.app:v2025.1.0",
   "resources": [
     {
@@ -24,9 +24,36 @@
       "_id": "req_list_products",
       "_type": "request",
       "parentId": "wrk_products_dona",
-      "name": "List Products",
+      "name": "List All Products",
       "method": "GET",
       "url": "{{ base_url }}/products",
+      "body": {}
+    },
+    {
+      "_id": "req_list_products_paginated",
+      "_type": "request",
+      "parentId": "wrk_products_dona",
+      "name": "List Products (Paginated)",
+      "method": "GET",
+      "url": "{{ base_url }}/products?page=1&limit=10",
+      "body": {}
+    },
+    {
+      "_id": "req_list_products_page2",
+      "_type": "request",
+      "parentId": "wrk_products_dona",
+      "name": "List Products (Page 2)",
+      "method": "GET",
+      "url": "{{ base_url }}/products?page=2&limit=10",
+      "body": {}
+    },
+    {
+      "_id": "req_search_products_filter",
+      "_type": "request",
+      "parentId": "wrk_products_dona",
+      "name": "Search Products by Filter",
+      "method": "GET",
+      "url": "{{ base_url }}/products?filter=Caneca",
       "body": {}
     },
     {
@@ -42,24 +69,48 @@
       "_id": "req_create_product",
       "_type": "request",
       "parentId": "wrk_products_dona",
-      "name": "Create Product",
+      "name": "Create Product (Simple Kit)",
       "method": "POST",
       "url": "{{ base_url }}/products",
       "body": {
         "mimeType": "application/json",
-        "text": "{ \"nome_produto\": \"Caneca Exemplo\", \"codigo_interno\": \"CAN-001\", \"codigo_fornecedor\": 1, \"grupo_produto\": \"canecas\", \"descricao\": \"Caneca cerâmica branca - 350ml\", \"fotos\": [\"https://example.com/foto1.jpg\", \"https://example.com/foto2.jpg\"], \"ncm\": \"6912.00.00\", \"origem_material\": \"BR\", \"estoque\": 100 }"
+        "text": "{ \"product_name\": \"Caneca Exemplo\", \"internal_code\": \"CAN-001\", \"supplier_id\": 1, \"product_group\": \"canecas\", \"description\": \"Caneca cerâmica branca - 350ml\", \"photos\": [\"https://example.com/foto1.jpg\", \"https://example.com/foto2.jpg\"], \"ncm\": \"6912.00.00\", \"material_origin\": \"BR\", \"stock\": 100, \"selling_price\": 29.90 }"
+      }
+    },
+    {
+      "_id": "req_create_product_composition",
+      "_type": "request",
+      "parentId": "wrk_products_dona",
+      "name": "Create Product (Kit with Composition)",
+      "method": "POST",
+      "url": "{{ base_url }}/products",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"product_name\": \"Kit Presente Completo\", \"internal_code\": \"KIT-001\", \"supplier_id\": 1, \"product_group\": \"kits\", \"description\": \"Kit com caneca, camiseta e caneta\", \"photos\": [\"https://example.com/kit.jpg\"], \"ncm\": \"6912.00.00\", \"material_origin\": \"BR\", \"stock\": 50, \"selling_price\": 89.90, \"items\": [ { \"product_id\": 1, \"quantity\": 1 }, { \"product_id\": 2, \"quantity\": 1 }, { \"product_id\": 3, \"quantity\": 2 } ] }"
       }
     },
     {
       "_id": "req_update_product",
       "_type": "request",
       "parentId": "wrk_products_dona",
-      "name": "Update Product",
+      "name": "Update Product (Simple Kit)",
       "method": "PUT",
       "url": "{{ base_url }}/products/{{ product_id }}",
       "body": {
         "mimeType": "application/json",
-        "text": "{ \"nome_produto\": \"Caneca Exemplo - Atualizada\", \"codigo_interno\": \"CAN-001\", \"codigo_fornecedor\": 1, \"grupo_produto\": \"canecas\", \"descricao\": \"Caneca cerâmica branca - 350ml (edição atualizada)\", \"fotos\": [\"https://example.com/foto1.jpg\"], \"ncm\": \"6912.00.00\", \"origem_material\": \"BR\", \"estoque\": 120 }"
+        "text": "{ \"product_name\": \"Caneca Exemplo - Atualizada\", \"internal_code\": \"CAN-001\", \"supplier_id\": 1, \"product_group\": \"canecas\", \"description\": \"Caneca cerâmica branca - 350ml (edição atualizada)\", \"photos\": [\"https://example.com/foto1.jpg\"], \"ncm\": \"6912.00.00\", \"material_origin\": \"BR\", \"stock\": 120, \"selling_price\": 34.90 }"
+      }
+    },
+    {
+      "_id": "req_update_product_composition",
+      "_type": "request",
+      "parentId": "wrk_products_dona",
+      "name": "Update Product (Kit with Composition)",
+      "method": "PUT",
+      "url": "{{ base_url }}/products/{{ product_id }}",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{ \"product_name\": \"Kit Presente Completo - Atualizado\", \"internal_code\": \"KIT-001\", \"supplier_id\": 1, \"product_group\": \"kits\", \"description\": \"Kit com caneca, camiseta e caneta (versão atualizada)\", \"photos\": [\"https://example.com/kit.jpg\"], \"ncm\": \"6912.00.00\", \"material_origin\": \"BR\", \"stock\": 60, \"selling_price\": 99.90, \"items\": [ { \"product_id\": 1, \"quantity\": 2 }, { \"product_id\": 2, \"quantity\": 1 }, { \"product_id\": 3, \"quantity\": 3 } ] }"
       }
     },
     {

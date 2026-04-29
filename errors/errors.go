@@ -28,73 +28,73 @@ var (
 	// Erros de validação
 	ErrInvalidInput = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "Invalid input data",
+		Message: "Dados de entrada inválidos",
 	}
 
 	ErrInvalidID = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "Invalid ID",
+		Message: "ID inválido",
 	}
 
 	ErrInvalidEmail = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "Invalid email",
+		Message: "E-mail inválido",
 	}
 
 	ErrInvalidCPF = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "Invalid CPF (must have 11 digits)",
+		Message: "CPF inválido (deve ter 11 dígitos)",
 	}
 
 	ErrInvalidCNPJ = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "Invalid CNPJ (must have 14 digits)",
+		Message: "CNPJ inválido (deve ter 14 dígitos)",
 	}
 
 	ErrMissingField = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "Required field missing",
+		Message: "Campo obrigatório não fornecido",
 	}
 
 	ErrInvalidJSON = &AppError{
 		Code:    http.StatusBadRequest,
-		Message: "Invalid JSON in request",
+		Message: "JSON inválido na requisição",
 	}
 
 	// Erros de recurso não encontrado
 	ErrNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Resource not found",
+		Message: "Recurso não encontrado",
 	}
 
 	ErrCustomerNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Customer not found",
+		Message: "Cliente não encontrado",
 	}
 
 	ErrSupplierNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Supplier not found",
-	}
-
-	ErrEmployeeNotFound = &AppError{
-		Code:    http.StatusNotFound,
-		Message: "Employee not found",
+		Message: "Fornecedor não encontrado",
 	}
 
 	ErrProductNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Product not found",
+		Message: "Produto não encontrado",
 	}
 
 	ErrCarrierNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Carrier not found",
+		Message: "Transportadora não encontrada",
 	}
 
 	ErrSaleNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Sale not found",
+		Message: "Venda não encontrada",
+	}
+
+	ErrQuoteNotFound = &AppError{
+		Code:    http.StatusNotFound,
+		Message: "Orçamento não encontrado",
 	}
 
 	// Erros de conflito

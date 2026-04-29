@@ -3,6 +3,8 @@ package controllers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -11,19 +13,32 @@ import (
 	"donapresentes/middleware"
 	"donapresentes/models"
 	"donapresentes/repositories"
+	"donapresentes/services"
 
 	"github.com/gorilla/mux"
 )
 
-var saleRepo *repositories.SaleRepository
+var saleService *services.SaleService
+var pdfService *services.PDFService
 
-func InitSaleRepository() {
-	saleRepo = repositories.NewSaleRepository(config.DB)
+func InitSaleService() {
+	saleRepo := repositories.NewSaleRepository(config.DB)
+	userRepo := repositories.NewUserRepository(config.DB)
+	productRepo := repositories.NewProductRepository(config.DB)
+	customerRepo := repositories.NewCustomerRepository(config.DB)
+	carrierRepo := repositories.NewCarrierRepository(config.DB)
+	saleService = services.NewSaleService(saleRepo, userRepo, productRepo, customerRepo, carrierRepo)
+
+	var err error
+	pdfService, err = services.NewPDFService()
+	if err != nil {
+		log.Printf("[WARN] PDF service não inicializado (chromedp): %v - endpoint /sales/{id}/pdf não disponível", err)
+	}
 }
 
 // List vendas
 func GetSales(w http.ResponseWriter, r *http.Request) {
-	vs, err := saleRepo.GetAll()
+	vs, err := saleService.GetAll()
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
@@ -40,7 +55,7 @@ func GetSale(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
-	v, err := saleRepo.GetByID(id)
+	v, err := saleService.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrSaleNotFound, http.StatusNotFound)
@@ -61,7 +76,7 @@ func CreateSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, err := saleRepo.Create(&input)
+	v, err := saleService.Create(&input)
 	if err != nil {
 		if appErr, ok := err.(*apperrors.AppError); ok {
 			middleware.ErrorHandler(w, appErr, appErr.Code)
@@ -89,7 +104,7 @@ func UpdateSale(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	v, err := saleRepo.Update(id, &input)
+	v, err := saleService.Update(id, &input)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrSaleNotFound, http.StatusNotFound)
@@ -106,6 +121,44 @@ func UpdateSale(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(v)
 }
 
+// GetSalePDF returns the order summary PDF for download
+func GetSalePDF(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+	sale, err := saleService.GetByID(id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			middleware.ErrorHandler(w, apperrors.ErrSaleNotFound, http.StatusNotFound)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+	if pdfService == nil {
+		middleware.ErrorHandler(w, &apperrors.AppError{
+			Code:    http.StatusServiceUnavailable,
+			Message: "Serviço de PDF não disponível",
+		}, http.StatusServiceUnavailable)
+		return
+	}
+	pdfBytes, err := pdfService.GenerateOrderPDF(sale)
+	if err != nil {
+		middleware.ErrorHandler(w, &apperrors.AppError{
+			Code:       http.StatusInternalServerError,
+			Message:    "Erro ao gerar PDF do pedido",
+			LogMessage: err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/pdf")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"pedido_%04d.pdf\"", sale.ID))
+	w.Write(pdfBytes)
+}
+
 // Delete venda
 func DeleteSale(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
@@ -114,7 +167,7 @@ func DeleteSale(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
-	if err := saleRepo.Delete(id); err != nil {
+	if err := saleService.Delete(id); err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrSaleNotFound, http.StatusNotFound)
 			return
