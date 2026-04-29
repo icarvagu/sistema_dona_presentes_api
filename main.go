@@ -68,6 +68,7 @@ func main() {
 	r.StrictSlash(true)
 
 	r.Use(middleware.CORSMiddleware)
+	middleware.ApplyCORSFallbackHandlers(r)
 	r.Use(middleware.NormalizePathMiddleware)
 	r.Use(middleware.LoggingMiddleware)
 	r.Use(middleware.RecoveryMiddleware)
