@@ -114,11 +114,6 @@ func (s *XBZService) GetProducts() ([]interface{}, error) {
 	return nil, fmt.Errorf("erro ao decodificar resposta da XBZ")
 }
 
-// GetProdutos is kept for backward compatibility.
-func (s *XBZService) GetProdutos() ([]interface{}, error) {
-	return s.GetProducts()
-}
-
 func (s *XBZService) fetch(fullURL string) ([]byte, error) {
 	start := time.Now()
 	req, err := http.NewRequest("GET", fullURL, nil)
@@ -366,9 +361,4 @@ func (s *XBZService) MapToSupplier(item interface{}) *models.Supplier {
 // GetXBZSupplierName returns the provider supplier display name.
 func (s *XBZService) GetXBZSupplierName() string {
 	return "XBZ Brindes"
-}
-
-// GetNomeFornecedorXBZ is kept for backward compatibility.
-func (s *XBZService) GetNomeFornecedorXBZ() string {
-	return s.GetXBZSupplierName()
 }

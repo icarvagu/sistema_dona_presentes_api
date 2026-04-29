@@ -217,11 +217,6 @@ func (r *ProductRepository) GetByInternalCode(internalCode string) (*models.Prod
 	return &p, nil
 }
 
-// GetByCodigoInterno is kept for backward compatibility.
-func (r *ProductRepository) GetByCodigoInterno(codigoInterno string) (*models.Product, error) {
-	return r.GetByInternalCode(codigoInterno)
-}
-
 // Create inserts a new product.
 func (r *ProductRepository) Create(p *models.Product) (*models.Product, error) {
 	// Determinar is_composition baseado na quantidade de items
