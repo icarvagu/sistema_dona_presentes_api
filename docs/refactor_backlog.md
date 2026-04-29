@@ -23,6 +23,7 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
   - Status: concluído neste ciclo.
   - Arquivos: `middleware/error_handler.go`, `services/xbz_service.go`
 - Padronizar nomenclatura de métodos para português ou inglês (evitar mistura: `GetByCodigoInterno`, `SyncProductsFromXBZ`, etc.).
+  - Status: em andamento (escopo XBZ concluído neste ciclo com aliases de compatibilidade).
   - Escopo inicial: `controllers/`, `services/`, `repositories/`
 
 ### P2 (estrutural)
@@ -31,5 +32,5 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
 - Criar guideline curto de convenções (nomes, erros, logs) para evitar regressão de padrão.
 
 ## Próxima ação proposta
-1. Padronizar nomenclatura de métodos para português ou inglês em `controllers/`, `services/`, `repositories/`.
+1. Concluir padronização de nomenclatura no restante do domínio (não-XBZ) em `controllers/`, `services/`, `repositories/`.
 2. Mapear e remover artefatos legados operacionais (coleções insomnia fora de uso).

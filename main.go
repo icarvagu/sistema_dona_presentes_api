@@ -93,7 +93,7 @@ func main() {
 
 	adminRouter.HandleFunc("/users", controllers.CreateUser).Methods("POST", "OPTIONS")
 	adminRouter.HandleFunc("/users/{id}", controllers.DeleteUser).Methods("DELETE", "OPTIONS")
-	adminRouter.HandleFunc("/products-xbz/sync", controllers.SyncProductsFromXBZ).Methods("POST", "OPTIONS")
+	adminRouter.HandleFunc("/products-xbz/sync", controllers.SyncProductsFromXBZHandler).Methods("POST", "OPTIONS")
 
 	log.Printf("Server starting on %s\n", port)
 	log.Fatal(http.ListenAndServe(port, r))

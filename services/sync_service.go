@@ -26,8 +26,8 @@ func NewSyncService(
 	}
 }
 
-// Sincronizar executa a sincronização completa
-func (s *SyncService) Sincronizar() (*SyncResult, error) {
+// Synchronize executes the full synchronization flow.
+func (s *SyncService) Synchronize() (*SyncResult, error) {
 	result := &SyncResult{}
 
 	// Obter produtos da API externa
@@ -58,7 +58,7 @@ func (s *SyncService) Sincronizar() (*SyncResult, error) {
 		produtoLocal.SupplierID = fornecedorID
 
 		// Verificar se já existe
-		existente, err := s.productRepository.GetByCodigoInterno(produtoLocal.InternalCode)
+		existente, err := s.productRepository.GetByInternalCode(produtoLocal.InternalCode)
 		if err == nil && existente != nil {
 			// Atualizar apenas campos vindos da sync: estoque, fotos, preço e last_synced_at
 			syncTime := time.Now()
@@ -89,6 +89,11 @@ func (s *SyncService) Sincronizar() (*SyncResult, error) {
 	}
 
 	return result, nil
+}
+
+// Sincronizar is kept for backward compatibility.
+func (s *SyncService) Sincronizar() (*SyncResult, error) {
+	return s.Synchronize()
 }
 
 // garantirFornecedor verifica se fornecedor existe, se não cria

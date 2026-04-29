@@ -205,16 +205,21 @@ func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, err
 	return res, nil
 }
 
-// GetByCodigoInterno returns a product by internal code (no supplier nested)
-func (r *ProductRepository) GetByCodigoInterno(codigoInterno string) (*models.Product, error) {
+// GetByInternalCode returns a product by internal code (no supplier nested).
+func (r *ProductRepository) GetByInternalCode(internalCode string) (*models.Product, error) {
 	p, _, err := scanProductRow(r.db.QueryRow(
 		`SELECT id, product_name, internal_code, supplier_id, product_group, description, photos, ncm, COALESCE(material_origin, ''), stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, created_at, updated_at FROM products WHERE internal_code=$1`,
-		codigoInterno,
+		internalCode,
 	), false)
 	if err != nil {
 		return nil, err
 	}
 	return &p, nil
+}
+
+// GetByCodigoInterno is kept for backward compatibility.
+func (r *ProductRepository) GetByCodigoInterno(codigoInterno string) (*models.Product, error) {
+	return r.GetByInternalCode(codigoInterno)
 }
 
 // Create inserts a new product.

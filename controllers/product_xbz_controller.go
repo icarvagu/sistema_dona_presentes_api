@@ -29,8 +29,8 @@ func InitProductXBZController() {
 	xbzService = services.NewXBZService(cnpj, token)
 }
 
-// SyncProductsFromXBZ inicia a sincronização de produtos da API XBZ de forma assíncrona
-func SyncProductsFromXBZ(w http.ResponseWriter, r *http.Request) {
+// SyncProductsFromXBZHandler starts async product sync from XBZ API.
+func SyncProductsFromXBZHandler(w http.ResponseWriter, r *http.Request) {
 	if xbzService == nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
@@ -69,7 +69,7 @@ func SyncProductsFromXBZ(w http.ResponseWriter, r *http.Request) {
 		supplierRepo := repositories.NewSupplierRepository(config.DB)
 
 		syncService := services.NewSyncService(xbzService, productRepo, supplierRepo)
-		result, err := syncService.Sincronizar()
+		result, err := syncService.Synchronize()
 		if err != nil {
 			log.Printf("[XBZ Sync] Erro na sincronização: %v", err)
 			return
@@ -86,4 +86,9 @@ func SyncProductsFromXBZ(w http.ResponseWriter, r *http.Request) {
 		"message": "Sincronização iniciada com sucesso",
 		"status":  "started",
 	})
+}
+
+// SyncProductsFromXBZ is kept for backward compatibility.
+func SyncProductsFromXBZ(w http.ResponseWriter, r *http.Request) {
+	SyncProductsFromXBZHandler(w, r)
 }
