@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 
 	"donapresentes/controllers/config"
@@ -18,12 +19,28 @@ var (
 )
 
 func InitProductXBZController() {
-	// Valores padrão - considere usar variáveis de ambiente
-	xbzService = services.NewXBZService("36168035000181", "X142AA979C")
+	cnpj := os.Getenv("XBZ_CNPJ")
+	token := os.Getenv("XBZ_TOKEN")
+	if cnpj == "" || token == "" {
+		log.Printf("[XBZ Sync] XBZ_CNPJ/XBZ_TOKEN não configurados; endpoint de sync ficará indisponível")
+		xbzService = nil
+		return
+	}
+	xbzService = services.NewXBZService(cnpj, token)
 }
 
 // SyncProductsFromXBZ inicia a sincronização de produtos da API XBZ de forma assíncrona
 func SyncProductsFromXBZ(w http.ResponseWriter, r *http.Request) {
+	if xbzService == nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "Integração XBZ não configurada",
+			"status":  "disabled",
+		})
+		return
+	}
+
 	// Verificar se já existe uma sincronização em andamento
 	syncMutex.Lock()
 	if syncInProgress {
