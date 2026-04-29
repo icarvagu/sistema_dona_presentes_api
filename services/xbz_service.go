@@ -75,8 +75,8 @@ type XBZProduto struct {
 	ReposicaoDataPrevista                *time.Time `json:"ReposicaoDataPrevista,omitempty"`
 }
 
-// GetProdutos implementa ExternalAPIProvider.GetProdutos
-func (s *XBZService) GetProdutos() ([]interface{}, error) {
+// GetProducts implements ExternalAPIProvider.GetProducts.
+func (s *XBZService) GetProducts() ([]interface{}, error) {
 	endpoint := fmt.Sprintf("%s/api/clientes/GetListaDeProdutos", XBZBaseURL)
 
 	params := url.Values{}
@@ -112,6 +112,11 @@ func (s *XBZService) GetProdutos() ([]interface{}, error) {
 
 	log.Printf("[XBZ] erro ao decodificar resposta da API (payload_size=%d)", len(body))
 	return nil, fmt.Errorf("erro ao decodificar resposta da XBZ")
+}
+
+// GetProdutos is kept for backward compatibility.
+func (s *XBZService) GetProdutos() ([]interface{}, error) {
+	return s.GetProducts()
 }
 
 func (s *XBZService) fetch(fullURL string) ([]byte, error) {
@@ -358,7 +363,12 @@ func (s *XBZService) MapToSupplier(item interface{}) *models.Supplier {
 	}
 }
 
-// GetNomeFornecedorXBZ retorna o nome do fornecedor XBZ
-func (s *XBZService) GetNomeFornecedorXBZ() string {
+// GetXBZSupplierName returns the provider supplier display name.
+func (s *XBZService) GetXBZSupplierName() string {
 	return "XBZ Brindes"
+}
+
+// GetNomeFornecedorXBZ is kept for backward compatibility.
+func (s *XBZService) GetNomeFornecedorXBZ() string {
+	return s.GetXBZSupplierName()
 }

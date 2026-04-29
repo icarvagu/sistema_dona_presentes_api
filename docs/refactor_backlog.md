@@ -23,7 +23,7 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
   - Status: concluído neste ciclo.
   - Arquivos: `middleware/error_handler.go`, `services/xbz_service.go`
 - Padronizar nomenclatura de métodos para português ou inglês (evitar mistura: `GetByCodigoInterno`, `SyncProductsFromXBZ`, etc.).
-  - Status: em andamento (escopo XBZ e SyncService concluídos com aliases de compatibilidade).
+  - Status: em andamento (escopo XBZ, SyncService e interface de provider concluídos com aliases de compatibilidade).
   - Escopo inicial: `controllers/`, `services/`, `repositories/`
 
 ### P2 (estrutural)

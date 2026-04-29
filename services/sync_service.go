@@ -31,7 +31,7 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 	result := &SyncResult{}
 
 	// Obter produtos da API externa
-	externalItems, err := s.provider.GetProdutos()
+	externalItems, err := s.provider.GetProducts()
 	if err != nil {
 		return result, err
 	}
