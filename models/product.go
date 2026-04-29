@@ -27,22 +27,3 @@ type Product struct {
 	CreatedAt         time.Time     `json:"created_at"`
 	UpdatedAt         time.Time     `json:"updated_at"`
 }
-
-// ProductInput representa os dados de entrada para criar/atualizar um produto
-type ProductInput struct {
-	ProductName       string             `json:"product_name"`
-	InternalCode      string             `json:"internal_code"`
-	SupplierID        int                `json:"supplier_id"`
-	ProductGroup      string             `json:"product_group,omitempty"`
-	Description       string             `json:"description,omitempty"`
-	Photos            []string           `json:"photos"`
-	NCM               string             `json:"ncm,omitempty"`
-	MaterialOrigin    string             `json:"material_origin,omitempty"`
-	Stock             int                `json:"stock"`
-	MovesStock        bool               `json:"moves_stock"`
-	EnabledForInvoice bool               `json:"enabled_for_invoice"`
-	CostPrice         float64            `json:"cost_price"`
-	SellingPrice      float64            `json:"selling_price"`
-	KitType           string             `json:"kit_type"`
-	Items             []ProductItemInput `json:"items,omitempty"` // composição (produtos filhos)
-}

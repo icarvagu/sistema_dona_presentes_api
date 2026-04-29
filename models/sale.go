@@ -48,6 +48,3 @@ type SaleItemInput struct {
 	UnitPrice float64 `json:"unit_price"`
 }
 
-// SaleKitItem e SaleKitItemInput foram removidos
-// Agora todos os produtos podem ser kits (produtos com is_composition = true)
-// Use SaleItemInput com product_id de um produto que é composição

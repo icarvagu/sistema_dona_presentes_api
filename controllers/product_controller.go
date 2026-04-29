@@ -24,15 +24,6 @@ func InitProductService() {
 	productService = services.NewProductService(productRepo, supplierRepo)
 }
 
-// PaginatedResponse estrutura para resposta paginada
-type PaginatedResponse struct {
-	Data       []models.Product `json:"data"`
-	Total      int              `json:"total"`
-	Page       int              `json:"page"`
-	Limit      int              `json:"limit"`
-	TotalPages int              `json:"total_pages"`
-}
-
 // List produtos
 func GetProducts(w http.ResponseWriter, r *http.Request) {
 	// Verifica se há parâmetro only_new na query string
@@ -95,7 +86,7 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 			totalPages = 1
 		}
 
-		response := PaginatedResponse{
+		response := models.PaginatedProductResponse{
 			Data:       ps,
 			Total:      total,
 			Page:       page,
