@@ -23,7 +23,7 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
   - Status: concluído neste ciclo.
   - Arquivos: `middleware/error_handler.go`, `services/xbz_service.go`
 - Padronizar nomenclatura de métodos para português ou inglês (evitar mistura: `GetByCodigoInterno`, `SyncProductsFromXBZ`, etc.).
-  - Status: em andamento (escopo XBZ, SyncService e interface de provider concluídos com aliases de compatibilidade).
+  - Status: concluído na fase de migração (restam apenas aliases de compatibilidade planejados para remoção pós-validação do PR).
   - Escopo inicial: `controllers/`, `services/`, `repositories/`
 
 ### P2 (estrutural)
@@ -34,5 +34,5 @@ Levantamento incremental de padronização, debloat e otimização com foco em b
   - Status: concluído (documentado em `docs/conventions.md`).
 
 ## Próxima ação proposta
-1. Concluir padronização de nomenclatura no restante do domínio (não-XBZ) em `controllers/`, `services/`, `repositories/`.
-2. Executar remoção futura dos aliases de compatibilidade já migrados, seguindo `docs/alias_deprecation_plan.md` (após validação do PR).
+1. Executar remoção dos aliases de compatibilidade já migrados, seguindo `docs/alias_deprecation_plan.md` (após validação do PR).
+2. Encerrar PRO-18 após merge e validação final do fluxo XBZ em desenvolvimento.
