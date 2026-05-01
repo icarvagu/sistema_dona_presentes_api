@@ -4,11 +4,27 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"donapresentes/errors"
 )
+
+func getAllowedOrigins() []string {
+	origins := []string{
+		"http://localhost:8081",
+		"http://localhost:19006",
+	}
+	if extra := os.Getenv("CORS_ALLOWED_ORIGINS"); extra != "" {
+		for _, o := range strings.Split(extra, ",") {
+			if trimmed := strings.TrimSpace(o); trimmed != "" {
+				origins = append(origins, trimmed)
+			}
+		}
+	}
+	return origins
+}
 
 type statusRecorder struct {
 	http.ResponseWriter
@@ -77,20 +93,20 @@ func NormalizePathMiddleware(next http.Handler) http.Handler {
 }
 
 func CORSMiddleware(next http.Handler) http.Handler {
+	allowedOrigins := getAllowedOrigins()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		origin := r.Header.Get("Origin")
-		if origin != "" {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-		} else {
-			w.Header().Set("Access-Control-Allow-Origin", "*")
+		for _, allowed := range allowedOrigins {
+			if origin == allowed {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				break
+			}
 		}
 
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, X-CSRF-Token")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key, X-Requested-With, Accept, Origin, X-CSRF-Token")
 		w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Content-Type, Location")
 		w.Header().Set("Access-Control-Max-Age", "3600")
-		w.Header().Set("Access-Control-Allow-Credentials", "false")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusNoContent)

@@ -30,7 +30,7 @@ func TestApplyCORSFallbackHandlers_OnMux404And405(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := httptest.NewRequest(tt.method, tt.path, nil)
-			req.Header.Set("Origin", "https://frontend.example")
+			req.Header.Set("Origin", "http://localhost:8081")
 
 			rec := httptest.NewRecorder()
 			r.ServeHTTP(rec, req)
@@ -39,7 +39,7 @@ func TestApplyCORSFallbackHandlers_OnMux404And405(t *testing.T) {
 				t.Fatalf("expected status %d, got %d", tt.wantStatus, rec.Code)
 			}
 
-			if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "https://frontend.example" {
+			if got := rec.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:8081" {
 				t.Fatalf("expected Access-Control-Allow-Origin header to be propagated, got %q", got)
 			}
 		})
