@@ -64,8 +64,27 @@ type Quote struct {
 	ProductionLeadTime string      `json:"production_lead_time"`
 	TotalValue         float64     `json:"total"`
 	Items              []QuoteItem `json:"items,omitempty"`
-	CreatedAt          time.Time   `json:"created_at"`
-	UpdatedAt          time.Time   `json:"updated_at"`
+
+	// Freight info
+	FreightCNPJSolicitante string          `json:"freight_cnpj_solicitante"`
+	FreightCNPJCPFOrigem   string          `json:"freight_cnpj_cpf_origem"`
+	FreightCNPJCPFDestino  string          `json:"freight_cnpj_cpf_destino"`
+	FreightCNPJDevedor     string          `json:"freight_cnpj_devedor"`
+	FreightTipoTransporte  string          `json:"freight_tipo_transporte"`
+	FreightContato         string          `json:"freight_contato"`
+	FreightCidadeOrigem    string          `json:"freight_cidade_origem"`
+	FreightCidadeDestino   string          `json:"freight_cidade_destino"`
+	FreightMaterial        string          `json:"freight_material"`
+	FreightTipoFrete       string          `json:"freight_tipo_frete"`
+	FreightProduto         string          `json:"freight_produto"`
+	FreightTipoEmbalagem   string          `json:"freight_tipo_embalagem"`
+	FreightQuantidade      int             `json:"freight_quantidade"`
+	FreightVolumes         json.RawMessage `json:"freight_volumes"`
+	FreightValorNota       float64         `json:"freight_valor_nota"`
+	FreightPesoReal        float64         `json:"freight_peso_real"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type QuoteInput struct {
@@ -76,6 +95,24 @@ type QuoteInput struct {
 	QuoteValidUntil    *time.Time       `json:"quote_valid_until,omitempty"`
 	ProductionLeadTime string           `json:"production_lead_time"`
 	Items              []QuoteItemInput `json:"items,omitempty"`
+
+	// Freight info
+	FreightCNPJSolicitante string          `json:"freight_cnpj_solicitante"`
+	FreightCNPJCPFOrigem   string          `json:"freight_cnpj_cpf_origem"`
+	FreightCNPJCPFDestino  string          `json:"freight_cnpj_cpf_destino"`
+	FreightCNPJDevedor     string          `json:"freight_cnpj_devedor"`
+	FreightTipoTransporte  string          `json:"freight_tipo_transporte"`
+	FreightContato         string          `json:"freight_contato"`
+	FreightCidadeOrigem    string          `json:"freight_cidade_origem"`
+	FreightCidadeDestino   string          `json:"freight_cidade_destino"`
+	FreightMaterial        string          `json:"freight_material"`
+	FreightTipoFrete       string          `json:"freight_tipo_frete"`
+	FreightProduto         string          `json:"freight_produto"`
+	FreightTipoEmbalagem   string          `json:"freight_tipo_embalagem"`
+	FreightQuantidade      int             `json:"freight_quantidade"`
+	FreightVolumes         json.RawMessage `json:"freight_volumes"`
+	FreightValorNota       float64         `json:"freight_valor_nota"`
+	FreightPesoReal        float64         `json:"freight_peso_real"`
 }
 
 type QuoteItemInput struct {

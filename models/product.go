@@ -6,6 +6,7 @@ type Product struct {
 	ID                int           `json:"id"`
 	ProductName       string        `json:"product_name"`
 	InternalCode      string        `json:"internal_code"`
+	SupplierCode      string        `json:"supplier_code"`
 	SupplierID        int           `json:"supplier_id"`
 	Supplier          *Supplier     `json:"supplier,omitempty"`
 	ProductGroup      string        `json:"product_group,omitempty"`
