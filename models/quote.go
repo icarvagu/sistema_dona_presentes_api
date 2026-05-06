@@ -48,6 +48,7 @@ type QuoteItem struct {
 	CostUnitCalc            float64         `json:"cost_unit_calc"`
 	Engravings              json.RawMessage `json:"engravings,omitempty"`
 	HasPriceFormation       bool            `json:"has_price_formation"`
+	Discount                float64         `json:"discount"`
 	CreatedAt               time.Time       `json:"created_at"`
 	UpdatedAt               time.Time       `json:"updated_at"`
 }
@@ -64,6 +65,16 @@ type Quote struct {
 	ProductionLeadTime string      `json:"production_lead_time"`
 	TotalValue         float64     `json:"total"`
 	Items              []QuoteItem `json:"items,omitempty"`
+
+	// New fields
+	QuoteDate      *time.Time `json:"quote_date,omitempty"`
+	CareOf         string     `json:"care_of"`
+	SalesChannel   string     `json:"sales_channel"`
+	Observations   string     `json:"observations"`
+	PaymentMethod  string     `json:"payment_method"`
+	CarrierID      *int       `json:"carrier_id,omitempty"`
+	Carrier        *Carrier   `json:"carrier,omitempty"`
+	FreightValue   float64    `json:"freight_value"`
 
 	// Freight info
 	FreightCNPJSolicitante string          `json:"freight_cnpj_solicitante"`
@@ -95,6 +106,15 @@ type QuoteInput struct {
 	QuoteValidUntil    *time.Time       `json:"quote_valid_until,omitempty"`
 	ProductionLeadTime string           `json:"production_lead_time"`
 	Items              []QuoteItemInput `json:"items,omitempty"`
+
+	// New fields
+	QuoteDate      *time.Time `json:"quote_date,omitempty"`
+	CareOf         string     `json:"care_of"`
+	SalesChannel   string     `json:"sales_channel"`
+	Observations   string     `json:"observations"`
+	PaymentMethod  string     `json:"payment_method"`
+	CarrierID      *int       `json:"carrier_id,omitempty"`
+	FreightValue   float64    `json:"freight_value"`
 
 	// Freight info
 	FreightCNPJSolicitante string          `json:"freight_cnpj_solicitante"`
@@ -154,4 +174,5 @@ type QuoteItemInput struct {
 	CostUnitCalc            float64         `json:"cost_unit_calc"`
 	Engravings              json.RawMessage `json:"engravings,omitempty"`
 	HasPriceFormation       bool            `json:"has_price_formation"`
+	Discount                float64         `json:"discount"`
 }

@@ -86,7 +86,7 @@ func (s *QuotePDFService) GenerateQuotePDF(quote *models.Quote) ([]byte, error) 
 	defer cancel()
 
 	var pdfBuf []byte
-	dataURL := "data:text/html;base64," + base64.StdEncoding.EncodeToString([]byte(html))
+	dataURL := "data:text/html;charset=UTF-8;base64," + base64.StdEncoding.EncodeToString([]byte(html))
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(dataURL),
 		chromedp.WaitReady("body"),
