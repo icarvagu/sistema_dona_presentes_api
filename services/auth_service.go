@@ -74,12 +74,18 @@ func (s *AuthService) GenerateToken(user *models.User) (string, error) {
 
 	expirationTime := time.Now().Add(24 * time.Hour)
 
+	permissions := user.Permissions
+	if permissions == nil {
+		permissions = []string{}
+	}
+
 	claims := jwt.MapClaims{
-		"user_id":  user.ID,
-		"username": user.Username,
-		"role":     user.Role,
-		"exp":      expirationTime.Unix(),
-		"iat":      time.Now().Unix(),
+		"user_id":     user.ID,
+		"username":    user.Username,
+		"role":        user.Role,
+		"permissions": permissions,
+		"exp":         expirationTime.Unix(),
+		"iat":         time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

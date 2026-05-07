@@ -29,6 +29,10 @@ func (s *SaleService) GetAll() ([]models.Sale, error) {
 	return s.saleRepo.GetAll()
 }
 
+func (s *SaleService) GetBySellerID(sellerID int) ([]models.Sale, error) {
+	return s.saleRepo.GetBySellerID(sellerID)
+}
+
 func (s *SaleService) GetByID(id int) (*models.Sale, error) {
 	return s.saleRepo.GetByID(id)
 }

@@ -36,7 +36,14 @@ func InitQuoteService() {
 }
 
 func GetQuotes(w http.ResponseWriter, r *http.Request) {
-	quotes, err := quoteService.GetAll()
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	var quotes []models.Quote
+	var err error
+	if middleware.HasPermission(r, "orcamentos:ver_todos") {
+		quotes, err = quoteService.GetAll()
+	} else {
+		quotes, err = quoteService.GetBySellerID(userID)
+	}
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return

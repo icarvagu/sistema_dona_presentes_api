@@ -65,6 +65,7 @@ func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
 		Username:     input.Username,
 		PasswordHash: passwordHash,
 		Role:         input.Role,
+		Permissions:  input.Permissions,
 		FullName:     input.FullName,
 		CPF:          input.CPF,
 		RG:           input.RG,
@@ -121,6 +122,7 @@ func (s *UserService) Update(id int, input *models.UserInput) (*models.User, err
 	user := &models.User{
 		Username:     input.Username,
 		Role:         input.Role,
+		Permissions:  input.Permissions,
 		FullName:     input.FullName,
 		CPF:          input.CPF,
 		RG:           input.RG,

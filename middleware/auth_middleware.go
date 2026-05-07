@@ -38,9 +38,20 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 			username, _ := claims["username"].(string)
 			role, _ := claims["role"].(string)
 
+			// Extract permissions from JWT claims
+			var permissions []string
+			if rawPerms, ok := claims["permissions"].([]interface{}); ok {
+				for _, p := range rawPerms {
+					if s, ok := p.(string); ok {
+						permissions = append(permissions, s)
+					}
+				}
+			}
+
 			ctx := context.WithValue(r.Context(), "user_id", int(userID))
 			ctx = context.WithValue(ctx, "username", username)
 			ctx = context.WithValue(ctx, "role", role)
+			ctx = context.WithValue(ctx, "permissions", permissions)
 
 			r.Header.Set("X-User-ID", strconv.Itoa(int(userID)))
 			r.Header.Set("X-Username", username)
@@ -91,4 +102,22 @@ func GetUserFromRequest(r *http.Request) (userID int, username string, role stri
 		role = r.Header.Get("X-User-Role")
 	}
 	return
+}
+
+// HasPermission returns true if the user has the given permission OR is an admin.
+func HasPermission(r *http.Request, permission string) bool {
+	_, _, role := GetUserFromRequest(r)
+	if role == "admin" {
+		return true
+	}
+	if permsVal := r.Context().Value("permissions"); permsVal != nil {
+		if perms, ok := permsVal.([]string); ok {
+			for _, p := range perms {
+				if p == permission {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

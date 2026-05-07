@@ -65,6 +65,52 @@ func (r *QuoteRepository) GetAll() ([]models.Quote, error) {
 	return quotes, nil
 }
 
+func (r *QuoteRepository) GetBySellerID(sellerID int) ([]models.Quote, error) {
+	rows, err := r.db.Query(`SELECT id, COALESCE(quote_number, ''), seller_id, customer_id, COALESCE(responsible_name, ''), quote_valid_until, COALESCE(production_lead_time, ''), total_value,
+		COALESCE(freight_cnpj_solicitante,''), COALESCE(freight_cnpj_cpf_origem,''), COALESCE(freight_cnpj_cpf_destino,''), COALESCE(freight_cnpj_devedor,''),
+		COALESCE(freight_tipo_transporte,''), COALESCE(freight_contato,''), COALESCE(freight_cidade_origem,''), COALESCE(freight_cidade_destino,''),
+		COALESCE(freight_material,''), COALESCE(freight_tipo_frete,''), COALESCE(freight_produto,''), COALESCE(freight_tipo_embalagem,''),
+		COALESCE(freight_quantidade,0), COALESCE(freight_volumes,'[]'::jsonb), COALESCE(freight_valor_nota,0), COALESCE(freight_peso_real,0),
+		created_at, updated_at,
+		quote_date, COALESCE(care_of,''), COALESCE(sales_channel,''), COALESCE(observations,''), COALESCE(payment_method,''), carrier_id, COALESCE(freight_value,0)
+		FROM quotes WHERE seller_id=$1 ORDER BY id DESC`, sellerID)
+	if err != nil {
+		return nil, apperrors.NewDatabaseError(err)
+	}
+	defer rows.Close()
+
+	var quotes []models.Quote
+	for rows.Next() {
+		var quote models.Quote
+		var freightVolumes []byte
+		var carrierID sql.NullInt64
+		err := rows.Scan(&quote.ID, &quote.QuoteNumber, &quote.SellerID, &quote.CustomerID, &quote.ResponsibleName, &quote.QuoteValidUntil, &quote.ProductionLeadTime, &quote.TotalValue,
+			&quote.FreightCNPJSolicitante, &quote.FreightCNPJCPFOrigem, &quote.FreightCNPJCPFDestino, &quote.FreightCNPJDevedor,
+			&quote.FreightTipoTransporte, &quote.FreightContato, &quote.FreightCidadeOrigem, &quote.FreightCidadeDestino,
+			&quote.FreightMaterial, &quote.FreightTipoFrete, &quote.FreightProduto, &quote.FreightTipoEmbalagem,
+			&quote.FreightQuantidade, &freightVolumes, &quote.FreightValorNota, &quote.FreightPesoReal,
+			&quote.CreatedAt, &quote.UpdatedAt,
+			&quote.QuoteDate, &quote.CareOf, &quote.SalesChannel, &quote.Observations, &quote.PaymentMethod, &carrierID, &quote.FreightValue)
+		if carrierID.Valid { v := int(carrierID.Int64); quote.CarrierID = &v }
+		if err != nil {
+			return nil, err
+		}
+		if freightVolumes != nil {
+			quote.FreightVolumes = freightVolumes
+		} else {
+			quote.FreightVolumes = []byte(`[]`)
+		}
+		if quote.CarrierID != nil {
+			quote.Carrier, _ = r.GetCarrier(*quote.CarrierID)
+		}
+		quote.Seller, _ = r.GetSeller(quote.SellerID)
+		quote.Customer, _ = r.GetCustomer(quote.CustomerID)
+		quote.Items, _ = r.GetItems(quote.ID)
+		quotes = append(quotes, quote)
+	}
+	return quotes, nil
+}
+
 func (r *QuoteRepository) GetByID(id int) (*models.Quote, error) {
 	var quote models.Quote
 	var freightVolumes []byte

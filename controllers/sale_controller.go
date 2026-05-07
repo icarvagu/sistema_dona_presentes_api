@@ -37,7 +37,14 @@ func InitSaleService() {
 }
 
 func GetSales(w http.ResponseWriter, r *http.Request) {
-	vs, err := saleService.GetAll()
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	var vs []models.Sale
+	var err error
+	if middleware.HasPermission(r, "vendas:ver_todos") {
+		vs, err = saleService.GetAll()
+	} else {
+		vs, err = saleService.GetBySellerID(userID)
+	}
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return

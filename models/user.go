@@ -8,7 +8,7 @@ type User struct {
 	Username     string    `json:"username"`
 	PasswordHash string    `json:"-"`
 	Role         string    `json:"role"`
-	
+	Permissions  []string  `json:"permissions"`
 
 	FullName     string     `json:"full_name"`
 	CPF          string     `json:"cpf"`
@@ -20,7 +20,7 @@ type User struct {
 	FullAddress  *string    `json:"full_address,omitempty"`
 	ContactPhone *string    `json:"contact_phone,omitempty"`
 	Notes        *string    `json:"notes,omitempty"`
-	
+
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
@@ -29,6 +29,7 @@ type UserInput struct {
 	Username     string     `json:"username"`
 	Password     string     `json:"password"`
 	Role         string     `json:"role"`
+	Permissions  []string   `json:"permissions"`
 	FullName     string     `json:"full_name"`
 	CPF          string     `json:"cpf"`
 	RG           *string    `json:"rg,omitempty"`

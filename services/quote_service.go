@@ -27,6 +27,10 @@ func (s *QuoteService) GetAll() ([]models.Quote, error) {
 	return s.quoteRepo.GetAll()
 }
 
+func (s *QuoteService) GetBySellerID(sellerID int) ([]models.Quote, error) {
+	return s.quoteRepo.GetBySellerID(sellerID)
+}
+
 func (s *QuoteService) GetByID(id int) (*models.Quote, error) {
 	return s.quoteRepo.GetByID(id)
 }

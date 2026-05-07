@@ -45,6 +45,32 @@ func (r *SaleRepository) GetAll() ([]models.Sale, error) {
 	return sales, nil
 }
 
+func (r *SaleRepository) GetBySellerID(sellerID int) ([]models.Sale, error) {
+	rows, err := r.db.Query(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, created_at, updated_at FROM sales WHERE seller_id=$1`, sellerID)
+	if err != nil {
+		return nil, apperrors.NewDatabaseError(err)
+	}
+	defer rows.Close()
+	var sales []models.Sale
+	for rows.Next() {
+		var v models.Sale
+		err := rows.Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.CreatedAt, &v.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+		seller, _ := r.GetSeller(v.SellerID)
+		v.Seller = seller
+		customer, _ := r.GetCustomer(v.CustomerID)
+		v.Customer = customer
+		items, _ := r.GetItems(v.ID)
+		v.Items = items
+		carriers, _ := r.GetCarriers(v.ID)
+		v.Carriers = carriers
+		sales = append(sales, v)
+	}
+	return sales, nil
+}
+
 func (r *SaleRepository) GetByID(id int) (*models.Sale, error) {
 	var v models.Sale
 	err := r.db.QueryRow(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, created_at, updated_at FROM sales WHERE id=$1`, id).
