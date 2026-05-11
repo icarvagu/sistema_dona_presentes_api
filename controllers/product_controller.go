@@ -24,6 +24,19 @@ func InitProductService() {
 	productService = services.NewProductService(productRepo, supplierRepo)
 }
 
+func GetProductGroups(w http.ResponseWriter, r *http.Request) {
+	groups, err := productService.GetGroups()
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+	if groups == nil {
+		groups = []string{}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(groups)
+}
+
 func GetProducts(w http.ResponseWriter, r *http.Request) {
 
 	onlyNew := r.URL.Query().Get("only_new")
@@ -39,9 +52,24 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	}
 
 	filter := r.URL.Query().Get("filter")
+	group := r.URL.Query().Get("group")
 
 	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
+
+	if group != "" {
+		ps, err := productService.GetByGroup(group)
+		if err != nil {
+			middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+			return
+		}
+		if ps == nil {
+			ps = []models.Product{}
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(ps)
+		return
+	}
 
 	if filter != "" {
 		ps, err := productService.SearchByFilter(filter)

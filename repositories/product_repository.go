@@ -169,6 +169,45 @@ func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
 	return &p, nil
 }
 
+func (r *ProductRepository) GetGroups() ([]string, error) {
+	rows, err := r.db.Query(`SELECT DISTINCT product_group FROM products WHERE product_group IS NOT NULL AND product_group != '' ORDER BY product_group`)
+	if err != nil {
+		return nil, apperrors.NewDatabaseError(err)
+	}
+	defer rows.Close()
+	var groups []string
+	for rows.Next() {
+		var g string
+		if err := rows.Scan(&g); err != nil {
+			return nil, err
+		}
+		groups = append(groups, g)
+	}
+	return groups, nil
+}
+
+func (r *ProductRepository) GetByGroup(group string) ([]models.Product, error) {
+	rows, err := r.db.Query(productSelectWithSupplier+` WHERE LOWER(p.product_group) = LOWER($1)`, group)
+	if err != nil {
+		return nil, apperrors.NewDatabaseError(err)
+	}
+	defer rows.Close()
+	var res []models.Product
+	for rows.Next() {
+		p, supplier, err := scanProductRow(rows, true)
+		if err != nil {
+			return nil, err
+		}
+		p.Supplier = supplier
+		if p.IsComposition {
+			items, _ := r.GetProductItems(p.ID)
+			p.Items = items
+		}
+		res = append(res, p)
+	}
+	return res, nil
+}
+
 func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, error) {
 	filterPattern := "%" + filter + "%"
 	rows, err := r.db.Query(productSelectWithSupplier+` 

@@ -15,6 +15,10 @@ func getAllowedOrigins() []string {
 	origins := []string{
 		"http://localhost:8081",
 		"http://localhost:19006",
+		"http://localhost:5173",
+		"http://localhost:5174",
+		"http://localhost:5175",
+		"http://localhost:5176",
 	}
 	if extra := os.Getenv("CORS_ALLOWED_ORIGINS"); extra != "" {
 		for _, o := range strings.Split(extra, ",") {

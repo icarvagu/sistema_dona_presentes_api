@@ -35,6 +35,14 @@ func (s *ProductService) SearchByFilter(filter string) ([]models.Product, error)
 	return s.productRepo.SearchByFilter(filter)
 }
 
+func (s *ProductService) GetGroups() ([]string, error) {
+	return s.productRepo.GetGroups()
+}
+
+func (s *ProductService) GetByGroup(group string) ([]models.Product, error) {
+	return s.productRepo.GetByGroup(group)
+}
+
 func (s *ProductService) validateRequiredFields(p *models.Product) error {
 	if p.ProductName == "" {
 		return apperrors.NewMissingFieldError("product_name")

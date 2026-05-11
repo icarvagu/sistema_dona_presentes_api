@@ -13,6 +13,7 @@ type Supplier struct {
     MobilePhone       *string    `json:"mobile_phone,omitempty"`
     ResponsibleEmail  *string    `json:"responsible_email,omitempty"`
     CommercialAddress *string    `json:"commercial_address,omitempty"`
+    Website           *string    `json:"website,omitempty"`
     CreatedAt         time.Time  `json:"created_at"`
     UpdatedAt         time.Time  `json:"updated_at"`
 }

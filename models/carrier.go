@@ -5,6 +5,7 @@ import "time"
 type Carrier struct {
     ID              int       `json:"id"`
     Name            string    `json:"name"`
+    CNPJ            string    `json:"cnpj"`
     CarrierType     string    `json:"carrier_type"`
     Email           string    `json:"email"`
     LandlinePhone   string    `json:"landline_phone"`

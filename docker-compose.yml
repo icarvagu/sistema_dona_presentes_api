@@ -29,6 +29,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       XBZ_CNPJ: ${XBZ_CNPJ}
       XBZ_TOKEN: ${XBZ_TOKEN}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
 
 volumes:
   database_postgres:

@@ -151,6 +151,13 @@ func NewDatabaseError(err error) *AppError {
 	}
 }
 
+func NewUnauthorizedError(message string) *AppError {
+	return &AppError{
+		Code:    http.StatusUnauthorized,
+		Message: message,
+	}
+}
+
 func IsNotFound(err error) bool {
 	if appErr, ok := err.(*AppError); ok {
 		return appErr.Code == http.StatusNotFound
