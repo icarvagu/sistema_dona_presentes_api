@@ -73,6 +73,7 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 			continue
 		} else {
 
+			localProduct.PendingApproval = true
 			_, err := s.productRepository.Create(localProduct)
 			if err != nil {
 				result.Erros++

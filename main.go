@@ -31,7 +31,7 @@ func bootstrap() error {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	if err := goose.Up(config.DB, "./db/migrations"); err != nil {
+	if err := goose.Up(config.DB, "./db/migrations", goose.WithAllowMissing()); err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 	log.Println("Connected to the database successfully!")

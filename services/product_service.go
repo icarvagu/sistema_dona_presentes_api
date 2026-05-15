@@ -39,6 +39,14 @@ func (s *ProductService) GetGroups() ([]string, error) {
 	return s.productRepo.GetGroups()
 }
 
+func (s *ProductService) GetPendingApproval() ([]models.Product, error) {
+	return s.productRepo.GetPendingApproval()
+}
+
+func (s *ProductService) ApproveProduct(id int, origin string) error {
+	return s.productRepo.ApproveProduct(id, origin)
+}
+
 func (s *ProductService) GetByGroup(group string) ([]models.Product, error) {
 	return s.productRepo.GetByGroup(group)
 }

@@ -25,6 +25,8 @@ type Product struct {
 	Source            string        `json:"source,omitempty"`
 	ImportedAt        *time.Time    `json:"imported_at,omitempty"`
 	LastSyncedAt      *time.Time    `json:"last_synced_at,omitempty"`
+	Origin            string        `json:"origin"`
+	PendingApproval   bool          `json:"pending_approval"`
 	CreatedAt         time.Time     `json:"created_at"`
 	UpdatedAt         time.Time     `json:"updated_at"`
 }

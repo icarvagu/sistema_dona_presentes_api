@@ -255,3 +255,39 @@ func GetProductsFinancialReport(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(report)
 }
+
+func GetPendingProducts(w http.ResponseWriter, r *http.Request) {
+	ps, err := productService.GetPendingApproval()
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+	if ps == nil {
+		ps = []models.Product{}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(ps)
+}
+
+func ApproveProduct(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		Origin string `json:"origin"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
+		return
+	}
+
+	if err := productService.ApproveProduct(id, body.Origin); err != nil {
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}

@@ -25,6 +25,8 @@ type Sale struct {
 	PaymentTermDays       int        `json:"payment_term_days,omitempty"`
 	FirstInstallmentStart *time.Time `json:"first_installment_start,omitempty"`
 	Status                string     `json:"status"`
+	IsEvent               bool       `json:"is_event"`
+	DeliveryAddress       string     `json:"delivery_address"`
 	TotalValue            float64    `json:"total"`
 	Items                 []SaleItem `json:"items,omitempty"`
 	Carriers              []Carrier  `json:"carriers,omitempty"`
@@ -40,6 +42,8 @@ type SaleInput struct {
 	PaymentTermDays       int             `json:"payment_term_days,omitempty"`
 	FirstInstallmentStart *time.Time      `json:"first_installment_start,omitempty"`
 	Status                string          `json:"status"`
+	IsEvent               bool            `json:"is_event"`
+	DeliveryAddress       string          `json:"delivery_address"`
 	Items                 []SaleItemInput `json:"items,omitempty"`
 	CarrierIDs            []int           `json:"carrier_ids,omitempty"`
 }
