@@ -224,6 +224,7 @@ func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, err
 	rows, err := r.db.Query(productSelectWithSupplier+` 
 		WHERE LOWER(p.product_name) LIKE LOWER($1) 
 		   OR LOWER(p.internal_code) LIKE LOWER($1) 
+		   OR LOWER(p.supplier_code) LIKE LOWER($1)
 		   OR LOWER(p.product_group) LIKE LOWER($1)`,
 		filterPattern)
 	if err != nil {
@@ -465,18 +466,18 @@ func (r *ProductRepository) UpdateLastCost(id int, p *models.Product) error {
 	return nil
 }
 
-func (r *ProductRepository) UpdateFromSync(id int, stock int, photos []string, sellingPrice float64, lastSyncedAt time.Time) error {
+func (r *ProductRepository) UpdateFromSync(id int, stock int, photos []string, costPrice float64, lastSyncedAt time.Time) error {
 	_, err := r.db.Exec(
 		`UPDATE products
          SET stock=$1,
              photos=$2,
-             selling_price=$3,
+             cost_price=$3,
              last_synced_at=$4,
              updated_at=NOW()
          WHERE id=$5`,
 		stock,
 		pq.Array(photos),
-		sellingPrice,
+		costPrice,
 		lastSyncedAt,
 		id,
 	)

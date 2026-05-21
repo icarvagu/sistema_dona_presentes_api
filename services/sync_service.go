@@ -60,7 +60,7 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 				existing.ID,
 				localProduct.Stock,
 				localProduct.Photos,
-				localProduct.SellingPrice,
+				localProduct.CostPrice,
 				syncTime,
 			); err != nil {
 				result.Erros++

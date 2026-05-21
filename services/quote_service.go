@@ -48,9 +48,6 @@ func (s *QuoteService) ValidateQuote(input *models.QuoteInput) error {
 	if input.QuoteValidUntil == nil {
 		return apperrors.NewMissingFieldError("quote_valid_until")
 	}
-	if input.ProductionLeadTime == "" {
-		return apperrors.NewMissingFieldError("production_lead_time")
-	}
 	if len(input.Items) == 0 {
 		return apperrors.NewInvalidFieldError("items", "quote must have at least 1 item")
 	}

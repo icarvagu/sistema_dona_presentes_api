@@ -24,11 +24,12 @@ type Sale struct {
 	Seller                *User      `json:"seller,omitempty"`
 	CustomerID            int        `json:"customer_id"`
 	Customer              *Customer  `json:"customer,omitempty"`
-	PaymentMethod         string     `json:"payment_method"`
-	Installments          int        `json:"installments"`
-	PaymentTermDays       int        `json:"payment_term_days,omitempty"`
-	FirstInstallmentStart *time.Time `json:"first_installment_start,omitempty"`
-	Status                string     `json:"status"`
+	PaymentMethod         string          `json:"payment_method"`
+	Installments          int             `json:"installments"`
+	PaymentTermDays       int             `json:"payment_term_days,omitempty"`
+	FirstInstallmentStart *time.Time      `json:"first_installment_start,omitempty"`
+	InstallmentDates      json.RawMessage `json:"installment_dates,omitempty"`
+	Status                string          `json:"status"`
 	IsEvent               bool       `json:"is_event"`
 	DeliveryAddress       string     `json:"delivery_address"`
 	DeliveryDate          *time.Time `json:"delivery_date,omitempty"`
@@ -53,6 +54,7 @@ type SaleInput struct {
 	Installments          int             `json:"installments"`
 	PaymentTermDays       int             `json:"payment_term_days,omitempty"`
 	FirstInstallmentStart *time.Time      `json:"first_installment_start,omitempty"`
+	InstallmentDates      json.RawMessage `json:"installment_dates,omitempty"`
 	Status                string          `json:"status"`
 	IsEvent               bool            `json:"is_event"`
 	DeliveryAddress       string          `json:"delivery_address"`
