@@ -241,6 +241,29 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func UpdateProductLastCost(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+	var p models.Product
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
+		return
+	}
+	if err := productService.UpdateLastCost(id, &p); err != nil {
+		if err == sql.ErrNoRows {
+			middleware.ErrorHandler(w, apperrors.ErrProductNotFound, http.StatusNotFound)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func GetProductsFinancialReport(w http.ResponseWriter, r *http.Request) {
 	report, err := productService.GetFinancialReport()
 	if err != nil {
@@ -267,6 +290,23 @@ func GetPendingProducts(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(ps)
+}
+
+func BulkApproveProducts(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Origin string `json:"origin"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Origin == "" {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
+		return
+	}
+	count, err := productService.BulkApproveAll(body.Origin)
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]int64{"updated": count})
 }
 
 func ApproveProduct(w http.ResponseWriter, r *http.Request) {

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"os"
@@ -61,18 +62,19 @@ type pedidoTemplateData struct {
 }
 
 type pedidoItemData struct {
-	ProductName        string
-	QuantityFormatted  string
-	UnitPriceFormatted string
+	ProductName         string
+	QuantityFormatted   string
+	UnitPriceFormatted  string
 	TotalPriceFormatted string
-	Logo               string
-	Cores              string
-	Grav               string
-	Local              string
-	InternalCode       string
-	NCM                string
-	CorItem            string
-	Obs                string
+	Logo                string
+	Cores               string
+	Grav                string
+	Local               string
+	Fornecedor          string
+	InternalCode        string
+	NCM                 string
+	CorItem             string
+	Obs                 string
 }
 
 func NewPDFService() (*PDFService, error) {
@@ -206,22 +208,74 @@ func (s *PDFService) buildTemplateData(sale *models.Sale) pedidoTemplateData {
 			internalCode = item.Product.InternalCode
 			ncm = item.Product.NCM
 		}
+
+		grav, local, cores, fornecedor := parseEngravings(item.Engravings)
+
 		data.Items = append(data.Items, pedidoItemData{
-			ProductName:        productName,
-			QuantityFormatted:  formatQty(item.Quantity),
-			UnitPriceFormatted: formatMoney(item.UnitPrice),
+			ProductName:         productName,
+			QuantityFormatted:   formatQty(item.Quantity),
+			UnitPriceFormatted:  formatMoney(item.UnitPrice),
 			TotalPriceFormatted: formatMoney(item.TotalPrice),
-			Logo:               "-",
-			Cores:              "-",
-			Grav:               "-",
-			Local:              "-",
-			InternalCode:       internalCode,
-			NCM:                ncm,
-			CorItem:            "-",
-			Obs:                "-",
+			Logo:                "-",
+			Grav:                grav,
+			Local:               local,
+			Cores:               cores,
+			Fornecedor:          fornecedor,
+			InternalCode:        internalCode,
+			NCM:                 ncm,
+			CorItem:             "-",
+			Obs:                 "-",
 		})
 	}
 	return data
+}
+
+// parseEngravings extracts Grav, Local, Cores, Fornecedor from the engravings JSON.
+// Cost (cost_per_unit) is intentionally excluded — must not appear in client documents.
+func parseEngravings(raw []byte) (grav, local, cores, fornecedor string) {
+	if len(raw) == 0 {
+		return "-", "-", "-", "-"
+	}
+
+	var engravings []struct {
+		Type     string `json:"type"`
+		Side     string `json:"side"`
+		Colors   string `json:"colors"`
+		Supplier string `json:"supplier"`
+		KitText  string `json:"kit_text"`
+	}
+	if err := json.Unmarshal(raw, &engravings); err != nil || len(engravings) == 0 {
+		return "-", "-", "-", "-"
+	}
+
+	// Kit: text is stored in the first element
+	if engravings[0].KitText != "" {
+		return engravings[0].KitText, "-", "-", "-"
+	}
+
+	var gravParts, localParts, coresParts, fornecedorParts []string
+	for _, e := range engravings {
+		if e.Type != "" {
+			gravParts = append(gravParts, e.Type)
+		}
+		if e.Side != "" {
+			localParts = append(localParts, e.Side)
+		}
+		if e.Colors != "" {
+			coresParts = append(coresParts, e.Colors)
+		}
+		if e.Supplier != "" {
+			fornecedorParts = append(fornecedorParts, e.Supplier)
+		}
+	}
+
+	join := func(parts []string) string {
+		if len(parts) == 0 {
+			return "-"
+		}
+		return strings.Join(parts, " / ")
+	}
+	return join(gravParts), join(localParts), join(coresParts), join(fornecedorParts)
 }
 
 func formatMoney(v float64) string {

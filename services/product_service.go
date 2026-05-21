@@ -47,6 +47,14 @@ func (s *ProductService) ApproveProduct(id int, origin string) error {
 	return s.productRepo.ApproveProduct(id, origin)
 }
 
+func (s *ProductService) BulkApproveAll(origin string) (int64, error) {
+	return s.productRepo.BulkApproveAll(origin)
+}
+
+func (s *ProductService) UpdateLastCost(id int, p *models.Product) error {
+	return s.productRepo.UpdateLastCost(id, p)
+}
+
 func (s *ProductService) GetByGroup(group string) ([]models.Product, error) {
 	return s.productRepo.GetByGroup(group)
 }

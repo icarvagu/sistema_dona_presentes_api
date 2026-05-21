@@ -28,8 +28,10 @@ const productSelectWithSupplier = `
 	       p.stock, p.selling_price, p.kit_type, p.is_composition, 
 	       p.moves_stock, p.enabled_for_invoice, p.cost_price, 
 	       p.source, p.imported_at, p.last_synced_at, 
-	       COALESCE(p.origin, ''), p.pending_approval,
-	       p.created_at, p.updated_at 
+	       COALESCE(p.color, ''), COALESCE(p.origin, ''), p.pending_approval,
+	       p.created_at, p.updated_at,
+	       COALESCE(p.last_cost, 0), p.last_cost_date, COALESCE(p.last_cost_qty1, 0),
+	       COALESCE(p.last_cost_qty2, 0), COALESCE(p.last_cost_qty3, 0), COALESCE(p.last_cost_user, '')
 	FROM products p 
 	JOIN suppliers f ON p.supplier_id = f.id`
 
@@ -42,6 +44,7 @@ func scanProductRow(scanner rowScanner, withSupplier bool) (models.Product, *mod
 	var f models.Supplier
 	var fotos pq.StringArray
 	var importedAt, lastSyncedAt sql.NullTime
+	var lastCostDate sql.NullTime
 	var source sql.NullString
 
 	if withSupplier {
@@ -54,8 +57,9 @@ func scanProductRow(scanner rowScanner, withSupplier bool) (models.Product, *mod
 			&p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition,
 			&p.MovesStock, &p.EnabledForInvoice, &p.CostPrice,
 			&source, &importedAt, &lastSyncedAt,
-			&p.Origin, &p.PendingApproval,
+			&p.Color, &p.Origin, &p.PendingApproval,
 			&p.CreatedAt, &p.UpdatedAt,
+			&p.LastCost, &lastCostDate, &p.LastCostQty1, &p.LastCostQty2, &p.LastCostQty3, &p.LastCostUser,
 		)
 		if err != nil {
 			return models.Product{}, nil, err
@@ -67,8 +71,9 @@ func scanProductRow(scanner rowScanner, withSupplier bool) (models.Product, *mod
 			&p.Stock, &p.SellingPrice, &p.KitType, &p.IsComposition,
 			&p.MovesStock, &p.EnabledForInvoice, &p.CostPrice,
 			&source, &importedAt, &lastSyncedAt,
-			&p.Origin, &p.PendingApproval,
+			&p.Color, &p.Origin, &p.PendingApproval,
 			&p.CreatedAt, &p.UpdatedAt,
+			&p.LastCost, &lastCostDate, &p.LastCostQty1, &p.LastCostQty2, &p.LastCostQty3, &p.LastCostUser,
 		)
 		if err != nil {
 			return models.Product{}, nil, err
@@ -90,6 +95,9 @@ func scanProductRow(scanner rowScanner, withSupplier bool) (models.Product, *mod
 	}
 	if lastSyncedAt.Valid {
 		p.LastSyncedAt = &lastSyncedAt.Time
+	}
+	if lastCostDate.Valid {
+		p.LastCostDate = &lastCostDate.Time
 	}
 
 	if withSupplier {
@@ -242,7 +250,7 @@ func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, err
 
 func (r *ProductRepository) GetByInternalCode(internalCode string) (*models.Product, error) {
 	p, _, err := scanProductRow(r.db.QueryRow(
-		`SELECT id, product_name, internal_code, supplier_code, supplier_id, product_group, description, photos, ncm, COALESCE(material_origin, ''), stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, COALESCE(origin, ''), pending_approval, created_at, updated_at FROM products WHERE internal_code=$1`,
+		`SELECT id, product_name, internal_code, supplier_code, supplier_id, product_group, description, photos, ncm, COALESCE(material_origin, ''), stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, COALESCE(color, ''), COALESCE(origin, ''), pending_approval, created_at, updated_at, COALESCE(last_cost, 0), last_cost_date, COALESCE(last_cost_qty1, 0), COALESCE(last_cost_qty2, 0), COALESCE(last_cost_qty3, 0), COALESCE(last_cost_user, '') FROM products WHERE internal_code=$1`,
 		internalCode,
 	), false)
 	if err != nil {
@@ -257,8 +265,8 @@ func (r *ProductRepository) Create(p *models.Product) (*models.Product, error) {
 	if p.KitType == "" {
 		p.KitType = "none"
 	}
-	err := r.db.QueryRow(`INSERT INTO products (product_name, internal_code, supplier_code, supplier_id, product_group, description, photos, ncm, material_origin, stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, origin, pending_approval) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING id, created_at, updated_at`,
-		p.ProductName, p.InternalCode, p.SupplierCode, p.SupplierID, p.ProductGroup, p.Description, pq.Array(p.Photos), p.NCM, p.MaterialOrigin, p.Stock, p.SellingPrice, p.KitType, isComposition, p.MovesStock, p.EnabledForInvoice, p.CostPrice, p.Source, p.ImportedAt, p.LastSyncedAt, p.Origin, p.PendingApproval).
+	err := r.db.QueryRow(`INSERT INTO products (product_name, internal_code, supplier_code, supplier_id, product_group, description, photos, ncm, material_origin, stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, color, origin, pending_approval) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22) RETURNING id, created_at, updated_at`,
+		p.ProductName, p.InternalCode, p.SupplierCode, p.SupplierID, p.ProductGroup, p.Description, pq.Array(p.Photos), p.NCM, p.MaterialOrigin, p.Stock, p.SellingPrice, p.KitType, isComposition, p.MovesStock, p.EnabledForInvoice, p.CostPrice, p.Source, p.ImportedAt, p.LastSyncedAt, p.Color, p.Origin, p.PendingApproval).
 		Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		var pqErr *pq.Error
@@ -277,8 +285,8 @@ func (r *ProductRepository) Update(id int, p *models.Product) (*models.Product, 
 	if p.KitType == "" {
 		p.KitType = "none"
 	}
-	_, err := r.db.Exec(`UPDATE products SET product_name=$1, internal_code=$2, supplier_code=$3, supplier_id=$4, product_group=$5, description=$6, photos=$7, ncm=$8, material_origin=$9, stock=$10, selling_price=$11, kit_type=$12, is_composition=$13, moves_stock=$14, enabled_for_invoice=$15, cost_price=$16, origin=$17, pending_approval=$18, updated_at=NOW() WHERE id=$19`,
-		p.ProductName, p.InternalCode, p.SupplierCode, p.SupplierID, p.ProductGroup, p.Description, pq.Array(p.Photos), p.NCM, p.MaterialOrigin, p.Stock, p.SellingPrice, p.KitType, isComposition, p.MovesStock, p.EnabledForInvoice, p.CostPrice, p.Origin, p.PendingApproval, id)
+	_, err := r.db.Exec(`UPDATE products SET product_name=$1, internal_code=$2, supplier_code=$3, supplier_id=$4, product_group=$5, description=$6, photos=$7, ncm=$8, material_origin=$9, stock=$10, selling_price=$11, kit_type=$12, is_composition=$13, moves_stock=$14, enabled_for_invoice=$15, cost_price=$16, color=$17, origin=$18, pending_approval=$19, updated_at=NOW() WHERE id=$20`,
+		p.ProductName, p.InternalCode, p.SupplierCode, p.SupplierID, p.ProductGroup, p.Description, pq.Array(p.Photos), p.NCM, p.MaterialOrigin, p.Stock, p.SellingPrice, p.KitType, isComposition, p.MovesStock, p.EnabledForInvoice, p.CostPrice, p.Color, p.Origin, p.PendingApproval, id)
 	if err != nil {
 		var pqErr *pq.Error
 		if ok := errors.As(err, &pqErr); ok && pqErr.Code == "23503" {
@@ -420,10 +428,36 @@ func (r *ProductRepository) GetPendingApproval() ([]models.Product, error) {
 	return res, nil
 }
 
+func (r *ProductRepository) BulkApproveAll(origin string) (int64, error) {
+	res, err := r.db.Exec(
+		`UPDATE products SET origin=$1, pending_approval=FALSE, updated_at=NOW() WHERE pending_approval=TRUE`,
+		origin)
+	if err != nil {
+		return 0, err
+	}
+	count, _ := res.RowsAffected()
+	return count, nil
+}
+
 func (r *ProductRepository) ApproveProduct(id int, origin string) error {
 	_, err := r.db.Exec(
 		`UPDATE products SET origin=$1, pending_approval=FALSE, updated_at=NOW() WHERE id=$2`,
 		origin, id,
+	)
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+	return nil
+}
+
+func (r *ProductRepository) UpdateLastCost(id int, p *models.Product) error {
+	var lastCostDate interface{}
+	if p.LastCostDate != nil {
+		lastCostDate = *p.LastCostDate
+	}
+	_, err := r.db.Exec(
+		`UPDATE products SET last_cost=$1, last_cost_date=$2, last_cost_qty1=$3, last_cost_qty2=$4, last_cost_qty3=$5, last_cost_user=$6, updated_at=NOW() WHERE id=$7`,
+		p.LastCost, lastCostDate, p.LastCostQty1, p.LastCostQty2, p.LastCostQty3, p.LastCostUser, id,
 	)
 	if err != nil {
 		return apperrors.NewDatabaseError(err)

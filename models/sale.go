@@ -1,17 +1,21 @@
 package models
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type SaleItem struct {
-	ID         int       `json:"id"`
-	SaleID     int       `json:"sale_id"`
-	ProductID  int       `json:"product_id"`
-	Product    *Product  `json:"product,omitempty"`
-	Quantity   int       `json:"quantity"`
-	UnitPrice  float64   `json:"unit_price"`
-	TotalPrice float64   `json:"total_price"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID         int             `json:"id"`
+	SaleID     int             `json:"sale_id"`
+	ProductID  int             `json:"product_id"`
+	Product    *Product        `json:"product,omitempty"`
+	Quantity   int             `json:"quantity"`
+	UnitPrice  float64         `json:"unit_price"`
+	TotalPrice float64         `json:"total_price"`
+	Engravings json.RawMessage `json:"engravings,omitempty"`
+	CreatedAt  time.Time       `json:"created_at"`
+	UpdatedAt  time.Time       `json:"updated_at"`
 }
 
 type Sale struct {
@@ -27,6 +31,14 @@ type Sale struct {
 	Status                string     `json:"status"`
 	IsEvent               bool       `json:"is_event"`
 	DeliveryAddress       string     `json:"delivery_address"`
+	DeliveryDate          *time.Time `json:"delivery_date,omitempty"`
+	DepartureDate         *time.Time `json:"departure_date,omitempty"`
+	ArrivalDate           *time.Time `json:"arrival_date,omitempty"`
+	Priority              string     `json:"priority"`
+	CareOf                string     `json:"care_of"`
+	EmailNF               string     `json:"email_nf"`
+	EmailFinanceiro       string     `json:"email_financeiro"`
+	OrdemCompra           string     `json:"ordem_compra"`
 	TotalValue            float64    `json:"total"`
 	Items                 []SaleItem `json:"items,omitempty"`
 	Carriers              []Carrier  `json:"carriers,omitempty"`
@@ -44,13 +56,22 @@ type SaleInput struct {
 	Status                string          `json:"status"`
 	IsEvent               bool            `json:"is_event"`
 	DeliveryAddress       string          `json:"delivery_address"`
+	DeliveryDate          *time.Time      `json:"delivery_date,omitempty"`
+	DepartureDate         *time.Time      `json:"departure_date,omitempty"`
+	ArrivalDate           *time.Time      `json:"arrival_date,omitempty"`
+	Priority              string          `json:"priority"`
+	CareOf                string          `json:"care_of"`
+	EmailNF               string          `json:"email_nf"`
+	EmailFinanceiro       string          `json:"email_financeiro"`
+	OrdemCompra           string          `json:"ordem_compra"`
 	Items                 []SaleItemInput `json:"items,omitempty"`
 	CarrierIDs            []int           `json:"carrier_ids,omitempty"`
 }
 
 type SaleItemInput struct {
-	ProductID int     `json:"product_id"`
-	Quantity  int     `json:"quantity"`
-	UnitPrice float64 `json:"unit_price"`
+	ProductID  int             `json:"product_id"`
+	Quantity   int             `json:"quantity"`
+	UnitPrice  float64         `json:"unit_price"`
+	Engravings json.RawMessage `json:"engravings,omitempty"`
 }
 

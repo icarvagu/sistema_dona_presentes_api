@@ -25,8 +25,17 @@ type Product struct {
 	Source            string        `json:"source,omitempty"`
 	ImportedAt        *time.Time    `json:"imported_at,omitempty"`
 	LastSyncedAt      *time.Time    `json:"last_synced_at,omitempty"`
+	Color             string        `json:"color"`
 	Origin            string        `json:"origin"`
 	PendingApproval   bool          `json:"pending_approval"`
 	CreatedAt         time.Time     `json:"created_at"`
 	UpdatedAt         time.Time     `json:"updated_at"`
+
+	// Campos para produtos sem API
+	LastCost          float64       `json:"last_cost"`
+	LastCostDate      *time.Time    `json:"last_cost_date"`
+	LastCostQty1      int           `json:"last_cost_qty1"`
+	LastCostQty2      int           `json:"last_cost_qty2"`
+	LastCostQty3      int           `json:"last_cost_qty3"`
+	LastCostUser      string        `json:"last_cost_user"`
 }

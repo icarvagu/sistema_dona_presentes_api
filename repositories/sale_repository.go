@@ -15,7 +15,7 @@ func NewSaleRepository(db *sql.DB) *SaleRepository {
 }
 
 func (r *SaleRepository) GetAll() ([]models.Sale, error) {
-	rows, err := r.db.Query(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address, created_at, updated_at FROM sales`)
+	rows, err := r.db.Query(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address, delivery_date, departure_date, arrival_date, priority, care_of, email_nf, email_financeiro, ordem_compra, created_at, updated_at FROM sales`)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
 	}
@@ -23,7 +23,7 @@ func (r *SaleRepository) GetAll() ([]models.Sale, error) {
 	var sales []models.Sale
 	for rows.Next() {
 		var v models.Sale
-		err := rows.Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.CreatedAt, &v.UpdatedAt)
+		err := rows.Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.DeliveryDate, &v.DepartureDate, &v.ArrivalDate, &v.Priority, &v.CareOf, &v.EmailNF, &v.EmailFinanceiro, &v.OrdemCompra, &v.CreatedAt, &v.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -46,7 +46,7 @@ func (r *SaleRepository) GetAll() ([]models.Sale, error) {
 }
 
 func (r *SaleRepository) GetBySellerID(sellerID int) ([]models.Sale, error) {
-	rows, err := r.db.Query(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address, created_at, updated_at FROM sales WHERE seller_id=$1`, sellerID)
+	rows, err := r.db.Query(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address, delivery_date, departure_date, arrival_date, priority, care_of, email_nf, email_financeiro, ordem_compra, created_at, updated_at FROM sales WHERE seller_id=$1`, sellerID)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
 	}
@@ -54,7 +54,7 @@ func (r *SaleRepository) GetBySellerID(sellerID int) ([]models.Sale, error) {
 	var sales []models.Sale
 	for rows.Next() {
 		var v models.Sale
-		err := rows.Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.CreatedAt, &v.UpdatedAt)
+		err := rows.Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.DeliveryDate, &v.DepartureDate, &v.ArrivalDate, &v.Priority, &v.CareOf, &v.EmailNF, &v.EmailFinanceiro, &v.OrdemCompra, &v.CreatedAt, &v.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -73,8 +73,8 @@ func (r *SaleRepository) GetBySellerID(sellerID int) ([]models.Sale, error) {
 
 func (r *SaleRepository) GetByID(id int) (*models.Sale, error) {
 	var v models.Sale
-	err := r.db.QueryRow(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address, created_at, updated_at FROM sales WHERE id=$1`, id).
-		Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.CreatedAt, &v.UpdatedAt)
+	err := r.db.QueryRow(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address, delivery_date, departure_date, arrival_date, priority, care_of, email_nf, email_financeiro, ordem_compra, created_at, updated_at FROM sales WHERE id=$1`, id).
+		Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.DeliveryDate, &v.DepartureDate, &v.ArrivalDate, &v.Priority, &v.CareOf, &v.EmailNF, &v.EmailFinanceiro, &v.OrdemCompra, &v.CreatedAt, &v.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, sql.ErrNoRows
@@ -111,8 +111,8 @@ func (r *SaleRepository) Create(input *models.SaleInput) (*models.Sale, error) {
 		status = "Pendente"
 	}
 	err := r.db.QueryRow(
-		`INSERT INTO sales (seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, total_value, status, created_at, updated_at`,
-		input.SellerID, input.CustomerID, input.PaymentMethod, input.Installments, input.PaymentTermDays, input.FirstInstallmentStart, totalValue, status, input.IsEvent, input.DeliveryAddress).
+		`INSERT INTO sales (seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address, delivery_date, departure_date, arrival_date, priority, care_of, email_nf, email_financeiro, ordem_compra) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING id, total_value, status, created_at, updated_at`,
+		input.SellerID, input.CustomerID, input.PaymentMethod, input.Installments, input.PaymentTermDays, input.FirstInstallmentStart, totalValue, status, input.IsEvent, input.DeliveryAddress, input.DeliveryDate, input.DepartureDate, input.ArrivalDate, input.Priority, input.CareOf, input.EmailNF, input.EmailFinanceiro, input.OrdemCompra).
 		Scan(&v.ID, &v.TotalValue, &v.Status, &v.CreatedAt, &v.UpdatedAt)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
@@ -127,6 +127,14 @@ func (r *SaleRepository) Create(input *models.SaleInput) (*models.Sale, error) {
 	v.Status = status
 	v.IsEvent = input.IsEvent
 	v.DeliveryAddress = input.DeliveryAddress
+	v.DeliveryDate = input.DeliveryDate
+	v.DepartureDate = input.DepartureDate
+	v.ArrivalDate = input.ArrivalDate
+	v.Priority = input.Priority
+	v.CareOf = input.CareOf
+	v.EmailNF = input.EmailNF
+	v.EmailFinanceiro = input.EmailFinanceiro
+	v.OrdemCompra = input.OrdemCompra
 
 	for _, itemInput := range input.Items {
 		item := models.SaleItem{
@@ -135,6 +143,7 @@ func (r *SaleRepository) Create(input *models.SaleInput) (*models.Sale, error) {
 			Quantity:   itemInput.Quantity,
 			UnitPrice:  itemInput.UnitPrice,
 			TotalPrice: float64(itemInput.Quantity) * itemInput.UnitPrice,
+			Engravings: itemInput.Engravings,
 		}
 		_ = r.CreateItem(&item)
 	}
@@ -162,8 +171,8 @@ func (r *SaleRepository) Update(id int, input *models.SaleInput) (*models.Sale, 
 		updateStatus = "Pendente"
 	}
 	_, err := r.db.Exec(
-		`UPDATE sales SET seller_id=$1, customer_id=$2, payment_method=$3, installments=$4, payment_term_days=$5, first_installment_start=$6, total_value=$7, status=$8, is_event=$9, delivery_address=$10, updated_at=NOW() WHERE id=$11`,
-		input.SellerID, input.CustomerID, input.PaymentMethod, input.Installments, input.PaymentTermDays, input.FirstInstallmentStart, totalValue, updateStatus, input.IsEvent, input.DeliveryAddress, id)
+		`UPDATE sales SET seller_id=$1, customer_id=$2, payment_method=$3, installments=$4, payment_term_days=$5, first_installment_start=$6, total_value=$7, status=$8, is_event=$9, delivery_address=$10, delivery_date=$11, departure_date=$12, arrival_date=$13, priority=$14, care_of=$15, email_nf=$16, email_financeiro=$17, ordem_compra=$18, updated_at=NOW() WHERE id=$19`,
+		input.SellerID, input.CustomerID, input.PaymentMethod, input.Installments, input.PaymentTermDays, input.FirstInstallmentStart, totalValue, updateStatus, input.IsEvent, input.DeliveryAddress, input.DeliveryDate, input.DepartureDate, input.ArrivalDate, input.Priority, input.CareOf, input.EmailNF, input.EmailFinanceiro, input.OrdemCompra, id)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
 	}
@@ -177,6 +186,7 @@ func (r *SaleRepository) Update(id int, input *models.SaleInput) (*models.Sale, 
 			Quantity:   itemInput.Quantity,
 			UnitPrice:  itemInput.UnitPrice,
 			TotalPrice: float64(itemInput.Quantity) * itemInput.UnitPrice,
+			Engravings: itemInput.Engravings,
 		}
 		_ = r.CreateItem(&item)
 	}
@@ -284,7 +294,7 @@ func (r *SaleRepository) GetCustomerAddresses(customerID int) ([]models.Address,
 }
 
 func (r *SaleRepository) GetItems(saleID int) ([]models.SaleItem, error) {
-	rows, err := r.db.Query(`SELECT id, sale_id, product_id, quantity, unit_price, total_price, created_at, updated_at FROM sale_items WHERE sale_id=$1`, saleID)
+	rows, err := r.db.Query(`SELECT id, sale_id, product_id, quantity, unit_price, total_price, COALESCE(engravings,'[]'::jsonb), created_at, updated_at FROM sale_items WHERE sale_id=$1`, saleID)
 	if err != nil {
 		return nil, err
 	}
@@ -292,9 +302,13 @@ func (r *SaleRepository) GetItems(saleID int) ([]models.SaleItem, error) {
 	var items []models.SaleItem
 	for rows.Next() {
 		var item models.SaleItem
-		err := rows.Scan(&item.ID, &item.SaleID, &item.ProductID, &item.Quantity, &item.UnitPrice, &item.TotalPrice, &item.CreatedAt, &item.UpdatedAt)
+		var engravingsBytes []byte
+		err := rows.Scan(&item.ID, &item.SaleID, &item.ProductID, &item.Quantity, &item.UnitPrice, &item.TotalPrice, &engravingsBytes, &item.CreatedAt, &item.UpdatedAt)
 		if err != nil {
 			return nil, err
+		}
+		if engravingsBytes != nil {
+			item.Engravings = engravingsBytes
 		}
 
 		product, _ := r.GetProductBasic(item.ProductID)
@@ -306,9 +320,13 @@ func (r *SaleRepository) GetItems(saleID int) ([]models.SaleItem, error) {
 }
 
 func (r *SaleRepository) CreateItem(item *models.SaleItem) error {
+	engravingsJSON := []byte("[]")
+	if item.Engravings != nil && len(item.Engravings) > 0 {
+		engravingsJSON = item.Engravings
+	}
 	err := r.db.QueryRow(
-		`INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, total_price) VALUES ($1,$2,$3,$4,$5) RETURNING id, created_at, updated_at`,
-		item.SaleID, item.ProductID, item.Quantity, item.UnitPrice, item.TotalPrice).
+		`INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, total_price, engravings) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, created_at, updated_at`,
+		item.SaleID, item.ProductID, item.Quantity, item.UnitPrice, item.TotalPrice, engravingsJSON).
 		Scan(&item.ID, &item.CreatedAt, &item.UpdatedAt)
 	return err
 }
