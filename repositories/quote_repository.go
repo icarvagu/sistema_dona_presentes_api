@@ -5,6 +5,7 @@ import (
 	apperrors "donapresentes/errors"
 	"donapresentes/models"
 	"fmt"
+	"time"
 
 	"github.com/lib/pq"
 )
@@ -24,7 +25,7 @@ func (r *QuoteRepository) GetAll() ([]models.Quote, error) {
 		COALESCE(freight_material,''), COALESCE(freight_tipo_frete,''), COALESCE(freight_produto,''), COALESCE(freight_tipo_embalagem,''),
 		COALESCE(freight_quantidade,0), COALESCE(freight_volumes,'[]'::jsonb), COALESCE(freight_valor_nota,0), COALESCE(freight_peso_real,0),
 		created_at, updated_at,
-		quote_date, COALESCE(care_of,''), COALESCE(sales_channel,''), COALESCE(observations,''), COALESCE(payment_method,''), carrier_id, COALESCE(freight_value,0)
+		quote_date, COALESCE(care_of,''), COALESCE(sales_channel,''), COALESCE(observations,''), feedback_datetime, COALESCE(feedback_observation,''), COALESCE(payment_method,''), carrier_id, COALESCE(freight_value,0)
 		FROM quotes ORDER BY id DESC`)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
@@ -42,8 +43,11 @@ func (r *QuoteRepository) GetAll() ([]models.Quote, error) {
 			&quote.FreightMaterial, &quote.FreightTipoFrete, &quote.FreightProduto, &quote.FreightTipoEmbalagem,
 			&quote.FreightQuantidade, &freightVolumes, &quote.FreightValorNota, &quote.FreightPesoReal,
 			&quote.CreatedAt, &quote.UpdatedAt,
-			&quote.QuoteDate, &quote.CareOf, &quote.SalesChannel, &quote.Observations, &quote.PaymentMethod, &carrierID, &quote.FreightValue)
-		if carrierID.Valid { v := int(carrierID.Int64); quote.CarrierID = &v }
+			&quote.QuoteDate, &quote.CareOf, &quote.SalesChannel, &quote.Observations, &quote.FeedbackDateTime, &quote.FeedbackObservation, &quote.PaymentMethod, &carrierID, &quote.FreightValue)
+		if carrierID.Valid {
+			v := int(carrierID.Int64)
+			quote.CarrierID = &v
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -72,7 +76,7 @@ func (r *QuoteRepository) GetBySellerID(sellerID int) ([]models.Quote, error) {
 		COALESCE(freight_material,''), COALESCE(freight_tipo_frete,''), COALESCE(freight_produto,''), COALESCE(freight_tipo_embalagem,''),
 		COALESCE(freight_quantidade,0), COALESCE(freight_volumes,'[]'::jsonb), COALESCE(freight_valor_nota,0), COALESCE(freight_peso_real,0),
 		created_at, updated_at,
-		quote_date, COALESCE(care_of,''), COALESCE(sales_channel,''), COALESCE(observations,''), COALESCE(payment_method,''), carrier_id, COALESCE(freight_value,0)
+		quote_date, COALESCE(care_of,''), COALESCE(sales_channel,''), COALESCE(observations,''), feedback_datetime, COALESCE(feedback_observation,''), COALESCE(payment_method,''), carrier_id, COALESCE(freight_value,0)
 		FROM quotes WHERE seller_id=$1 ORDER BY id DESC`, sellerID)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
@@ -90,8 +94,11 @@ func (r *QuoteRepository) GetBySellerID(sellerID int) ([]models.Quote, error) {
 			&quote.FreightMaterial, &quote.FreightTipoFrete, &quote.FreightProduto, &quote.FreightTipoEmbalagem,
 			&quote.FreightQuantidade, &freightVolumes, &quote.FreightValorNota, &quote.FreightPesoReal,
 			&quote.CreatedAt, &quote.UpdatedAt,
-			&quote.QuoteDate, &quote.CareOf, &quote.SalesChannel, &quote.Observations, &quote.PaymentMethod, &carrierID, &quote.FreightValue)
-		if carrierID.Valid { v := int(carrierID.Int64); quote.CarrierID = &v }
+			&quote.QuoteDate, &quote.CareOf, &quote.SalesChannel, &quote.Observations, &quote.FeedbackDateTime, &quote.FeedbackObservation, &quote.PaymentMethod, &carrierID, &quote.FreightValue)
+		if carrierID.Valid {
+			v := int(carrierID.Int64)
+			quote.CarrierID = &v
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +128,7 @@ func (r *QuoteRepository) GetByID(id int) (*models.Quote, error) {
 		COALESCE(freight_material,''), COALESCE(freight_tipo_frete,''), COALESCE(freight_produto,''), COALESCE(freight_tipo_embalagem,''),
 		COALESCE(freight_quantidade,0), COALESCE(freight_volumes,'[]'::jsonb), COALESCE(freight_valor_nota,0), COALESCE(freight_peso_real,0),
 		created_at, updated_at,
-		quote_date, COALESCE(care_of,''), COALESCE(sales_channel,''), COALESCE(observations,''), COALESCE(payment_method,''), carrier_id, COALESCE(freight_value,0)
+		quote_date, COALESCE(care_of,''), COALESCE(sales_channel,''), COALESCE(observations,''), feedback_datetime, COALESCE(feedback_observation,''), COALESCE(payment_method,''), carrier_id, COALESCE(freight_value,0)
 		FROM quotes WHERE id=$1`, id).
 		Scan(&quote.ID, &quote.QuoteNumber, &quote.SellerID, &quote.CustomerID, &quote.ResponsibleName, &quote.QuoteValidUntil, &quote.ProductionLeadTime, &quote.TotalValue,
 			&quote.FreightCNPJSolicitante, &quote.FreightCNPJCPFOrigem, &quote.FreightCNPJCPFDestino, &quote.FreightCNPJDevedor,
@@ -129,8 +136,11 @@ func (r *QuoteRepository) GetByID(id int) (*models.Quote, error) {
 			&quote.FreightMaterial, &quote.FreightTipoFrete, &quote.FreightProduto, &quote.FreightTipoEmbalagem,
 			&quote.FreightQuantidade, &freightVolumes, &quote.FreightValorNota, &quote.FreightPesoReal,
 			&quote.CreatedAt, &quote.UpdatedAt,
-			&quote.QuoteDate, &quote.CareOf, &quote.SalesChannel, &quote.Observations, &quote.PaymentMethod, &carrierID, &quote.FreightValue)
-	if carrierID.Valid { v := int(carrierID.Int64); quote.CarrierID = &v }
+			&quote.QuoteDate, &quote.CareOf, &quote.SalesChannel, &quote.Observations, &quote.FeedbackDateTime, &quote.FeedbackObservation, &quote.PaymentMethod, &carrierID, &quote.FreightValue)
+	if carrierID.Valid {
+		v := int(carrierID.Int64)
+		quote.CarrierID = &v
+	}
 	if freightVolumes != nil {
 		quote.FreightVolumes = freightVolumes
 	} else {
@@ -176,14 +186,14 @@ func (r *QuoteRepository) Create(input *models.QuoteInput) (*models.Quote, error
 			freight_tipo_transporte, freight_contato, freight_cidade_origem, freight_cidade_destino,
 			freight_material, freight_tipo_frete, freight_produto, freight_tipo_embalagem,
 			freight_quantidade, freight_volumes, freight_valor_nota, freight_peso_real,
-			quote_date, care_of, sales_channel, observations, payment_method, carrier_id, freight_value)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30) RETURNING id, quote_number, total_value, created_at, updated_at`,
+			quote_date, care_of, sales_channel, observations, feedback_datetime, feedback_observation, payment_method, carrier_id, freight_value)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32) RETURNING id, quote_number, total_value, created_at, updated_at`,
 		input.QuoteNumber, input.SellerID, input.CustomerID, input.ResponsibleName, input.QuoteValidUntil, input.ProductionLeadTime, totalValue,
 		input.FreightCNPJSolicitante, input.FreightCNPJCPFOrigem, input.FreightCNPJCPFDestino, input.FreightCNPJDevedor,
 		input.FreightTipoTransporte, input.FreightContato, input.FreightCidadeOrigem, input.FreightCidadeDestino,
 		input.FreightMaterial, input.FreightTipoFrete, input.FreightProduto, input.FreightTipoEmbalagem,
 		input.FreightQuantidade, freightVolumesJSON, input.FreightValorNota, input.FreightPesoReal,
-		input.QuoteDate, input.CareOf, input.SalesChannel, input.Observations, input.PaymentMethod, input.CarrierID, input.FreightValue,
+		input.QuoteDate, input.CareOf, input.SalesChannel, input.Observations, input.FeedbackDateTime, input.FeedbackObservation, input.PaymentMethod, input.CarrierID, input.FreightValue,
 	).Scan(&quote.ID, &quote.QuoteNumber, &quote.TotalValue, &quote.CreatedAt, &quote.UpdatedAt)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
@@ -202,14 +212,16 @@ func (r *QuoteRepository) Create(input *models.QuoteInput) (*models.Quote, error
 
 	for _, itemInput := range input.Items {
 		item := models.QuoteItem{
-			QuoteID:                 quote.ID,
-			ProductID:               itemInput.ProductID,
-			Quantity:                itemInput.Quantity,
-			UnitPrice:               itemInput.UnitPrice,
-			Discount:                itemInput.Discount,
+			QuoteID:   quote.ID,
+			ProductID: itemInput.ProductID,
+			Quantity:  itemInput.Quantity,
+			UnitPrice: itemInput.UnitPrice,
+			Discount:  itemInput.Discount,
 			TotalPrice: func() float64 {
 				v := float64(itemInput.Quantity)*itemInput.UnitPrice - itemInput.Discount
-				if v < 0 { return 0 }
+				if v < 0 {
+					return 0
+				}
 				return v
 			}(),
 			PersonalizationType:     itemInput.PersonalizationType,
@@ -277,8 +289,8 @@ func (r *QuoteRepository) Update(id int, input *models.QuoteInput) (*models.Quot
 			freight_tipo_transporte=$12, freight_contato=$13, freight_cidade_origem=$14, freight_cidade_destino=$15,
 			freight_material=$16, freight_tipo_frete=$17, freight_produto=$18, freight_tipo_embalagem=$19,
 			freight_quantidade=$20, freight_volumes=$21, freight_valor_nota=$22, freight_peso_real=$23,
-			quote_date=$24, care_of=$25, sales_channel=$26, observations=$27, payment_method=$28, carrier_id=$29, freight_value=$30,
-			updated_at=NOW() WHERE id=$31`,
+			quote_date=$24, care_of=$25, sales_channel=$26, observations=$27, feedback_datetime=$28, feedback_observation=$29, payment_method=$30, carrier_id=$31, freight_value=$32,
+			updated_at=NOW() WHERE id=$33`,
 		input.QuoteNumber, input.SellerID, input.CustomerID, input.ResponsibleName, input.QuoteValidUntil, input.ProductionLeadTime, totalValue,
 		input.FreightCNPJSolicitante, input.FreightCNPJCPFOrigem, input.FreightCNPJCPFDestino, input.FreightCNPJDevedor,
 		input.FreightTipoTransporte, input.FreightContato, input.FreightCidadeOrigem, input.FreightCidadeDestino,
@@ -295,14 +307,16 @@ func (r *QuoteRepository) Update(id int, input *models.QuoteInput) (*models.Quot
 
 	for _, itemInput := range input.Items {
 		item := models.QuoteItem{
-			QuoteID:                 id,
-			ProductID:               itemInput.ProductID,
-			Quantity:                itemInput.Quantity,
-			UnitPrice:               itemInput.UnitPrice,
-			Discount:                itemInput.Discount,
+			QuoteID:   id,
+			ProductID: itemInput.ProductID,
+			Quantity:  itemInput.Quantity,
+			UnitPrice: itemInput.UnitPrice,
+			Discount:  itemInput.Discount,
 			TotalPrice: func() float64 {
 				v := float64(itemInput.Quantity)*itemInput.UnitPrice - itemInput.Discount
-				if v < 0 { return 0 }
+				if v < 0 {
+					return 0
+				}
 				return v
 			}(),
 			PersonalizationType:     itemInput.PersonalizationType,
@@ -351,6 +365,14 @@ func (r *QuoteRepository) Update(id int, input *models.QuoteInput) (*models.Quot
 	}
 
 	return r.GetByID(id)
+}
+
+func (r *QuoteRepository) UpdateFeedback(id int, feedbackDatetime *time.Time, feedbackObservation string) error {
+	_, err := r.db.Exec(`UPDATE quotes SET feedback_datetime=$1, feedback_observation=$2, updated_at=NOW() WHERE id=$3`, feedbackDatetime, feedbackObservation, id)
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+	return nil
 }
 
 func (r *QuoteRepository) Delete(id int) error {
@@ -545,8 +567,8 @@ func (r *QuoteRepository) GetProductBasic(productID int) (*models.Product, error
 	var product models.Product
 	var productGroup, description, ncm, materialOrigin sql.NullString
 	var photos pq.StringArray
-	err := r.db.QueryRow(`SELECT id, product_name, internal_code, supplier_id, product_group, description, photos, ncm, material_origin, stock, created_at, updated_at FROM products WHERE id=$1`, productID).
-		Scan(&product.ID, &product.ProductName, &product.InternalCode, &product.SupplierID, &productGroup, &description, &photos, &ncm, &materialOrigin, &product.Stock, &product.CreatedAt, &product.UpdatedAt)
+	err := r.db.QueryRow(`SELECT id, product_name, internal_code, supplier_id, product_group, description, photos, ncm, material_origin, stock, supplier_stock, created_at, updated_at FROM products WHERE id=$1`, productID).
+		Scan(&product.ID, &product.ProductName, &product.InternalCode, &product.SupplierID, &productGroup, &description, &photos, &ncm, &materialOrigin, &product.Stock, &product.SupplierStock, &product.CreatedAt, &product.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}

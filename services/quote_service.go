@@ -5,6 +5,7 @@ import (
 	apperrors "donapresentes/errors"
 	"donapresentes/models"
 	"donapresentes/repositories"
+	"time"
 )
 
 type QuoteService struct {
@@ -109,6 +110,19 @@ func (s *QuoteService) Update(id int, input *models.QuoteInput) (*models.Quote, 
 		return nil, err
 	}
 	return s.quoteRepo.Update(id, input)
+}
+
+func (s *QuoteService) UpdateFeedback(id int, feedbackDatetime *time.Time, feedbackObservation string) (*models.Quote, error) {
+	if _, err := s.quoteRepo.GetByID(id); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, apperrors.ErrQuoteNotFound
+		}
+		return nil, err
+	}
+	if err := s.quoteRepo.UpdateFeedback(id, feedbackDatetime, feedbackObservation); err != nil {
+		return nil, err
+	}
+	return s.quoteRepo.GetByID(id)
 }
 
 func (s *QuoteService) Delete(id int) error {

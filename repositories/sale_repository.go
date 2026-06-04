@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	apperrors "donapresentes/errors"
 	"donapresentes/models"
+	"encoding/json"
 )
 
 type SaleRepository struct {
@@ -23,9 +24,13 @@ func (r *SaleRepository) GetAll() ([]models.Sale, error) {
 	var sales []models.Sale
 	for rows.Next() {
 		var v models.Sale
-		err := rows.Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.DeliveryDate, &v.DepartureDate, &v.ArrivalDate, &v.Priority, &v.CareOf, &v.EmailNF, &v.EmailFinanceiro, &v.OrdemCompra, &v.InstallmentDates, &v.CreatedAt, &v.UpdatedAt)
+		var installmentDates sql.NullString
+		err := rows.Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.DeliveryDate, &v.DepartureDate, &v.ArrivalDate, &v.Priority, &v.CareOf, &v.EmailNF, &v.EmailFinanceiro, &v.OrdemCompra, &installmentDates, &v.CreatedAt, &v.UpdatedAt)
 		if err != nil {
 			return nil, err
+		}
+		if installmentDates.Valid {
+			v.InstallmentDates = json.RawMessage(installmentDates.String)
 		}
 
 		seller, _ := r.GetSeller(v.SellerID)
@@ -54,9 +59,13 @@ func (r *SaleRepository) GetBySellerID(sellerID int) ([]models.Sale, error) {
 	var sales []models.Sale
 	for rows.Next() {
 		var v models.Sale
-		err := rows.Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.DeliveryDate, &v.DepartureDate, &v.ArrivalDate, &v.Priority, &v.CareOf, &v.EmailNF, &v.EmailFinanceiro, &v.OrdemCompra, &v.InstallmentDates, &v.CreatedAt, &v.UpdatedAt)
+		var installmentDates sql.NullString
+		err := rows.Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.DeliveryDate, &v.DepartureDate, &v.ArrivalDate, &v.Priority, &v.CareOf, &v.EmailNF, &v.EmailFinanceiro, &v.OrdemCompra, &installmentDates, &v.CreatedAt, &v.UpdatedAt)
 		if err != nil {
 			return nil, err
+		}
+		if installmentDates.Valid {
+			v.InstallmentDates = json.RawMessage(installmentDates.String)
 		}
 		seller, _ := r.GetSeller(v.SellerID)
 		v.Seller = seller
@@ -73,8 +82,9 @@ func (r *SaleRepository) GetBySellerID(sellerID int) ([]models.Sale, error) {
 
 func (r *SaleRepository) GetByID(id int) (*models.Sale, error) {
 	var v models.Sale
+	var installmentDates sql.NullString
 	err := r.db.QueryRow(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address, delivery_date, departure_date, arrival_date, priority, care_of, email_nf, email_financeiro, ordem_compra, installment_dates, created_at, updated_at FROM sales WHERE id=$1`, id).
-		Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.DeliveryDate, &v.DepartureDate, &v.ArrivalDate, &v.Priority, &v.CareOf, &v.EmailNF, &v.EmailFinanceiro, &v.OrdemCompra, &v.InstallmentDates, &v.CreatedAt, &v.UpdatedAt)
+		Scan(&v.ID, &v.SellerID, &v.CustomerID, &v.PaymentMethod, &v.Installments, &v.PaymentTermDays, &v.FirstInstallmentStart, &v.TotalValue, &v.Status, &v.IsEvent, &v.DeliveryAddress, &v.DeliveryDate, &v.DepartureDate, &v.ArrivalDate, &v.Priority, &v.CareOf, &v.EmailNF, &v.EmailFinanceiro, &v.OrdemCompra, &installmentDates, &v.CreatedAt, &v.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, sql.ErrNoRows
@@ -99,6 +109,17 @@ func (r *SaleRepository) GetByID(id int) (*models.Sale, error) {
 
 func (r *SaleRepository) Create(input *models.SaleInput) (*models.Sale, error) {
 
+	if len(input.InstallmentDates) == 0 || !json.Valid(input.InstallmentDates) {
+		input.InstallmentDates = nil
+	}
+
+	var installmentDates interface{}
+	if input.InstallmentDates == nil {
+		installmentDates = nil
+	} else {
+		installmentDates = string(input.InstallmentDates)
+	}
+
 	totalValue := 0.0
 
 	for _, itemInput := range input.Items {
@@ -112,7 +133,7 @@ func (r *SaleRepository) Create(input *models.SaleInput) (*models.Sale, error) {
 	}
 	err := r.db.QueryRow(
 		`INSERT INTO sales (seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address, delivery_date, departure_date, arrival_date, priority, care_of, email_nf, email_financeiro, ordem_compra, installment_dates) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING id, total_value, status, created_at, updated_at`,
-		input.SellerID, input.CustomerID, input.PaymentMethod, input.Installments, input.PaymentTermDays, input.FirstInstallmentStart, totalValue, status, input.IsEvent, input.DeliveryAddress, input.DeliveryDate, input.DepartureDate, input.ArrivalDate, input.Priority, input.CareOf, input.EmailNF, input.EmailFinanceiro, input.OrdemCompra, input.InstallmentDates).
+		input.SellerID, input.CustomerID, input.PaymentMethod, input.Installments, input.PaymentTermDays, input.FirstInstallmentStart, totalValue, status, input.IsEvent, input.DeliveryAddress, input.DeliveryDate, input.DepartureDate, input.ArrivalDate, input.Priority, input.CareOf, input.EmailNF, input.EmailFinanceiro, input.OrdemCompra, installmentDates).
 		Scan(&v.ID, &v.TotalValue, &v.Status, &v.CreatedAt, &v.UpdatedAt)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
@@ -160,6 +181,10 @@ func (r *SaleRepository) Create(input *models.SaleInput) (*models.Sale, error) {
 
 func (r *SaleRepository) Update(id int, input *models.SaleInput) (*models.Sale, error) {
 
+	if len(input.InstallmentDates) == 0 || !json.Valid(input.InstallmentDates) {
+		input.InstallmentDates = nil
+	}
+
 	totalValue := 0.0
 
 	for _, itemInput := range input.Items {
@@ -170,9 +195,16 @@ func (r *SaleRepository) Update(id int, input *models.SaleInput) (*models.Sale, 
 	if updateStatus == "" {
 		updateStatus = "Pendente"
 	}
+	var installmentDates interface{}
+	if len(input.InstallmentDates) == 0 || !json.Valid(input.InstallmentDates) {
+		installmentDates = nil
+	} else {
+		str := string(input.InstallmentDates)
+		installmentDates = str
+	}
 	_, err := r.db.Exec(
 		`UPDATE sales SET seller_id=$1, customer_id=$2, payment_method=$3, installments=$4, payment_term_days=$5, first_installment_start=$6, total_value=$7, status=$8, is_event=$9, delivery_address=$10, delivery_date=$11, departure_date=$12, arrival_date=$13, priority=$14, care_of=$15, email_nf=$16, email_financeiro=$17, ordem_compra=$18, installment_dates=$19, updated_at=NOW() WHERE id=$20`,
-		input.SellerID, input.CustomerID, input.PaymentMethod, input.Installments, input.PaymentTermDays, input.FirstInstallmentStart, totalValue, updateStatus, input.IsEvent, input.DeliveryAddress, input.DeliveryDate, input.DepartureDate, input.ArrivalDate, input.Priority, input.CareOf, input.EmailNF, input.EmailFinanceiro, input.OrdemCompra, input.InstallmentDates, id)
+		input.SellerID, input.CustomerID, input.PaymentMethod, input.Installments, input.PaymentTermDays, input.FirstInstallmentStart, totalValue, updateStatus, input.IsEvent, input.DeliveryAddress, input.DeliveryDate, input.DepartureDate, input.ArrivalDate, input.Priority, input.CareOf, input.EmailNF, input.EmailFinanceiro, input.OrdemCompra, installmentDates, id)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
 	}
@@ -221,18 +253,17 @@ func (r *SaleRepository) GetSeller(sellerID int) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
 	var birthDate sql.NullTime
-	
+
 	err := r.db.QueryRow(
 		`SELECT id, username, role, full_name, cpf, rg, birth_date, gender, status, 
 		 contact_email, full_address, contact_phone, notes, created_at, updated_at 
 		 FROM users WHERE id=$1`, sellerID).
-		Scan(&u.ID, &u.Username, &u.Role, &u.FullName, &u.CPF, &rg, &birthDate, 
-			&gender, &u.Status, &contactEmail, &fullAddress, &contactPhone, &notes, 
+		Scan(&u.ID, &u.Username, &u.Role, &u.FullName, &u.CPF, &rg, &birthDate,
+			&gender, &u.Status, &contactEmail, &fullAddress, &contactPhone, &notes,
 			&u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
-	
 
 	if rg.Valid {
 		u.RG = &rg.String
@@ -255,7 +286,7 @@ func (r *SaleRepository) GetSeller(sellerID int) (*models.User, error) {
 	if birthDate.Valid {
 		u.BirthDate = &birthDate.Time
 	}
-	
+
 	return &u, nil
 }
 
@@ -334,8 +365,8 @@ func (r *SaleRepository) CreateItem(item *models.SaleItem) error {
 func (r *SaleRepository) GetProductBasic(productID int) (*models.Product, error) {
 	var p models.Product
 	var productGroup, description, ncm, materialOrigin sql.NullString
-	err := r.db.QueryRow(`SELECT id, product_name, internal_code, supplier_id, product_group, description, ncm, material_origin, stock, created_at, updated_at FROM products WHERE id=$1`, productID).
-		Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &productGroup, &description, &ncm, &materialOrigin, &p.Stock, &p.CreatedAt, &p.UpdatedAt)
+	err := r.db.QueryRow(`SELECT id, product_name, internal_code, supplier_id, product_group, description, ncm, material_origin, stock, supplier_stock, created_at, updated_at FROM products WHERE id=$1`, productID).
+		Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &productGroup, &description, &ncm, &materialOrigin, &p.Stock, &p.SupplierStock, &p.CreatedAt, &p.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -371,7 +402,7 @@ func (r *SaleRepository) GetCarriers(saleID int) ([]models.Carrier, error) {
 	var carriers []models.Carrier
 	for rows.Next() {
 		var c models.Carrier
-		err := rows.Scan(&c.ID, &c.Name, &c.CarrierType, &c.Email, &c.LandlinePhone, 
+		err := rows.Scan(&c.ID, &c.Name, &c.CarrierType, &c.Email, &c.LandlinePhone,
 			&c.MobilePhone, &c.FullAddress, &c.ContactName, &c.ContactPhone, &c.Website,
 			&c.CreatedAt, &c.UpdatedAt)
 		if err != nil {

@@ -53,6 +53,7 @@ func main() {
 	controllers.InitCustomerService()
 	controllers.InitSaleService()
 	controllers.InitQuoteService()
+	controllers.InitDashboardService(services.NewDashboardService(repositories.NewDashboardRepository(config.DB)))
 
 	productRepo := repositories.NewProductRepository(config.DB)
 	supplierRepo := repositories.NewSupplierRepository(config.DB)
@@ -86,6 +87,7 @@ func main() {
 	routes.RegisterCustomersRoutes(protectedRouter)
 	routes.RegisterSalesRoutes(protectedRouter)
 	routes.RegisterQuotesRoutes(protectedRouter)
+	routes.RegisterDashboardRoutes(protectedRouter)
 	routes.RegisterAuthProtectedRoutes(protectedRouter)
 
 	adminRouter := protectedRouter.PathPrefix("").Subrouter()

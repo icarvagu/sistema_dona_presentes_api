@@ -59,6 +59,8 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 			if err := s.productRepository.UpdateFromSync(
 				existing.ID,
 				localProduct.Stock,
+				localProduct.SupplierStock,
+				localProduct.SupplierCode,
 				localProduct.Photos,
 				localProduct.CostPrice,
 				syncTime,

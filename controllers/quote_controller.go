@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"donapresentes/controllers/config"
 	apperrors "donapresentes/errors"
@@ -91,6 +92,11 @@ func CreateQuote(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(quote)
 }
 
+type QuoteFeedbackInput struct {
+	FeedbackDateTime    *time.Time `json:"feedback_datetime,omitempty"`
+	FeedbackObservation string     `json:"feedback_observation"`
+}
+
 func UpdateQuote(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -119,6 +125,34 @@ func UpdateQuote(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(quote)
 }
 
+func UpdateQuoteFeedback(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(mux.Vars(r)["id"])
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+	var input QuoteFeedbackInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
+		return
+	}
+	quote, err := quoteService.UpdateFeedback(id, input.FeedbackDateTime, input.FeedbackObservation)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			middleware.ErrorHandler(w, apperrors.ErrQuoteNotFound, http.StatusNotFound)
+			return
+		}
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(quote)
+}
+
 func DeleteQuote(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -128,6 +162,10 @@ func DeleteQuote(w http.ResponseWriter, r *http.Request) {
 	if err := quoteService.Delete(id); err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrQuoteNotFound, http.StatusNotFound)
+			return
+		}
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
 			return
 		}
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)

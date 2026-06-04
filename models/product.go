@@ -15,6 +15,7 @@ type Product struct {
 	NCM               string        `json:"ncm,omitempty"`
 	MaterialOrigin    string        `json:"material_origin,omitempty"`
 	Stock             int           `json:"stock"`
+	SupplierStock     int           `json:"supplier_stock"`
 	MovesStock        bool          `json:"moves_stock"`
 	EnabledForInvoice bool          `json:"enabled_for_invoice"`
 	CostPrice         float64       `json:"cost_price"`
@@ -32,10 +33,10 @@ type Product struct {
 	UpdatedAt         time.Time     `json:"updated_at"`
 
 	// Campos para produtos sem API
-	LastCost          float64       `json:"last_cost"`
-	LastCostDate      *time.Time    `json:"last_cost_date"`
-	LastCostQty1      int           `json:"last_cost_qty1"`
-	LastCostQty2      int           `json:"last_cost_qty2"`
-	LastCostQty3      int           `json:"last_cost_qty3"`
-	LastCostUser      string        `json:"last_cost_user"`
+	LastCost     float64    `json:"last_cost"`
+	LastCostDate *time.Time `json:"last_cost_date"`
+	LastCostQty1 int        `json:"last_cost_qty1"`
+	LastCostQty2 int        `json:"last_cost_qty2"`
+	LastCostQty3 int        `json:"last_cost_qty3"`
+	LastCostUser string     `json:"last_cost_user"`
 }

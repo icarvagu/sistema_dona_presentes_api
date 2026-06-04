@@ -6,14 +6,14 @@ import (
 )
 
 type QuoteItem struct {
-	ID                  int             `json:"id"`
-	QuoteID             int             `json:"quote_id"`
-	ProductID           int             `json:"product_id"`
-	Product             *Product        `json:"product,omitempty"`
-	Quantity            int             `json:"quantity"`
-	UnitPrice           float64         `json:"unit_price"`
-	TotalPrice          float64         `json:"total_price"`
-	PersonalizationType string          `json:"personalization_type,omitempty"`
+	ID                  int      `json:"id"`
+	QuoteID             int      `json:"quote_id"`
+	ProductID           int      `json:"product_id"`
+	Product             *Product `json:"product,omitempty"`
+	Quantity            int      `json:"quantity"`
+	UnitPrice           float64  `json:"unit_price"`
+	TotalPrice          float64  `json:"total_price"`
+	PersonalizationType string   `json:"personalization_type,omitempty"`
 
 	DNCode                  string          `json:"dn_code,omitempty"`
 	DescriptionSummary      string          `json:"description_summary,omitempty"`
@@ -67,14 +67,16 @@ type Quote struct {
 	Items              []QuoteItem `json:"items,omitempty"`
 
 	// New fields
-	QuoteDate      *time.Time `json:"quote_date,omitempty"`
-	CareOf         string     `json:"care_of"`
-	SalesChannel   string     `json:"sales_channel"`
-	Observations   string     `json:"observations"`
-	PaymentMethod  string     `json:"payment_method"`
-	CarrierID      *int       `json:"carrier_id,omitempty"`
-	Carrier        *Carrier   `json:"carrier,omitempty"`
-	FreightValue   float64    `json:"freight_value"`
+	QuoteDate           *time.Time `json:"quote_date,omitempty"`
+	CareOf              string     `json:"care_of"`
+	SalesChannel        string     `json:"sales_channel"`
+	Observations        string     `json:"observations"`
+	FeedbackDateTime    *time.Time `json:"feedback_datetime,omitempty"`
+	FeedbackObservation string     `json:"feedback_observation,omitempty"`
+	PaymentMethod       string     `json:"payment_method"`
+	CarrierID           *int       `json:"carrier_id,omitempty"`
+	Carrier             *Carrier   `json:"carrier,omitempty"`
+	FreightValue        float64    `json:"freight_value"`
 
 	// Freight info
 	FreightCNPJSolicitante string          `json:"freight_cnpj_solicitante"`
@@ -108,13 +110,15 @@ type QuoteInput struct {
 	Items              []QuoteItemInput `json:"items,omitempty"`
 
 	// New fields
-	QuoteDate      *time.Time `json:"quote_date,omitempty"`
-	CareOf         string     `json:"care_of"`
-	SalesChannel   string     `json:"sales_channel"`
-	Observations   string     `json:"observations"`
-	PaymentMethod  string     `json:"payment_method"`
-	CarrierID      *int       `json:"carrier_id,omitempty"`
-	FreightValue   float64    `json:"freight_value"`
+	QuoteDate           *time.Time `json:"quote_date,omitempty"`
+	CareOf              string     `json:"care_of"`
+	SalesChannel        string     `json:"sales_channel"`
+	Observations        string     `json:"observations"`
+	FeedbackDateTime    *time.Time `json:"feedback_datetime,omitempty"`
+	FeedbackObservation string     `json:"feedback_observation,omitempty"`
+	PaymentMethod       string     `json:"payment_method"`
+	CarrierID           *int       `json:"carrier_id,omitempty"`
+	FreightValue        float64    `json:"freight_value"`
 
 	// Freight info
 	FreightCNPJSolicitante string          `json:"freight_cnpj_solicitante"`
@@ -136,10 +140,10 @@ type QuoteInput struct {
 }
 
 type QuoteItemInput struct {
-	ProductID           int             `json:"product_id"`
-	Quantity            int             `json:"quantity"`
-	UnitPrice           float64         `json:"unit_price"`
-	PersonalizationType string          `json:"personalization_type,omitempty"`
+	ProductID           int     `json:"product_id"`
+	Quantity            int     `json:"quantity"`
+	UnitPrice           float64 `json:"unit_price"`
+	PersonalizationType string  `json:"personalization_type,omitempty"`
 
 	DNCode                  string          `json:"dn_code,omitempty"`
 	DescriptionSummary      string          `json:"description_summary,omitempty"`
