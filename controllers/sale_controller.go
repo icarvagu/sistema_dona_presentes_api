@@ -178,3 +178,37 @@ func DeleteSale(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func UpdateSaleLayout(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+	var body struct {
+		LayoutURLs []string `json:"layout_urls"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		middleware.ErrorHandler(w, apperrors.NewValidationError("JSON inválido"), http.StatusBadRequest)
+		return
+	}
+	if body.LayoutURLs == nil {
+		body.LayoutURLs = []string{}
+	}
+	if err := saleService.UpdateLayoutURLs(id, body.LayoutURLs); err != nil {
+		if err == sql.ErrNoRows {
+			middleware.ErrorHandler(w, apperrors.ErrSaleNotFound, http.StatusNotFound)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+	sale, err := saleService.GetByID(id)
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(sale)
+}

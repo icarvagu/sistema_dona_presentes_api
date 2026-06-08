@@ -32,33 +32,44 @@ type PDFService struct {
 	template *template.Template
 }
 
+type parcItem struct {
+	Label string
+	Data  string
+	Valor string
+}
+
 type pedidoTemplateData struct {
-	SaleID           int
-	SaleIDFormatted  string
-	LogoDataURI      template.URL
-	SellerName       string
-	DataPedido       string
-	EmailFinanceiro  string
-	IsPF             bool
-	ClienteNome      string
-	ClienteEndereco  string
-	ClienteCidade    string
-	ClienteTelefone  string
-	ClienteDoc       string
-	ClienteCEP       string
-	ClienteEstado    string
-	ClienteEmail     string
+	SaleID              int
+	SaleIDFormatted     string
+	LogoDataURI         template.URL
+	SellerName          string
+	DataPedido          string
+	EmailFinanceiro     string
+	IsPF                bool
+	ClienteNome         string
+	ClienteEndereco     string
+	ClienteCidade       string
+	ClienteTelefone     string
+	ClienteDoc          string
+	ClienteCEP          string
+	ClienteEstado       string
+	ClienteEmail        string
 	ClienteNomeFantasia string
-	Vencimento       string
-	ValorTotal       string
-	ValorProdutos    string
-	ValorFrete       string
-	FormaPagamento   string
-	AosCuidadosDe    string
-	Transportadora   string
-	PrazoEntrega     string
-	Observacoes      string
-	Items            []pedidoItemData
+	Vencimento          string
+	ValorTotal          string
+	ValorProdutos       string
+	ValorFrete          string
+	FormaPagamento      string
+	AosCuidadosDe       string
+	Transportadora      string
+	PrazoEntrega        string
+	Observacoes         string
+	PrazoPagamento      string
+	Parcelas            []parcItem
+	ObservacoesExternas string
+	ObservacoesInternas string
+	LayoutURLs          []template.URL
+	Items               []pedidoItemData
 }
 
 type pedidoItemData struct {
@@ -171,6 +182,40 @@ func (s *PDFService) buildTemplateData(sale *models.Sale) pedidoTemplateData {
 			names[i] = c.Name
 		}
 		data.Transportadora = strings.Join(names, ", ")
+	}
+
+	// Build installment items
+	if sale.Installments > 0 {
+		var dates []string
+		if sale.InstallmentDates != nil {
+			_ = json.Unmarshal(sale.InstallmentDates, &dates)
+		}
+		installVal := 0.0
+		if sale.Installments > 0 {
+			installVal = sale.TotalValue / float64(sale.Installments)
+		}
+		for i := 0; i < sale.Installments; i++ {
+			label := fmt.Sprintf("%dª Parcela", i+1)
+			dateStr := "—"
+			if i < len(dates) && dates[i] != "" {
+				if t, err := time.Parse("2006-01-02", dates[i]); err == nil {
+					dateStr = t.Format("02/01/2006")
+				}
+			}
+			data.Parcelas = append(data.Parcelas, parcItem{
+				Label: label,
+				Data:  dateStr,
+				Valor: formatMoney(installVal),
+			})
+		}
+	}
+	if sale.PaymentTermDays > 0 {
+		data.PrazoPagamento = fmt.Sprintf("%d dias", sale.PaymentTermDays)
+	}
+	data.ObservacoesExternas = sale.ObservacoesExternas
+	data.ObservacoesInternas = sale.ObservacoesInternas
+	for _, u := range sale.LayoutURLs {
+		data.LayoutURLs = append(data.LayoutURLs, template.URL(u))
 	}
 
 	if sale.Customer != nil {

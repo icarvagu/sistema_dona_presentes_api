@@ -467,17 +467,70 @@
     }
 
     .pagamento-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px;
+      display: block;
       margin-top: 4px;
     }
 
     .pagamento-linhas {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 4mm;
       align-items: start;
+    }
+
+    .parcelas-bloco {
+      margin-top: 3mm;
+    }
+
+    .parcela-linha {
+      display: flex;
+      align-items: flex-end;
+      gap: 3mm;
+      margin-bottom: 2mm;
+    }
+
+    .parcela-num {
+      font-size: 7.8pt;
+      font-weight: 700;
+      white-space: nowrap;
+      flex: 0 0 22mm;
+      padding-bottom: 1.5mm;
+    }
+
+    .lbl2 {
+      font-weight: 400;
+      font-size: 7pt;
+      display: block;
+      margin-bottom: 1.4mm;
+      color: var(--muted);
+      line-height: 1;
+    }
+
+    .parcela-cell {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .pagto-sumario {
+      margin-top: 3mm;
+      padding-top: 2mm;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 1mm;
+    }
+
+    .pagto-sum-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      padding: 0.5mm 1mm;
+    }
+
+    .pagto-sum-row.negrito {
+      font-weight: 800;
+      font-size: 9pt;
+      color: var(--text);
     }
 
     .pagto-item .lbl {
@@ -754,24 +807,39 @@
         <div class="conteudo">
           <div class="pagamento-linhas">
             <div class="pagto-item">
-              <span class="lbl">VENCIMENTO:</span>
-              <div class="input-box">{{.Vencimento}}</div>
-            </div>
-            <div class="pagto-item">
-              <span class="lbl">VALOR:</span>
-              <div class="input-box">{{.ValorTotal}}</div>
-            </div>
-            <div class="pagto-item">
               <span class="lbl">FORMA DE PAGTO:</span>
               <div class="input-box">{{.FormaPagamento}}</div>
             </div>
+            {{if .PrazoPagamento}}
+            <div class="pagto-item">
+              <span class="lbl">PRAZO DE PAGAMENTO:</span>
+              <div class="input-box">{{.PrazoPagamento}}</div>
+            </div>
+            {{end}}
+          </div>
+          {{if .Parcelas}}
+          <div class="parcelas-bloco">
+            {{range .Parcelas}}
+            <div class="parcela-linha">
+              <span class="parcela-num">{{.Label}}:</span>
+              <div class="parcela-cell">
+                <span class="lbl2">VENCIMENTO</span>
+                <div class="input-box">{{.Data}}</div>
+              </div>
+              <div class="parcela-cell">
+                <span class="lbl2">VALOR</span>
+                <div class="input-box">{{.Valor}}</div>
+              </div>
+            </div>
+            {{end}}
+          </div>
+          {{end}}
+          <div class="pagto-sumario">
+            <div class="pagto-sum-row"><span>SUBTOTAL PRODUTOS:</span><span>{{.ValorProdutos}}</span></div>
+            {{if .ValorFrete}}<div class="pagto-sum-row"><span>FRETE:</span><span>{{.ValorFrete}}</span></div>{{end}}
+            <div class="pagto-sum-row negrito"><span>TOTAL GERAL:</span><span>{{.ValorTotal}}</span></div>
           </div>
         </div>
-      </div>
-
-      <div class="campo-largo">
-        <div class="tit">OBSERVAÇÕES:</div>
-        <div class="conteudo box-texto">{{.Observacoes}}</div>
       </div>
     </div>
 
@@ -787,10 +855,26 @@
       </div>
     </div>
 
-    <div class="obs-final">
-      <div class="tit">OBSERVAÇÕES:</div>
-      <div class="conteudo">{{.Observacoes}}</div>
+    <div class="obs-final" style="margin-top:4px">
+      <div class="tit">OBSERVAÇÕES (CLIENTE):</div>
+      <div class="conteudo">{{if .ObservacoesExternas}}{{.ObservacoesExternas}}{{else}}-{{end}}</div>
     </div>
+
+    <div class="obs-final" style="margin-top:4px">
+      <div class="tit">OBSERVAÇÕES INTERNAS:</div>
+      <div class="conteudo">{{if .ObservacoesInternas}}{{.ObservacoesInternas}}{{else}}-{{end}}</div>
+    </div>
+
+    {{if .LayoutURLs}}
+    <div class="campo-largo" style="margin-top:4px">
+      <div class="tit">LAYOUT APROVADO PELO CLIENTE</div>
+      <div class="conteudo" style="display:flex;flex-wrap:wrap;gap:4mm;padding:3mm;">
+        {{range .LayoutURLs}}
+        <img src="{{.}}" alt="Layout" style="max-height:60mm;max-width:80mm;object-fit:contain;border:1px solid #C29D50;border-radius:1.5mm;" />
+        {{end}}
+      </div>
+    </div>
+    {{end}}
 
     <div class="secao">
       <div class="secao-titulo">INFORMAÇÕES GERAIS:</div>

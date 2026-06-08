@@ -194,8 +194,8 @@ func (s *UserService) validateUserInput(input *models.UserInput, requirePassword
 		}
 	}
 
-	if input.Role != "admin" && input.Role != "standard" {
-		return apperrors.NewValidationError("Role deve ser 'admin' ou 'standard'")
+	if input.Role != "admin" && input.Role != "standard" && input.Role != "gerente" {
+		return apperrors.NewValidationError("Role deve ser 'admin', 'gerente' ou 'standard'")
 	}
 
 	if input.Status != "" && input.Status != "Ativo" && input.Status != "Inativo" {

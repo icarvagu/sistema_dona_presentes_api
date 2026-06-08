@@ -140,3 +140,7 @@ func (s *SaleService) Update(id int, input *models.SaleInput) (*models.Sale, err
 func (s *SaleService) Delete(id int) error {
 	return s.saleRepo.Delete(id)
 }
+
+func (s *SaleService) UpdateLayoutURLs(id int, urls []string) error {
+	return s.saleRepo.UpdateLayoutURLs(id, urls)
+}
