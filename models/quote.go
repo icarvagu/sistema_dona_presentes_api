@@ -67,16 +67,18 @@ type Quote struct {
 	Items              []QuoteItem `json:"items,omitempty"`
 
 	// New fields
-	QuoteDate           *time.Time `json:"quote_date,omitempty"`
-	CareOf              string     `json:"care_of"`
-	SalesChannel        string     `json:"sales_channel"`
-	Observations        string     `json:"observations"`
-	FeedbackDateTime    *time.Time `json:"feedback_datetime,omitempty"`
-	FeedbackObservation string     `json:"feedback_observation,omitempty"`
-	PaymentMethod       string     `json:"payment_method"`
-	CarrierID           *int       `json:"carrier_id,omitempty"`
-	Carrier             *Carrier   `json:"carrier,omitempty"`
-	FreightValue        float64    `json:"freight_value"`
+	QuoteDate           *time.Time      `json:"quote_date,omitempty"`
+	CareOf              string          `json:"care_of"`
+	SalesChannel        string          `json:"sales_channel"`
+	Observations        string          `json:"observations"`
+	FeedbackDateTime    *time.Time      `json:"feedback_datetime,omitempty"`
+	FeedbackObservation string          `json:"feedback_observation,omitempty"`
+	PaymentMethod       string          `json:"payment_method"`
+	Installments        int             `json:"installments"`
+	InstallmentDates    json.RawMessage `json:"installment_dates,omitempty"`
+	CarrierID           *int            `json:"carrier_id,omitempty"`
+	Carrier             *Carrier        `json:"carrier,omitempty"`
+	FreightValue        float64         `json:"freight_value"`
 
 	// Freight info
 	FreightCNPJSolicitante string          `json:"freight_cnpj_solicitante"`
@@ -110,15 +112,17 @@ type QuoteInput struct {
 	Items              []QuoteItemInput `json:"items,omitempty"`
 
 	// New fields
-	QuoteDate           *time.Time `json:"quote_date,omitempty"`
-	CareOf              string     `json:"care_of"`
-	SalesChannel        string     `json:"sales_channel"`
-	Observations        string     `json:"observations"`
-	FeedbackDateTime    *time.Time `json:"feedback_datetime,omitempty"`
-	FeedbackObservation string     `json:"feedback_observation,omitempty"`
-	PaymentMethod       string     `json:"payment_method"`
-	CarrierID           *int       `json:"carrier_id,omitempty"`
-	FreightValue        float64    `json:"freight_value"`
+	QuoteDate           *time.Time      `json:"quote_date,omitempty"`
+	CareOf              string          `json:"care_of"`
+	SalesChannel        string          `json:"sales_channel"`
+	Observations        string          `json:"observations"`
+	FeedbackDateTime    *time.Time      `json:"feedback_datetime,omitempty"`
+	FeedbackObservation string          `json:"feedback_observation,omitempty"`
+	PaymentMethod       string          `json:"payment_method"`
+	Installments        int             `json:"installments"`
+	InstallmentDates    json.RawMessage `json:"installment_dates,omitempty"`
+	CarrierID           *int            `json:"carrier_id,omitempty"`
+	FreightValue        float64         `json:"freight_value"`
 
 	// Freight info
 	FreightCNPJSolicitante string          `json:"freight_cnpj_solicitante"`

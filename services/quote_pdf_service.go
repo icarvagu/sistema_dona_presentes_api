@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"os"
@@ -32,20 +33,23 @@ type quoteTemplateData struct {
 	CustomerAddress    string
 	QuoteValidUntil    string
 	ProductionLeadTime string
+	PaymentMethod      string
+	Installments       string
+	InstallmentDates   string
 	TotalValue         string
 	Items              []quoteTemplateItem
 }
 
 type quoteTemplateItem struct {
-	InternalCode       string
-	ImageURL           string
-	ProductName        string
-	Description        string
-	NCM                string
-	Personalization    string
-	Quantity           string
-	UnitPrice          string
-	TotalPrice         string
+	InternalCode    string
+	ImageURL        string
+	ProductName     string
+	Description     string
+	NCM             string
+	Personalization string
+	Quantity        string
+	UnitPrice       string
+	TotalPrice      string
 }
 
 func NewQuotePDFService() (*QuotePDFService, error) {
@@ -123,6 +127,9 @@ func (s *QuotePDFService) buildTemplateData(quote *models.Quote) quoteTemplateDa
 		CustomerAddress:    "-",
 		QuoteValidUntil:    "-",
 		ProductionLeadTime: quote.ProductionLeadTime,
+		PaymentMethod:      "-",
+		Installments:       "1",
+		InstallmentDates:   "-",
 		TotalValue:         formatMoney(quote.TotalValue),
 	}
 
@@ -134,6 +141,31 @@ func (s *QuotePDFService) buildTemplateData(quote *models.Quote) quoteTemplateDa
 	}
 	if quote.QuoteValidUntil != nil {
 		data.QuoteValidUntil = quote.QuoteValidUntil.Format("02/01/2006")
+	}
+	if strings.TrimSpace(quote.PaymentMethod) != "" {
+		data.PaymentMethod = quote.PaymentMethod
+	}
+	if quote.Installments > 0 {
+		data.Installments = fmt.Sprintf("%d", quote.Installments)
+	}
+	if len(quote.InstallmentDates) > 0 {
+		var dates []string
+		if err := json.Unmarshal(quote.InstallmentDates, &dates); err == nil {
+			formattedDates := make([]string, 0, len(dates))
+			for i, date := range dates {
+				if strings.TrimSpace(date) == "" {
+					continue
+				}
+				if parsed, err := time.Parse("2006-01-02", date); err == nil {
+					formattedDates = append(formattedDates, fmt.Sprintf("%dª: %s", i+1, parsed.Format("02/01/2006")))
+				} else {
+					formattedDates = append(formattedDates, fmt.Sprintf("%dª: %s", i+1, date))
+				}
+			}
+			if len(formattedDates) > 0 {
+				data.InstallmentDates = strings.Join(formattedDates, " | ")
+			}
+		}
 	}
 	if quote.Customer != nil {
 		data.CustomerName = quote.Customer.Name
