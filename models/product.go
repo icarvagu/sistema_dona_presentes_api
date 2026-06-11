@@ -38,5 +38,8 @@ type Product struct {
 	LastCostQty1 int        `json:"last_cost_qty1"`
 	LastCostQty2 int        `json:"last_cost_qty2"`
 	LastCostQty3 int        `json:"last_cost_qty3"`
+	LastCostVal1 float64    `json:"last_cost_val1"`
+	LastCostVal2 float64    `json:"last_cost_val2"`
+	LastCostVal3 float64    `json:"last_cost_val3"`
 	LastCostUser string     `json:"last_cost_user"`
 }

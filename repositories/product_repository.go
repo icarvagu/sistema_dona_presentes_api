@@ -31,7 +31,9 @@ const productSelectWithSupplier = `
 	       COALESCE(p.color, ''), COALESCE(p.origin, ''), p.pending_approval,
 	       p.created_at, p.updated_at,
 	       COALESCE(p.last_cost, 0), p.last_cost_date, COALESCE(p.last_cost_qty1, 0),
-	       COALESCE(p.last_cost_qty2, 0), COALESCE(p.last_cost_qty3, 0), COALESCE(p.last_cost_user, '')
+	       COALESCE(p.last_cost_qty2, 0), COALESCE(p.last_cost_qty3, 0),
+	       COALESCE(p.last_cost_val1, 0), COALESCE(p.last_cost_val2, 0), COALESCE(p.last_cost_val3, 0),
+	       COALESCE(p.last_cost_user, '')
 	FROM products p 
 	JOIN suppliers f ON p.supplier_id = f.id`
 
@@ -59,7 +61,8 @@ func scanProductRow(scanner rowScanner, withSupplier bool) (models.Product, *mod
 			&source, &importedAt, &lastSyncedAt,
 			&p.Color, &p.Origin, &p.PendingApproval,
 			&p.CreatedAt, &p.UpdatedAt,
-			&p.LastCost, &lastCostDate, &p.LastCostQty1, &p.LastCostQty2, &p.LastCostQty3, &p.LastCostUser,
+			&p.LastCost, &lastCostDate, &p.LastCostQty1, &p.LastCostQty2, &p.LastCostQty3,
+			&p.LastCostVal1, &p.LastCostVal2, &p.LastCostVal3, &p.LastCostUser,
 		)
 		if err != nil {
 			return models.Product{}, nil, err
@@ -73,7 +76,8 @@ func scanProductRow(scanner rowScanner, withSupplier bool) (models.Product, *mod
 			&source, &importedAt, &lastSyncedAt,
 			&p.Color, &p.Origin, &p.PendingApproval,
 			&p.CreatedAt, &p.UpdatedAt,
-			&p.LastCost, &lastCostDate, &p.LastCostQty1, &p.LastCostQty2, &p.LastCostQty3, &p.LastCostUser,
+			&p.LastCost, &lastCostDate, &p.LastCostQty1, &p.LastCostQty2, &p.LastCostQty3,
+			&p.LastCostVal1, &p.LastCostVal2, &p.LastCostVal3, &p.LastCostUser,
 		)
 		if err != nil {
 			return models.Product{}, nil, err
@@ -252,7 +256,7 @@ func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, err
 
 func (r *ProductRepository) GetByInternalCode(internalCode string) (*models.Product, error) {
 	p, _, err := scanProductRow(r.db.QueryRow(
-		`SELECT id, product_name, internal_code, supplier_code, supplier_id, product_group, description, photos, ncm, COALESCE(material_origin, ''), stock, supplier_stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, COALESCE(color, ''), COALESCE(origin, ''), pending_approval, created_at, updated_at, COALESCE(last_cost, 0), last_cost_date, COALESCE(last_cost_qty1, 0), COALESCE(last_cost_qty2, 0), COALESCE(last_cost_qty3, 0), COALESCE(last_cost_user, '') FROM products WHERE internal_code=$1`,
+		`SELECT id, product_name, internal_code, supplier_code, supplier_id, product_group, description, photos, ncm, COALESCE(material_origin, ''), stock, supplier_stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, COALESCE(color, ''), COALESCE(origin, ''), pending_approval, created_at, updated_at, COALESCE(last_cost, 0), last_cost_date, COALESCE(last_cost_qty1, 0), COALESCE(last_cost_qty2, 0), COALESCE(last_cost_qty3, 0), COALESCE(last_cost_val1, 0), COALESCE(last_cost_val2, 0), COALESCE(last_cost_val3, 0), COALESCE(last_cost_user, '') FROM products WHERE internal_code=$1`,
 		internalCode,
 	), false)
 	if err != nil {
@@ -458,8 +462,9 @@ func (r *ProductRepository) UpdateLastCost(id int, p *models.Product) error {
 		lastCostDate = *p.LastCostDate
 	}
 	_, err := r.db.Exec(
-		`UPDATE products SET last_cost=$1, last_cost_date=$2, last_cost_qty1=$3, last_cost_qty2=$4, last_cost_qty3=$5, last_cost_user=$6, updated_at=NOW() WHERE id=$7`,
-		p.LastCost, lastCostDate, p.LastCostQty1, p.LastCostQty2, p.LastCostQty3, p.LastCostUser, id,
+		`UPDATE products SET last_cost=$1, last_cost_date=$2, last_cost_qty1=$3, last_cost_qty2=$4, last_cost_qty3=$5, last_cost_val1=$6, last_cost_val2=$7, last_cost_val3=$8, last_cost_user=$9, updated_at=NOW() WHERE id=$10`,
+		p.LastCost, lastCostDate, p.LastCostQty1, p.LastCostQty2, p.LastCostQty3,
+		p.LastCostVal1, p.LastCostVal2, p.LastCostVal3, p.LastCostUser, id,
 	)
 	if err != nil {
 		return apperrors.NewDatabaseError(err)
