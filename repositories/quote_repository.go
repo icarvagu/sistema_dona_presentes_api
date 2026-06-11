@@ -14,6 +14,10 @@ type QuoteRepository struct {
 	db *sql.DB
 }
 
+type queryRower interface {
+	QueryRow(query string, args ...interface{}) *sql.Row
+}
+
 func NewQuoteRepository(db *sql.DB) *QuoteRepository {
 	return &QuoteRepository{db: db}
 }
@@ -317,7 +321,13 @@ func (r *QuoteRepository) Update(id int, input *models.QuoteInput) (*models.Quot
 		installments = 1
 	}
 
-	_, err := r.db.Exec(
+	tx, err := r.db.Begin()
+	if err != nil {
+		return nil, apperrors.NewDatabaseError(err)
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(
 		`UPDATE quotes SET quote_number=$1, seller_id=$2, customer_id=$3, responsible_name=$4, quote_valid_until=$5, production_lead_time=$6, total_value=$7,
 			freight_cnpj_solicitante=$8, freight_cnpj_cpf_origem=$9, freight_cnpj_cpf_destino=$10, freight_cnpj_devedor=$11,
 			freight_tipo_transporte=$12, freight_contato=$13, freight_cidade_origem=$14, freight_cidade_destino=$15,
@@ -337,7 +347,9 @@ func (r *QuoteRepository) Update(id int, input *models.QuoteInput) (*models.Quot
 		return nil, apperrors.NewDatabaseError(err)
 	}
 
-	_, _ = r.db.Exec(`DELETE FROM quote_items WHERE quote_id=$1`, id)
+	if _, err := tx.Exec(`DELETE FROM quote_items WHERE quote_id=$1`, id); err != nil {
+		return nil, apperrors.NewDatabaseError(err)
+	}
 
 	for _, itemInput := range input.Items {
 		item := models.QuoteItem{
@@ -388,14 +400,20 @@ func (r *QuoteRepository) Update(id int, input *models.QuoteInput) (*models.Quot
 			Engravings:              itemInput.Engravings,
 			HasPriceFormation:       itemInput.HasPriceFormation,
 		}
-		if err := r.CreateItem(&item); err != nil {
+		if err := createQuoteItem(tx, &item); err != nil {
 			return nil, apperrors.NewDatabaseError(err)
 		}
 	}
 
 	if input.QuoteNumber == "" {
 		quoteNumber := fmt.Sprintf("COT-%06d", id)
-		_, _ = r.db.Exec(`UPDATE quotes SET quote_number=$1 WHERE id=$2`, quoteNumber, id)
+		if _, err := tx.Exec(`UPDATE quotes SET quote_number=$1 WHERE id=$2`, quoteNumber, id); err != nil {
+			return nil, apperrors.NewDatabaseError(err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, apperrors.NewDatabaseError(err)
 	}
 
 	return r.GetByID(id)
@@ -492,11 +510,15 @@ func (r *QuoteRepository) GetItems(quoteID int) ([]models.QuoteItem, error) {
 }
 
 func (r *QuoteRepository) CreateItem(item *models.QuoteItem) error {
+	return createQuoteItem(r.db, item)
+}
+
+func createQuoteItem(q queryRower, item *models.QuoteItem) error {
 	engravingsJSON := []byte("[]")
 	if item.Engravings != nil && len(item.Engravings) > 0 {
 		engravingsJSON = item.Engravings
 	}
-	return r.db.QueryRow(`
+	return q.QueryRow(`
 		INSERT INTO quote_items (
 			quote_id, product_id, quantity, unit_price, total_price, personalization_type,
 			dn_code, description_summary, is_kit,
