@@ -446,7 +446,7 @@ func (r *QuoteRepository) GetItems(quoteID int) ([]models.QuoteItem, error) {
 	rows, err := r.db.Query(`
 		SELECT id, quote_id, product_id, quantity, unit_price, total_price,
 		       COALESCE(personalization_type,''),
-		       COALESCE(dn_code,''), COALESCE(description_summary,''), COALESCE(is_kit,false),
+		       COALESCE(NULLIF(dn_code,'DN0000'),''), COALESCE(description_summary,''), COALESCE(is_kit,false),
 		       COALESCE(base_cost_unit,0), COALESCE(labor_cost,0),
 		       COALESCE(extra_unit_cost1,0), COALESCE(extra_unit_cost2,0),
 		       COALESCE(engraving_cost,0), COALESCE(urgency_fee,0),
@@ -502,7 +502,13 @@ func (r *QuoteRepository) GetItems(quoteID int) ([]models.QuoteItem, error) {
 		if engravingsBytes != nil {
 			item.Engravings = engravingsBytes
 		}
-		item.Product, _ = r.GetProductBasic(item.ProductID)
+		item.Product, _ = r.GetProductForQuoteItem(item)
+		if item.Product != nil {
+			item.DNCode = item.Product.InternalCode
+			if item.DescriptionSummary == "" {
+				item.DescriptionSummary = item.Product.ProductName
+			}
+		}
 		items = append(items, item)
 	}
 
@@ -517,6 +523,10 @@ func createQuoteItem(q queryRower, item *models.QuoteItem) error {
 	engravingsJSON := []byte("[]")
 	if item.Engravings != nil && len(item.Engravings) > 0 {
 		engravingsJSON = item.Engravings
+	}
+	dnCode := item.DNCode
+	if dnCode == "DN0000" {
+		dnCode = ""
 	}
 	return q.QueryRow(`
 		INSERT INTO quote_items (
@@ -537,7 +547,7 @@ func createQuoteItem(q queryRower, item *models.QuoteItem) error {
 			$32,$33,$34,$35,$36,$37,$38,$39,$40
 		) RETURNING id, created_at, updated_at`,
 		item.QuoteID, item.ProductID, item.Quantity, item.UnitPrice, item.TotalPrice, item.PersonalizationType,
-		item.DNCode, item.DescriptionSummary, item.IsKit,
+		dnCode, item.DescriptionSummary, item.IsKit,
 		item.BaseCostUnit, item.LaborCost, item.ExtraUnitCost1, item.ExtraUnitCost2,
 		item.EngravingCost, item.UrgencyFee, item.LogisticsCost, item.FreightCost,
 		item.TaxPercent, item.StPercent, item.LossIndexPercent, item.ImportedLaborPercent,
@@ -619,28 +629,123 @@ func (r *QuoteRepository) GetCustomerAddresses(customerID int) ([]models.Address
 	return addresses, nil
 }
 
+func productHasQuoteDetails(product *models.Product) bool {
+	return product != nil &&
+		(product.InternalCode != "" || product.SupplierCode != "" || product.Color != "" || (product.Supplier != nil && product.Supplier.Name != ""))
+}
+
+func mergeMissingProductQuoteDetails(product *models.Product, details *models.Product) *models.Product {
+	if product == nil {
+		return details
+	}
+	if details == nil {
+		return product
+	}
+	if product.InternalCode == "" {
+		product.InternalCode = details.InternalCode
+	}
+	if product.SupplierCode == "" {
+		product.SupplierCode = details.SupplierCode
+	}
+	if product.Color == "" {
+		product.Color = details.Color
+	}
+	if product.Supplier == nil || product.Supplier.Name == "" {
+		product.Supplier = details.Supplier
+	}
+	if product.Source == "" {
+		product.Source = details.Source
+	}
+	return product
+}
+
+func (r *QuoteRepository) GetProductForQuoteItem(item models.QuoteItem) (*models.Product, error) {
+	product, err := r.GetProductBasic(item.ProductID)
+	if err == nil {
+		if productHasQuoteDetails(product) {
+			return product, nil
+		}
+		if item.DescriptionSummary != "" {
+			if byName, nameErr := r.GetProductBasicByName(item.DescriptionSummary); nameErr == nil {
+				return mergeMissingProductQuoteDetails(product, byName), nil
+			}
+		}
+		return product, nil
+	}
+
+	if item.DescriptionSummary != "" {
+		byName, nameErr := r.GetProductBasicByName(item.DescriptionSummary)
+		if nameErr == nil && productHasQuoteDetails(byName) {
+			return byName, nil
+		}
+	}
+
+	return product, err
+}
+
 func (r *QuoteRepository) GetProductBasic(productID int) (*models.Product, error) {
+	return r.getProductBasicByCondition("p.id=$1", productID)
+}
+
+func (r *QuoteRepository) GetProductBasicByInternalCode(internalCode string) (*models.Product, error) {
+	return r.getProductBasicByCondition("LOWER(p.internal_code)=LOWER($1)", internalCode)
+}
+
+func (r *QuoteRepository) GetProductBasicByName(productName string) (*models.Product, error) {
+	return r.getProductBasicByCondition(`
+		LOWER(p.product_name)=LOWER($1)
+		OR LOWER(p.description)=LOWER($1)
+		OR LOWER(p.product_name) LIKE '%' || LOWER($1) || '%'
+		OR LOWER($1) LIKE '%' || LOWER(p.product_name) || '%'
+		OR LOWER(p.description) LIKE '%' || LOWER($1) || '%'`, productName)
+}
+
+func (r *QuoteRepository) getProductBasicByCondition(where string, arg interface{}) (*models.Product, error) {
 	var product models.Product
-	var productGroup, description, ncm, materialOrigin sql.NullString
+	var supplierID sql.NullInt64
+	var supplierName, supplierWebsite sql.NullString
+	var supplierCreatedAt, supplierUpdatedAt sql.NullTime
 	var photos pq.StringArray
-	err := r.db.QueryRow(`SELECT id, product_name, internal_code, supplier_id, product_group, description, photos, ncm, material_origin, stock, supplier_stock, created_at, updated_at FROM products WHERE id=$1`, productID).
-		Scan(&product.ID, &product.ProductName, &product.InternalCode, &product.SupplierID, &productGroup, &description, &photos, &ncm, &materialOrigin, &product.Stock, &product.SupplierStock, &product.CreatedAt, &product.UpdatedAt)
+	err := r.db.QueryRow(`
+		SELECT p.id, COALESCE(p.product_name,''), COALESCE(NULLIF(p.internal_code,'DN0000'),''),
+		       COALESCE(p.supplier_code,''), COALESCE(p.supplier_id,0),
+		       COALESCE(p.product_group,''), COALESCE(p.description,''), COALESCE(p.photos,'{}'::text[]),
+		       COALESCE(p.ncm,''), COALESCE(p.material_origin,''), COALESCE(p.stock,0), COALESCE(p.supplier_stock,0),
+		       COALESCE(p.source,''), COALESCE(p.color,''), p.created_at, p.updated_at,
+		       f.id, f.name, f.website, f.created_at, f.updated_at
+		FROM products p
+		LEFT JOIN suppliers f ON p.supplier_id = f.id
+		WHERE `+where+`
+		ORDER BY CASE WHEN COALESCE(p.supplier_code,'') <> '' THEN 0 ELSE 1 END, p.id
+		LIMIT 1`, arg).
+		Scan(
+			&product.ID, &product.ProductName, &product.InternalCode,
+			&product.SupplierCode, &product.SupplierID,
+			&product.ProductGroup, &product.Description, &photos,
+			&product.NCM, &product.MaterialOrigin, &product.Stock, &product.SupplierStock,
+			&product.Source, &product.Color, &product.CreatedAt, &product.UpdatedAt,
+			&supplierID, &supplierName, &supplierWebsite, &supplierCreatedAt, &supplierUpdatedAt,
+		)
 	if err != nil {
 		return nil, err
 	}
-	if productGroup.Valid {
-		product.ProductGroup = productGroup.String
-	}
-	if description.Valid {
-		product.Description = description.String
-	}
-	if ncm.Valid {
-		product.NCM = ncm.String
-	}
-	if materialOrigin.Valid {
-		product.MaterialOrigin = materialOrigin.String
-	}
 	product.Photos = []string(photos)
+	if supplierID.Valid {
+		supplier := &models.Supplier{ID: int(supplierID.Int64)}
+		if supplierName.Valid {
+			supplier.Name = supplierName.String
+		}
+		if supplierWebsite.Valid {
+			supplier.Website = &supplierWebsite.String
+		}
+		if supplierCreatedAt.Valid {
+			supplier.CreatedAt = supplierCreatedAt.Time
+		}
+		if supplierUpdatedAt.Valid {
+			supplier.UpdatedAt = supplierUpdatedAt.Time
+		}
+		product.Supplier = supplier
+	}
 	return &product, nil
 }
 

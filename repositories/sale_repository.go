@@ -399,23 +399,45 @@ func (r *SaleRepository) CreateItem(item *models.SaleItem) error {
 
 func (r *SaleRepository) GetProductBasic(productID int) (*models.Product, error) {
 	var p models.Product
-	var productGroup, description, ncm, materialOrigin sql.NullString
-	err := r.db.QueryRow(`SELECT id, product_name, internal_code, supplier_id, product_group, description, ncm, material_origin, stock, supplier_stock, created_at, updated_at FROM products WHERE id=$1`, productID).
-		Scan(&p.ID, &p.ProductName, &p.InternalCode, &p.SupplierID, &productGroup, &description, &ncm, &materialOrigin, &p.Stock, &p.SupplierStock, &p.CreatedAt, &p.UpdatedAt)
+	var supplierID sql.NullInt64
+	var supplierName, supplierWebsite sql.NullString
+	var supplierCreatedAt, supplierUpdatedAt sql.NullTime
+	err := r.db.QueryRow(`
+		SELECT p.id, COALESCE(p.product_name,''), COALESCE(p.internal_code,''),
+		       COALESCE(p.supplier_code,''), COALESCE(p.supplier_id,0),
+		       COALESCE(p.product_group,''), COALESCE(p.description,''), COALESCE(p.ncm,''),
+		       COALESCE(p.material_origin,''), COALESCE(p.stock,0), COALESCE(p.supplier_stock,0),
+		       COALESCE(p.color,''), p.created_at, p.updated_at,
+		       f.id, f.name, f.website, f.created_at, f.updated_at
+		FROM products p
+		LEFT JOIN suppliers f ON p.supplier_id = f.id
+		WHERE p.id=$1`, productID).
+		Scan(
+			&p.ID, &p.ProductName, &p.InternalCode,
+			&p.SupplierCode, &p.SupplierID,
+			&p.ProductGroup, &p.Description, &p.NCM,
+			&p.MaterialOrigin, &p.Stock, &p.SupplierStock,
+			&p.Color, &p.CreatedAt, &p.UpdatedAt,
+			&supplierID, &supplierName, &supplierWebsite, &supplierCreatedAt, &supplierUpdatedAt,
+		)
 	if err != nil {
 		return nil, err
 	}
-	if productGroup.Valid {
-		p.ProductGroup = productGroup.String
-	}
-	if description.Valid {
-		p.Description = description.String
-	}
-	if ncm.Valid {
-		p.NCM = ncm.String
-	}
-	if materialOrigin.Valid {
-		p.MaterialOrigin = materialOrigin.String
+	if supplierID.Valid {
+		supplier := &models.Supplier{ID: int(supplierID.Int64)}
+		if supplierName.Valid {
+			supplier.Name = supplierName.String
+		}
+		if supplierWebsite.Valid {
+			supplier.Website = &supplierWebsite.String
+		}
+		if supplierCreatedAt.Valid {
+			supplier.CreatedAt = supplierCreatedAt.Time
+		}
+		if supplierUpdatedAt.Valid {
+			supplier.UpdatedAt = supplierUpdatedAt.Time
+		}
+		p.Supplier = supplier
 	}
 	return &p, nil
 }
