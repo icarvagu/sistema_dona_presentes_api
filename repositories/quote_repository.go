@@ -446,7 +446,7 @@ func (r *QuoteRepository) GetItems(quoteID int) ([]models.QuoteItem, error) {
 	rows, err := r.db.Query(`
 		SELECT id, quote_id, product_id, quantity, unit_price, total_price,
 		       COALESCE(personalization_type,''),
-		       COALESCE(NULLIF(dn_code,'DN0000'),''), COALESCE(description_summary,''), COALESCE(is_kit,false),
+		       COALESCE(dn_code,''), COALESCE(description_summary,''), COALESCE(is_kit,false),
 		       COALESCE(base_cost_unit,0), COALESCE(labor_cost,0),
 		       COALESCE(extra_unit_cost1,0), COALESCE(extra_unit_cost2,0),
 		       COALESCE(engraving_cost,0), COALESCE(urgency_fee,0),
@@ -524,10 +524,6 @@ func createQuoteItem(q queryRower, item *models.QuoteItem) error {
 	if item.Engravings != nil && len(item.Engravings) > 0 {
 		engravingsJSON = item.Engravings
 	}
-	dnCode := item.DNCode
-	if dnCode == "DN0000" {
-		dnCode = ""
-	}
 	return q.QueryRow(`
 		INSERT INTO quote_items (
 			quote_id, product_id, quantity, unit_price, total_price, personalization_type,
@@ -547,7 +543,7 @@ func createQuoteItem(q queryRower, item *models.QuoteItem) error {
 			$32,$33,$34,$35,$36,$37,$38,$39,$40
 		) RETURNING id, created_at, updated_at`,
 		item.QuoteID, item.ProductID, item.Quantity, item.UnitPrice, item.TotalPrice, item.PersonalizationType,
-		dnCode, item.DescriptionSummary, item.IsKit,
+		item.DNCode, item.DescriptionSummary, item.IsKit,
 		item.BaseCostUnit, item.LaborCost, item.ExtraUnitCost1, item.ExtraUnitCost2,
 		item.EngravingCost, item.UrgencyFee, item.LogisticsCost, item.FreightCost,
 		item.TaxPercent, item.StPercent, item.LossIndexPercent, item.ImportedLaborPercent,
@@ -665,12 +661,24 @@ func (r *QuoteRepository) GetProductForQuoteItem(item models.QuoteItem) (*models
 		if productHasQuoteDetails(product) {
 			return product, nil
 		}
+		if item.DNCode != "" {
+			if byCode, codeErr := r.GetProductBasicByInternalCode(item.DNCode); codeErr == nil {
+				return mergeMissingProductQuoteDetails(product, byCode), nil
+			}
+		}
 		if item.DescriptionSummary != "" {
 			if byName, nameErr := r.GetProductBasicByName(item.DescriptionSummary); nameErr == nil {
 				return mergeMissingProductQuoteDetails(product, byName), nil
 			}
 		}
 		return product, nil
+	}
+
+	if item.DNCode != "" {
+		byCode, codeErr := r.GetProductBasicByInternalCode(item.DNCode)
+		if codeErr == nil && productHasQuoteDetails(byCode) {
+			return byCode, nil
+		}
 	}
 
 	if item.DescriptionSummary != "" {
@@ -707,7 +715,7 @@ func (r *QuoteRepository) getProductBasicByCondition(where string, arg interface
 	var supplierCreatedAt, supplierUpdatedAt sql.NullTime
 	var photos pq.StringArray
 	err := r.db.QueryRow(`
-		SELECT p.id, COALESCE(p.product_name,''), COALESCE(NULLIF(p.internal_code,'DN0000'),''),
+		SELECT p.id, COALESCE(p.product_name,''), COALESCE(p.internal_code,''),
 		       COALESCE(p.supplier_code,''), COALESCE(p.supplier_id,0),
 		       COALESCE(p.product_group,''), COALESCE(p.description,''), COALESCE(p.photos,'{}'::text[]),
 		       COALESCE(p.ncm,''), COALESCE(p.material_origin,''), COALESCE(p.stock,0), COALESCE(p.supplier_stock,0),
