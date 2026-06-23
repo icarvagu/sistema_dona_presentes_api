@@ -121,3 +121,15 @@ func HasPermission(r *http.Request, permission string) bool {
 	}
 	return false
 }
+
+// GetPermissionsFromRequest returns a defensive copy of the permission keys in the JWT.
+func GetPermissionsFromRequest(r *http.Request) []string {
+	if permsVal := r.Context().Value("permissions"); permsVal != nil {
+		if perms, ok := permsVal.([]string); ok {
+			result := make([]string, len(perms))
+			copy(result, perms)
+			return result
+		}
+	}
+	return []string{}
+}
