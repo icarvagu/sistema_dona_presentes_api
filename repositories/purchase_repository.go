@@ -107,38 +107,57 @@ func (r *PurchaseRepository) ReleaseSale(saleID, userID int, isSample, sampleHas
 	defer tx.Rollback()
 
 	var purchaseID int
-	err = tx.QueryRow(`
-		INSERT INTO purchase_orders (
-			sale_id, general_number, status, material_supplier_id, is_sample,
-			sample_has_engraving, has_engraving, corel_required, material_unit_cost,
-			material_total_cost, payment_method, commercial_notes
-		)
-		SELECT s.id, s.id::text, $2, MIN(NULLIF(p.supplier_id,0)), $3,
-		       $4, CASE WHEN $3 THEN $4 ELSE COALESCE(BOOL_OR(COALESCE(si.engravings,'[]'::jsonb) <> '[]'::jsonb),FALSE) END,
-		       CASE WHEN $3 THEN $4 ELSE COALESCE(BOOL_OR(COALESCE(si.engravings,'[]'::jsonb) <> '[]'::jsonb),FALSE) END,
-		       COALESCE(MIN(p.cost_price),0), COALESCE(SUM(si.quantity*p.cost_price),0),
-		       COALESCE(s.payment_method,''), COALESCE(s.observacoes_internas,'')
-		FROM sales s
-		LEFT JOIN sale_items si ON si.sale_id=s.id
-		LEFT JOIN products p ON p.id=si.product_id
-		WHERE s.id=$1
-		GROUP BY s.id
-		ON CONFLICT (sale_id) DO UPDATE SET
-			is_sample=EXCLUDED.is_sample,
-			sample_has_engraving=EXCLUDED.sample_has_engraving,
-			updated_at=NOW()
-		RETURNING id`, saleID, models.PurchasePending, isSample, sampleHasEngraving).Scan(&purchaseID)
+	created := false
+	if _, err = tx.Exec(`SELECT pg_advisory_xact_lock($1)`, saleID); err != nil {
+		return nil, err
+	}
+	var saleExists int
+	if err = tx.QueryRow(`SELECT 1 FROM sales WHERE id=$1 FOR UPDATE`, saleID).Scan(&saleExists); err != nil {
+		return nil, err
+	}
+	workflowRepo := &SalesWorkflowRepository{db: r.db}
+	if err = workflowRepo.validateChecklist(tx, saleID, true); err != nil {
+		return nil, err
+	}
+	err = tx.QueryRow(`SELECT id FROM purchase_orders WHERE sale_id=$1 FOR UPDATE`, saleID).Scan(&purchaseID)
+	if err == sql.ErrNoRows {
+		err = tx.QueryRow(`
+			INSERT INTO purchase_orders (
+				sale_id, general_number, status, material_supplier_id, is_sample,
+				sample_has_engraving, has_engraving, corel_required, material_unit_cost,
+				material_total_cost, payment_method, commercial_notes
+			)
+			SELECT s.id, s.id::text, $2, MIN(NULLIF(p.supplier_id,0)), $3,
+			       $4, CASE WHEN $3 THEN $4 ELSE COALESCE(BOOL_OR(COALESCE(si.engravings,'[]'::jsonb) <> '[]'::jsonb),FALSE) END,
+			       CASE WHEN $3 THEN $4 ELSE COALESCE(BOOL_OR(COALESCE(si.engravings,'[]'::jsonb) <> '[]'::jsonb),FALSE) END,
+			       COALESCE(MIN(p.cost_price),0), COALESCE(SUM(si.quantity*p.cost_price),0),
+			       COALESCE(s.payment_method,''), COALESCE(s.observacoes_internas,'')
+			FROM sales s
+			LEFT JOIN sale_items si ON si.sale_id=s.id
+			LEFT JOIN products p ON p.id=si.product_id
+			WHERE s.id=$1
+			GROUP BY s.id
+			RETURNING id`, saleID, models.PurchasePending, isSample, sampleHasEngraving).Scan(&purchaseID)
+		created = true
+	}
 	if err != nil {
 		return nil, err
 	}
-	if _, err = tx.Exec(`UPDATE sales SET status=$1, updated_at=NOW() WHERE id=$2`, models.PurchasePending, saleID); err != nil {
+	if !created {
+		if _, err = tx.Exec(`UPDATE purchase_orders SET is_sample=$1,sample_has_engraving=$2,updated_at=NOW() WHERE id=$3`, isSample, sampleHasEngraving, purchaseID); err != nil {
+			return nil, err
+		}
+	}
+	if _, err = tx.Exec(`UPDATE sales SET status='Liberado para Compras', released_to_purchases_at=COALESCE(released_to_purchases_at, NOW()), updated_at=NOW() WHERE id=$1`, saleID); err != nil {
 		return nil, err
 	}
-	if _, err = tx.Exec(`INSERT INTO purchase_history (purchase_id,action,to_status,details,user_id) VALUES ($1,'Pedido liberado pelo Comercial',$2,'Pedido enviado para Compras',$3)`, purchaseID, models.PurchasePending, userID); err != nil {
-		return nil, err
-	}
-	if _, err = tx.Exec(`INSERT INTO notifications (purchase_id,recipient_permission,notification_type,message) VALUES ($1,'compras','pedido_compra',$2)`, purchaseID, fmt.Sprintf("Pedido %d pendente de compra", saleID)); err != nil {
-		return nil, err
+	if created {
+		if _, err = tx.Exec(`INSERT INTO purchase_history (purchase_id,action,to_status,details,user_id) VALUES ($1,'Pedido liberado pelo Comercial',$2,'Pedido enviado para Compras',$3)`, purchaseID, models.PurchasePending, userID); err != nil {
+			return nil, err
+		}
+		if _, err = tx.Exec(`INSERT INTO notifications (purchase_id,recipient_permission,notification_type,message) VALUES ($1,'compras','pedido_compra',$2)`, purchaseID, fmt.Sprintf("Pedido %d pendente de compra", saleID)); err != nil {
+			return nil, err
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return nil, err

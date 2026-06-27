@@ -120,6 +120,10 @@ func ReleaseSaleToPurchases(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&input)
 	}
 	userID, _, _ := middleware.GetUserFromRequest(r)
+	if err := salesWorkflowService.EnsureReadyForPurchases(saleID); err != nil {
+		writePurchaseError(w, err)
+		return
+	}
 	item, err := purchaseService.ReleaseSale(saleID, userID, input.IsSample, input.SampleHasEngraving)
 	if err != nil {
 		writePurchaseError(w, err)

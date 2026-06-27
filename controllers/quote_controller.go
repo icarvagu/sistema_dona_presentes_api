@@ -68,6 +68,11 @@ func GetQuote(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	if quote.SellerID != userID && !middleware.HasPermission(r, "orcamentos:ver_todos") {
+		workflowForbidden(w)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(quote)
 }
@@ -77,6 +82,10 @@ func CreateQuote(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
+	}
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	if !middleware.HasPermission(r, "orcamentos:ver_todos") {
+		input.SellerID = userID
 	}
 	quote, err := quoteService.Create(&input)
 	if err != nil {
@@ -108,6 +117,15 @@ func UpdateQuote(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	ownerID, ownerErr := salesWorkflowService.QuoteOwner(id)
+	if ownerErr != nil || (ownerID != userID && !middleware.HasPermission(r, "orcamentos:ver_todos")) {
+		workflowForbidden(w)
+		return
+	}
+	if !middleware.HasPermission(r, "orcamentos:ver_todos") {
+		input.SellerID = userID
+	}
 	quote, err := quoteService.Update(id, &input)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -136,7 +154,12 @@ func UpdateQuoteFeedback(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
 	}
-	quote, err := quoteService.UpdateFeedback(id, input.FeedbackDateTime, input.FeedbackObservation)
+	if !canSeeQuote(r, id) {
+		workflowForbidden(w)
+		return
+	}
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	_, err = salesWorkflowService.AddFeedback(id, userID, input.FeedbackDateTime, input.FeedbackObservation)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrQuoteNotFound, http.StatusNotFound)
@@ -149,6 +172,11 @@ func UpdateQuoteFeedback(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusBadRequest)
 		return
 	}
+	quote, err := quoteService.GetByID(id)
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(quote)
 }
@@ -157,6 +185,10 @@ func DeleteQuote(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+	if !canSeeQuote(r, id) {
+		workflowForbidden(w)
 		return
 	}
 	if err := quoteService.Delete(id); err != nil {
@@ -187,6 +219,11 @@ func GetQuotePDF(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	if quote.SellerID != userID && !middleware.HasPermission(r, "orcamentos:ver_todos") {
+		workflowForbidden(w)
 		return
 	}
 	if quotePDFService == nil {

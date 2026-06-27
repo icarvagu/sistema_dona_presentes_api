@@ -69,6 +69,11 @@ func GetSale(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	if v.SellerID != userID && !middleware.HasPermission(r, "vendas:ver_todos") {
+		workflowForbidden(w)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(v)
 }
@@ -78,6 +83,10 @@ func CreateSale(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
+	}
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	if !middleware.HasPermission(r, "vendas:ver_todos") {
+		input.SellerID = userID
 	}
 
 	v, err := saleService.Create(&input)
@@ -105,6 +114,15 @@ func UpdateSale(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
 		return
+	}
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	ownerID, ownerErr := salesWorkflowService.SaleOwner(id)
+	if ownerErr != nil || (ownerID != userID && !middleware.HasPermission(r, "vendas:ver_todos")) {
+		workflowForbidden(w)
+		return
+	}
+	if !middleware.HasPermission(r, "vendas:ver_todos") {
+		input.SellerID = userID
 	}
 
 	v, err := saleService.Update(id, &input)
@@ -140,6 +158,11 @@ func GetSalePDF(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
 		return
 	}
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	if sale.SellerID != userID && !middleware.HasPermission(r, "vendas:ver_todos") {
+		workflowForbidden(w)
+		return
+	}
 	if pdfService == nil {
 		middleware.ErrorHandler(w, &apperrors.AppError{
 			Code:    http.StatusServiceUnavailable,
@@ -168,6 +191,12 @@ func DeleteSale(w http.ResponseWriter, r *http.Request) {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
 		return
 	}
+	userID, _, _ := middleware.GetUserFromRequest(r)
+	ownerID, ownerErr := salesWorkflowService.SaleOwner(id)
+	if ownerErr != nil || (ownerID != userID && !middleware.HasPermission(r, "vendas:ver_todos")) {
+		workflowForbidden(w)
+		return
+	}
 	if err := saleService.Delete(id); err != nil {
 		if err == sql.ErrNoRows {
 			middleware.ErrorHandler(w, apperrors.ErrSaleNotFound, http.StatusNotFound)
@@ -184,6 +213,10 @@ func UpdateSaleLayout(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
 		middleware.ErrorHandler(w, apperrors.ErrInvalidID, http.StatusBadRequest)
+		return
+	}
+	if !canSeeSale(r, id) {
+		workflowForbidden(w)
 		return
 	}
 	var body struct {
