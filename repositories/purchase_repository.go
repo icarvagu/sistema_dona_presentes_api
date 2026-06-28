@@ -188,15 +188,15 @@ func (r *PurchaseRepository) Update(id int, input *models.PurchaseUpdateInput, u
 }
 
 func (r *PurchaseRepository) SetStatus(id int, status string, userID int, action, details string) error {
-	var oldStatus string
-	if err := r.db.QueryRow(`SELECT status FROM purchase_orders WHERE id=$1`, id).Scan(&oldStatus); err != nil {
-		return err
-	}
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
+	var oldStatus string
+	if err = tx.QueryRow(`SELECT status FROM purchase_orders WHERE id=$1 FOR UPDATE`, id).Scan(&oldStatus); err != nil {
+		return err
+	}
 	productionReleased := interface{}(nil)
 	if status == models.PurchaseReleased {
 		productionReleased = "now"
@@ -214,6 +214,15 @@ func (r *PurchaseRepository) SetStatus(id int, status string, userID int, action
 	}
 	if status == models.PurchaseReleased {
 		if _, err = tx.Exec(`UPDATE sales SET status=$1,updated_at=NOW() WHERE id=(SELECT sale_id FROM purchase_orders WHERE id=$2)`, status, id); err != nil {
+			return err
+		}
+		productionRepo := NewProductionRepository(r.db)
+		productionID, ensureErr := productionRepo.EnsureForPurchaseTx(tx, id, userID)
+		if ensureErr != nil {
+			return ensureErr
+		}
+		if _, err = tx.Exec(`INSERT INTO notifications (purchase_id,production_order_id,recipient_permission,notification_type,message)
+			VALUES ($1,$2,'producao','ordem_producao',$3)`, id, productionID, fmt.Sprintf("Pedido %d liberado para Produção", id)); err != nil {
 			return err
 		}
 	}
