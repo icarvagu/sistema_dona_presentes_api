@@ -58,6 +58,12 @@ func canSeeItem(r *http.Request, entity string, id int) bool {
 	return err == nil && (owner == user || middleware.HasPermission(r, "orcamentos:ver_todos") || middleware.HasPermission(r, "vendas:ver_todos") || middleware.HasPermission(r, "arte_final"))
 }
 
+func canManageSalePending(r *http.Request) bool {
+	return middleware.HasPermission(r, "compras") || middleware.HasPermission(r, "producao") ||
+		middleware.HasPermission(r, "financeiro") || middleware.HasPermission(r, "diretoria_financeira") ||
+		middleware.HasPermission(r, "arte_final")
+}
+
 func AddQuoteFeedbackEvent(w http.ResponseWriter, r *http.Request) {
 	id, err := workflowID(r, "id")
 	if err != nil {
@@ -206,7 +212,7 @@ func AddSaleReceipt(w http.ResponseWriter, r *http.Request) {
 		workflowError(w, err)
 		return
 	}
-	if !canSeeSale(r, saleID) && !middleware.HasPermission(r, "financeiro") {
+	if !canSeeSale(r, saleID) && !middleware.HasPermission(r, "financeiro") && !middleware.HasPermission(r, "diretoria_financeira") {
 		workflowForbidden(w)
 		return
 	}
@@ -226,7 +232,7 @@ func AddSaleReceipt(w http.ResponseWriter, r *http.Request) {
 	workflowJSON(w, http.StatusCreated, map[string]int64{"id": id})
 }
 func ValidateSaleReceipt(w http.ResponseWriter, r *http.Request) {
-	if !middleware.HasPermission(r, "financeiro") {
+	if !middleware.HasPermission(r, "financeiro") && !middleware.HasPermission(r, "diretoria_financeira") {
 		workflowForbidden(w)
 		return
 	}
@@ -257,7 +263,7 @@ func AddSalePending(w http.ResponseWriter, r *http.Request) {
 		workflowError(w, err)
 		return
 	}
-	if !canSeeSale(r, saleID) && !middleware.HasPermission(r, "compras") && !middleware.HasPermission(r, "producao") {
+	if !canSeeSale(r, saleID) && !canManageSalePending(r) {
 		workflowForbidden(w)
 		return
 	}
@@ -282,7 +288,7 @@ func ResolveSalePending(w http.ResponseWriter, r *http.Request) {
 	}
 	user, _, _ := middleware.GetUserFromRequest(r)
 	owner, ownerErr := salesWorkflowService.PendingSaleOwner(id)
-	if ownerErr != nil || (owner != user && !middleware.HasPermission(r, "vendas:ver_todos") && !middleware.HasPermission(r, "compras") && !middleware.HasPermission(r, "producao")) {
+	if ownerErr != nil || (owner != user && !middleware.HasPermission(r, "vendas:ver_todos") && !canManageSalePending(r)) {
 		workflowForbidden(w)
 		return
 	}
@@ -330,7 +336,7 @@ func GetSaleWorkflow(w http.ResponseWriter, r *http.Request) {
 		workflowError(w, err)
 		return
 	}
-	if !canSeeSale(r, id) && !middleware.HasPermission(r, "financeiro") && !middleware.HasPermission(r, "compras") && !middleware.HasPermission(r, "arte_final") {
+	if !canSeeSale(r, id) && !middleware.HasPermission(r, "financeiro") && !middleware.HasPermission(r, "diretoria_financeira") && !middleware.HasPermission(r, "compras") && !middleware.HasPermission(r, "arte_final") && !middleware.HasPermission(r, "producao") {
 		workflowForbidden(w)
 		return
 	}
@@ -439,7 +445,10 @@ func SetSellerMonthlyTarget(w http.ResponseWriter, r *http.Request) {
 }
 func GetSalesWorkflowDashboard(w http.ResponseWriter, r *http.Request) {
 	user, _, _ := middleware.GetUserFromRequest(r)
-	data, err := salesWorkflowService.Dashboard(user, middleware.HasPermission(r, "vendas:ver_todos"))
+	canSeeAll := middleware.HasPermission(r, "vendas:ver_todos") || middleware.HasPermission(r, "arte_final") ||
+		middleware.HasPermission(r, "financeiro") || middleware.HasPermission(r, "diretoria_financeira") ||
+		middleware.HasPermission(r, "compras") || middleware.HasPermission(r, "producao")
+	data, err := salesWorkflowService.Dashboard(user, canSeeAll)
 	if err != nil {
 		workflowError(w, err)
 		return

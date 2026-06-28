@@ -27,6 +27,10 @@ func (s *SalesWorkflowService) AddFeedback(quoteID, userID int, when *time.Time,
 	if strings.TrimSpace(note) == "" {
 		return nil, fmt.Errorf("observation is required")
 	}
+	if when == nil {
+		defaultDate := time.Now().Add(72 * time.Hour)
+		when = &defaultDate
+	}
 	return s.repo.AddFeedback(quoteID, userID, when, strings.TrimSpace(note))
 }
 func (s *SalesWorkflowService) Feedbacks(id int) ([]models.QuoteFeedbackEvent, error) {

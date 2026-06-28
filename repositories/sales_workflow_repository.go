@@ -55,6 +55,10 @@ func (r *SalesWorkflowRepository) AddFeedback(quoteID, userID int, scheduledAt *
 	if err != nil {
 		return nil, err
 	}
+	if _, err = tx.Exec(`INSERT INTO notifications(recipient_user_id,notification_type,message)
+		SELECT seller_id,'feedback_orcamento',$1 FROM quotes WHERE id=$2`, fmt.Sprintf("Feedback do orçamento %d agendado", quoteID), quoteID); err != nil {
+		return nil, err
+	}
 	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -111,6 +115,9 @@ func (r *SalesWorkflowRepository) CreateLayout(entity string, itemID, userID int
 	if err != nil {
 		return nil, err
 	}
+	if _, err = tx.Exec(`INSERT INTO notifications(recipient_permission,notification_type,message) VALUES('arte_final','novo_layout',$1)`, fmt.Sprintf("Novo layout para análise: %s item %d, versão %d", entity, itemID, v.Version)); err != nil {
+		return nil, err
+	}
 	if err = tx.Commit(); err != nil {
 		return nil, err
 	}
@@ -132,6 +139,14 @@ func (r *SalesWorkflowRepository) ApproveLayout(id int64, userID int, status, no
 		return sql.ErrNoRows
 	}
 	if _, err = tx.Exec(`INSERT INTO layout_approval_events(layout_version_id,status,note,created_by) VALUES($1,$2,$3,$4)`, id, status, note, userID); err != nil {
+		return err
+	}
+	if _, err = tx.Exec(`INSERT INTO notifications(recipient_user_id,notification_type,message)
+		SELECT COALESCE(q.seller_id,s.seller_id),'layout_analisado',$1
+		FROM item_layout_versions l
+		LEFT JOIN quote_items qi ON l.entity_type='quote_item' AND qi.id=l.item_id LEFT JOIN quotes q ON q.id=qi.quote_id
+		LEFT JOIN sale_items si ON l.entity_type='sale_item' AND si.id=l.item_id LEFT JOIN sales s ON s.id=si.sale_id
+		WHERE l.id=$2`, fmt.Sprintf("Layout %d atualizado para %s", id, status), id); err != nil {
 		return err
 	}
 	return tx.Commit()
@@ -234,16 +249,35 @@ func (r *SalesWorkflowRepository) UpsertFinancial(saleID, userID int, input mode
 	if _, err = tx.Exec(`INSERT INTO financial_analysis_events(sale_id,status,tags,observation,attachment_url,created_by) VALUES($1,$2,$3,$4,$5,$6)`, saleID, input.Status, pq.Array(input.Tags), input.Observation, input.AttachmentURL, userID); err != nil {
 		return err
 	}
+	if _, err = tx.Exec(`INSERT INTO notifications(recipient_user_id,notification_type,message)
+		SELECT seller_id,'analise_financeira',$1 FROM sales WHERE id=$2`, fmt.Sprintf("Análise financeira do pedido %d: %s", saleID, input.Status), saleID); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 
 func (r *SalesWorkflowRepository) AddReceipt(saleID, userID int, url string) (int64, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
 	var id int64
-	err := r.db.QueryRow(`INSERT INTO sale_payment_receipts(sale_id,file_url,uploaded_by) VALUES($1,$2,$3) RETURNING id`, saleID, url, userID).Scan(&id)
-	return id, err
+	if err = tx.QueryRow(`INSERT INTO sale_payment_receipts(sale_id,file_url,uploaded_by) VALUES($1,$2,$3) RETURNING id`, saleID, url, userID).Scan(&id); err != nil {
+		return 0, err
+	}
+	if _, err = tx.Exec(`INSERT INTO notifications(recipient_permission,notification_type,message) VALUES('financeiro','novo_comprovante',$1)`, fmt.Sprintf("Novo comprovante no pedido %d", saleID)); err != nil {
+		return 0, err
+	}
+	return id, tx.Commit()
 }
 func (r *SalesWorkflowRepository) ValidateReceipt(id int64, userID int, status, note string) error {
-	res, err := r.db.Exec(`UPDATE sale_payment_receipts SET status=$1,observation=$2,validated_by=$3,validated_at=now() WHERE id=$4`, status, note, userID, id)
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	res, err := tx.Exec(`UPDATE sale_payment_receipts SET status=$1,observation=$2,validated_by=$3,validated_at=now() WHERE id=$4`, status, note, userID, id)
 	if err != nil {
 		return err
 	}
@@ -251,7 +285,11 @@ func (r *SalesWorkflowRepository) ValidateReceipt(id int64, userID int, status, 
 	if n == 0 {
 		return sql.ErrNoRows
 	}
-	return nil
+	if _, err = tx.Exec(`INSERT INTO notifications(recipient_user_id,notification_type,message)
+		SELECT s.seller_id,'comprovante_validado',$1 FROM sale_payment_receipts r JOIN sales s ON s.id=r.sale_id WHERE r.id=$2`, fmt.Sprintf("Comprovante %d: %s", id, status), id); err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 func (r *SalesWorkflowRepository) AddPending(saleID, userID int, input models.SalePendingInput) (int64, error) {
@@ -278,9 +316,19 @@ func (r *SalesWorkflowRepository) PendingSaleOwner(id int64) (int, error) {
 }
 
 func (r *SalesWorkflowRepository) AddEngravingApproval(itemID, userID int, input models.EngravingApprovalInput) (int64, error) {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer tx.Rollback()
 	var id int64
-	err := r.db.QueryRow(`INSERT INTO engraving_approvals(sale_item_id,response,observation,responded_by) VALUES($1,$2,$3,$4) RETURNING id`, itemID, input.Response, input.Observation, userID).Scan(&id)
-	return id, err
+	if err = tx.QueryRow(`INSERT INTO engraving_approvals(sale_item_id,response,observation,responded_by) VALUES($1,$2,$3,$4) RETURNING id`, itemID, input.Response, input.Observation, userID).Scan(&id); err != nil {
+		return 0, err
+	}
+	if _, err = tx.Exec(`INSERT INTO notifications(recipient_permission,notification_type,message) VALUES('compras','aprovacao_gravacao',$1)`, fmt.Sprintf("Resposta de gravação do item %d: %s", itemID, input.Response)); err != nil {
+		return 0, err
+	}
+	return id, tx.Commit()
 }
 func (r *SalesWorkflowRepository) RecordEngravingChannel(id int64, userID int, channel string) error {
 	res, err := r.db.Exec(`UPDATE engraving_approvals SET channel=$1,recorded_by=$2,recorded_at=now() WHERE id=$3 AND recorded_at IS NULL`, channel, userID, id)
@@ -426,36 +474,25 @@ func (r *SalesWorkflowRepository) SaleWorkflow(id int) (map[string]interface{}, 
 }
 
 func (r *SalesWorkflowRepository) Dashboard(sellerID int, all bool) (map[string]interface{}, error) {
-	filter := ""
-	args := []interface{}{}
-	if !all {
-		filter = " WHERE seller_id=$1"
-		args = append(args, sellerID)
-	}
 	result := map[string]interface{}{}
 	var quotes, important int
-	err := r.db.QueryRow(`SELECT count(*),count(*) FILTER(WHERE important) FROM quotes`+filter, args...).Scan(&quotes, &important)
+	err := r.db.QueryRow(`SELECT count(*),count(*) FILTER(WHERE important) FROM quotes WHERE ($1 OR seller_id=$2)`, all, sellerID).Scan(&quotes, &important)
 	if err != nil {
 		return nil, err
 	}
 	result["quotes"] = quotes
 	result["important_quotes"] = important
-	feedbackFilter := ""
-	if !all {
-		feedbackFilter = " AND q.seller_id=$1"
-	}
 	var due int
-	err = r.db.QueryRow(`SELECT count(*) FROM quote_feedback_events e JOIN quotes q ON q.id=e.quote_id WHERE e.scheduled_at<=now()`+feedbackFilter, args...).Scan(&due)
+	err = r.db.QueryRow(`SELECT count(*) FROM quotes q
+		LEFT JOIN LATERAL (SELECT scheduled_at FROM quote_feedback_events WHERE quote_id=q.id ORDER BY created_at DESC,id DESC LIMIT 1) e ON true
+		WHERE ($1 OR q.seller_id=$2) AND q.converted_sale_id IS NULL
+		AND COALESCE(e.scheduled_at,q.feedback_datetime,q.created_at+interval '3 days')<=now()`, all, sellerID).Scan(&due)
 	if err != nil {
 		return nil, err
 	}
 	result["overdue_feedbacks"] = due
-	saleFilter := ""
-	if !all {
-		saleFilter = " WHERE s.seller_id=$1"
-	}
 	var pending, layouts, approvals int
-	err = r.db.QueryRow(`SELECT count(DISTINCT p.id) FILTER(WHERE p.resolved_at IS NULL),count(DISTINCT l.id) FILTER(WHERE l.approval_status='pending'),count(DISTINCT a.id) FILTER(WHERE a.recorded_at IS NULL) FROM sales s LEFT JOIN sale_pending_events p ON p.sale_id=s.id LEFT JOIN sale_items i ON i.sale_id=s.id LEFT JOIN item_layout_versions l ON l.entity_type='sale_item' AND l.item_id=i.id LEFT JOIN engraving_approvals a ON a.sale_item_id=i.id`+saleFilter, args...).Scan(&pending, &layouts, &approvals)
+	err = r.db.QueryRow(`SELECT count(DISTINCT p.id) FILTER(WHERE p.resolved_at IS NULL),count(DISTINCT l.id) FILTER(WHERE l.approval_status='pending'),count(DISTINCT a.id) FILTER(WHERE a.recorded_at IS NULL) FROM sales s LEFT JOIN sale_pending_events p ON p.sale_id=s.id LEFT JOIN sale_items i ON i.sale_id=s.id LEFT JOIN item_layout_versions l ON l.entity_type='sale_item' AND l.item_id=i.id LEFT JOIN engraving_approvals a ON a.sale_item_id=i.id WHERE ($1 OR s.seller_id=$2)`, all, sellerID).Scan(&pending, &layouts, &approvals)
 	if err != nil {
 		return nil, err
 	}
@@ -471,6 +508,61 @@ func (r *SalesWorkflowRepository) Dashboard(sellerID int, all bool) (map[string]
 	result["monthly_sold"] = sold
 	result["monthly_target"] = target
 	result["target_remaining"] = maxFloat(target-sold, 0)
+
+	queueQueries := map[string]string{
+		"quote_queue": `SELECT COALESCE(jsonb_agg(row_to_json(x) ORDER BY x.important DESC,x.feedback_at,x.id),'[]'::jsonb) FROM (
+			SELECT q.id,q.quote_number,q.responsible_name,c.name customer_name,q.total_value total,q.important,q.converted_sale_id,
+			COALESCE(e.scheduled_at,q.feedback_datetime,q.created_at+interval '3 days') feedback_at,
+			COALESCE(e.observation,q.feedback_observation,'') feedback_observation
+			FROM quotes q JOIN customers c ON c.id=q.customer_id
+			LEFT JOIN LATERAL (SELECT scheduled_at,observation FROM quote_feedback_events WHERE quote_id=q.id ORDER BY created_at DESC,id DESC LIMIT 1) e ON true
+			WHERE ($1 OR q.seller_id=$2) AND q.converted_sale_id IS NULL
+			ORDER BY q.important DESC,feedback_at,q.id LIMIT 40) x`,
+		"feedback_queue": `SELECT COALESCE(jsonb_agg(row_to_json(x) ORDER BY x.overdue DESC,x.scheduled_at,x.quote_id),'[]'::jsonb) FROM (
+			SELECT q.id quote_id,q.quote_number,c.name customer_name,q.important,
+			COALESCE(e.scheduled_at,q.feedback_datetime,q.created_at+interval '3 days') scheduled_at,
+			COALESCE(e.observation,q.feedback_observation,'') observation,
+			COALESCE(e.scheduled_at,q.feedback_datetime,q.created_at+interval '3 days')<now() overdue
+			FROM quotes q JOIN customers c ON c.id=q.customer_id
+			LEFT JOIN LATERAL (SELECT scheduled_at,observation FROM quote_feedback_events WHERE quote_id=q.id ORDER BY created_at DESC,id DESC LIMIT 1) e ON true
+			WHERE ($1 OR q.seller_id=$2) AND q.converted_sale_id IS NULL
+			AND COALESCE(e.scheduled_at,q.feedback_datetime,q.created_at+interval '3 days')<=now()+interval '7 days'
+			ORDER BY overdue DESC,scheduled_at LIMIT 40) x`,
+		"layout_queue": `SELECT COALESCE(jsonb_agg(row_to_json(x) ORDER BY x.approval_status,x.created_at),'[]'::jsonb) FROM (
+			SELECT DISTINCT ON (l.entity_type,l.item_id) l.id,l.entity_type,l.item_id,l.version,l.label,l.file_url,l.approval_status,l.approval_note,l.created_at,
+			COALESCE(q.id,s.id) entity_id,COALESCE(q.quote_number,s.id::text) entity_number,p.product_name
+			FROM item_layout_versions l
+			LEFT JOIN quote_items qi ON l.entity_type='quote_item' AND qi.id=l.item_id LEFT JOIN quotes q ON q.id=qi.quote_id
+			LEFT JOIN sale_items si ON l.entity_type='sale_item' AND si.id=l.item_id LEFT JOIN sales s ON s.id=si.sale_id
+			JOIN products p ON p.id=COALESCE(qi.product_id,si.product_id)
+			WHERE ($1 OR COALESCE(q.seller_id,s.seller_id)=$2)
+			ORDER BY l.entity_type,l.item_id,l.version DESC) x`,
+		"sale_stages": `SELECT COALESCE(jsonb_agg(row_to_json(x) ORDER BY x.created_at,x.id),'[]'::jsonb) FROM (
+			SELECT s.id,c.name customer_name,s.total_value total,s.status,s.created_at,
+			CASE WHEN s.released_to_purchases_at IS NOT NULL THEN 'released'
+			 WHEN s.seller_approved_at IS NOT NULL THEN 'seller_approved'
+			 WHEN EXISTS(SELECT 1 FROM sale_pending_events p WHERE p.sale_id=s.id AND p.blocking AND p.resolved_at IS NULL) THEN 'blocked'
+			 WHEN EXISTS(SELECT 1 FROM financial_analyses f WHERE f.sale_id=s.id AND f.status='approved') THEN 'final_checklist'
+			 WHEN EXISTS(SELECT 1 FROM financial_analyses f WHERE f.sale_id=s.id) THEN 'financial_analysis'
+			 ELSE 'awaiting_financial' END stage
+			FROM sales s JOIN customers c ON c.id=s.customer_id WHERE ($1 OR s.seller_id=$2)
+			ORDER BY s.created_at DESC LIMIT 60) x`,
+		"pending_queue": `SELECT COALESCE(jsonb_agg(row_to_json(x) ORDER BY x.blocking DESC,x.sector,x.created_at),'[]'::jsonb) FROM (
+			SELECT p.id,p.sale_id,p.sector,p.description,p.blocking,p.created_at,c.name customer_name
+			FROM sale_pending_events p JOIN sales s ON s.id=p.sale_id JOIN customers c ON c.id=s.customer_id
+			WHERE p.resolved_at IS NULL AND ($1 OR s.seller_id=$2) ORDER BY p.blocking DESC,p.created_at LIMIT 60) x`,
+		"engraving_queue": `SELECT COALESCE(jsonb_agg(row_to_json(x) ORDER BY x.responded_at),'[]'::jsonb) FROM (
+			SELECT a.id,a.sale_item_id,i.sale_id,a.response,a.observation,a.channel,a.recorded_at,a.responded_at,p.product_name
+			FROM engraving_approvals a JOIN sale_items i ON i.id=a.sale_item_id JOIN sales s ON s.id=i.sale_id JOIN products p ON p.id=i.product_id
+			WHERE a.recorded_at IS NULL AND ($1 OR s.seller_id=$2) ORDER BY a.responded_at LIMIT 40) x`,
+	}
+	for key, query := range queueQueries {
+		var raw []byte
+		if err = r.db.QueryRow(query, all, sellerID).Scan(&raw); err != nil {
+			return nil, err
+		}
+		result[key] = json.RawMessage(raw)
+	}
 	return result, nil
 }
 
