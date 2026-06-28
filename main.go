@@ -54,6 +54,7 @@ func main() {
 	controllers.InitSaleService()
 	controllers.InitQuoteService()
 	controllers.InitSalesWorkflowService()
+	controllers.InitArtFinalService()
 	controllers.InitDashboardService(services.NewDashboardService(repositories.NewDashboardRepository(config.DB)))
 	controllers.InitPurchaseService()
 
@@ -90,6 +91,7 @@ func main() {
 	routes.RegisterSalesRoutes(protectedRouter)
 	routes.RegisterQuotesRoutes(protectedRouter)
 	routes.RegisterSalesWorkflowRoutes(protectedRouter)
+	routes.RegisterArtFinalRoutes(protectedRouter)
 	routes.RegisterDashboardRoutes(protectedRouter)
 	routes.RegisterPurchasesRoutes(protectedRouter)
 	routes.RegisterAuthProtectedRoutes(protectedRouter)
