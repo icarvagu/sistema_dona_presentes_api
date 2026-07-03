@@ -119,9 +119,6 @@ func (s *PurchaseService) ExecuteAction(id, userID int, input *models.PurchaseAc
 			err = s.repo.AddHistory(id, "Aceite do fornecedor de material", p.Status, p.Status, input.Observation, userID)
 		}
 	case "accept_engraving":
-		if !p.HasEngraving {
-			return nil, errors.New("o pedido não possui gravação")
-		}
 		err = s.repo.SetAcceptance(id, true)
 		if err == nil {
 			err = s.repo.AddHistory(id, "Aceite do fornecedor de gravação", p.Status, p.Status, input.Observation, userID)
@@ -130,8 +127,8 @@ func (s *PurchaseService) ExecuteAction(id, userID int, input *models.PurchaseAc
 		if !p.MaterialAccepted {
 			return nil, errors.New("confirme o aceite do fornecedor de material")
 		}
-		if p.HasEngraving && !p.EngravingAccepted {
-			return nil, errors.New("confirme o aceite do fornecedor de gravação")
+		if !p.EngravingAccepted {
+			return nil, errors.New("confirme o aceite do pedido de gravação")
 		}
 		for _, payment := range p.Payments {
 			if payment.Status != "Pagamento Registrado" {
@@ -143,8 +140,8 @@ func (s *PurchaseService) ExecuteAction(id, userID int, input *models.PurchaseAc
 		if p.Status != models.PurchaseBought && p.Status != models.PurchaseInEngraving {
 			return nil, errors.New("o pedido precisa estar comprado antes da liberação para Produção")
 		}
-		if !p.MaterialAccepted || (p.HasEngraving && !p.EngravingAccepted) {
-			return nil, errors.New("a liberação está bloqueada até o aceite de todos os fornecedores")
+		if !p.MaterialAccepted || !p.EngravingAccepted {
+			return nil, errors.New("a liberação está bloqueada até o aceite dos pedidos de material e gravação")
 		}
 		err = s.repo.SetStatus(id, models.PurchaseReleased, userID, "Liberado para Produção", input.Observation)
 	case "first_piece_received":

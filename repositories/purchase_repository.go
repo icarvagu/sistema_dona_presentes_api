@@ -128,8 +128,8 @@ func (r *PurchaseRepository) ReleaseSale(saleID, userID int, isSample, sampleHas
 				material_total_cost, payment_method, commercial_notes
 			)
 			SELECT s.id, s.id::text, $2, MIN(NULLIF(p.supplier_id,0)), $3,
-			       $4, CASE WHEN $3 THEN $4 ELSE COALESCE(BOOL_OR(COALESCE(si.engravings,'[]'::jsonb) <> '[]'::jsonb),FALSE) END,
-			       CASE WHEN $3 THEN $4 ELSE COALESCE(BOOL_OR(COALESCE(si.engravings,'[]'::jsonb) <> '[]'::jsonb),FALSE) END,
+			       $4, CASE WHEN $3 THEN $4 ELSE COALESCE(BOOL_OR(COALESCE(si.engravings,'[]'::jsonb) <> '[]'::jsonb OR COALESCE(si.personalization_type,'') <> ''),FALSE) END,
+			       CASE WHEN $3 THEN $4 ELSE COALESCE(BOOL_OR(COALESCE(si.engravings,'[]'::jsonb) <> '[]'::jsonb OR COALESCE(si.personalization_type,'') <> ''),FALSE) END,
 			       COALESCE(MIN(p.cost_price),0), COALESCE(SUM(si.quantity*p.cost_price),0),
 			       COALESCE(s.payment_method,''), COALESCE(s.observacoes_internas,'')
 			FROM sales s
@@ -144,7 +144,9 @@ func (r *PurchaseRepository) ReleaseSale(saleID, userID int, isSample, sampleHas
 		return nil, err
 	}
 	if !created {
-		if _, err = tx.Exec(`UPDATE purchase_orders SET is_sample=$1,sample_has_engraving=$2,updated_at=NOW() WHERE id=$3`, isSample, sampleHasEngraving, purchaseID); err != nil {
+		if _, err = tx.Exec(`UPDATE purchase_orders SET is_sample=$1,sample_has_engraving=$2,general_number=sale_id::text,
+			has_engraving=CASE WHEN $1 THEN $2 ELSE EXISTS(SELECT 1 FROM sale_items si WHERE si.sale_id=purchase_orders.sale_id AND (COALESCE(si.engravings,'[]'::jsonb)<>'[]'::jsonb OR COALESCE(si.personalization_type,'')<>'')) END,
+			corel_required=CASE WHEN $1 THEN $2 ELSE EXISTS(SELECT 1 FROM sale_items si WHERE si.sale_id=purchase_orders.sale_id AND (COALESCE(si.engravings,'[]'::jsonb)<>'[]'::jsonb OR COALESCE(si.personalization_type,'')<>'')) END,updated_at=NOW() WHERE id=$3`, isSample, sampleHasEngraving, purchaseID); err != nil {
 			return nil, err
 		}
 	}
