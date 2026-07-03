@@ -33,6 +33,9 @@ func (r *artFinalRepoStub) CreateLayoutRequest(models.LayoutRequestInput, int, m
 	return 1, nil
 }
 func (r *artFinalRepoStub) TransitionLayoutRequest(int64, string, string, int) error { return nil }
+func (r *artFinalRepoStub) AddLayoutMessage(int64, models.LayoutMessageInput, int, models.ArtFinalAccess) error {
+	return nil
+}
 func (r *artFinalRepoStub) AddLayoutVersion(int64, models.LayoutVersionInput, int) (int64, error) {
 	return 1, nil
 }

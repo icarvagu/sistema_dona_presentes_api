@@ -263,6 +263,29 @@ func TransitionLayoutRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+func AddLayoutMessage(w http.ResponseWriter, r *http.Request) {
+	access := artFinalAccess(r)
+	if !access.Layout && !access.Corel && !access.Engraving {
+		workflowForbidden(w)
+		return
+	}
+	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
+	if err != nil {
+		workflowError(w, err)
+		return
+	}
+	var input models.LayoutMessageInput
+	if err = json.NewDecoder(r.Body).Decode(&input); err != nil {
+		workflowError(w, err)
+		return
+	}
+	user, _, _ := middleware.GetUserFromRequest(r)
+	if err = artFinalService.AddLayoutMessage(id, input, user, access); err != nil {
+		workflowError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
 func AddLayoutVersion(w http.ResponseWriter, r *http.Request) {
 	if !artFinalAccess(r).Manage {
 		workflowForbidden(w)

@@ -21,11 +21,21 @@ type ArtFinalRepositoryPort interface {
 	GetLayoutRequest(int64, models.ArtFinalAccess) (json.RawMessage, error)
 	CreateLayoutRequest(models.LayoutRequestInput, int, models.ArtFinalAccess) (int64, error)
 	TransitionLayoutRequest(int64, string, string, int) error
+	AddLayoutMessage(int64, models.LayoutMessageInput, int, models.ArtFinalAccess) error
 	AddLayoutVersion(int64, models.LayoutVersionInput, int) (int64, error)
 	DecideLayoutVersion(int64, string, string, int, models.ArtFinalAccess) error
 	UpsertLayoutJob(string, int64, models.LayoutJobInput, int, models.ArtFinalAccess) error
 	ConfirmProductReceived(int64, bool, int, models.ArtFinalAccess) error
 	UpdateStoryLifecycle(int64, models.StoryLifecycleInput, int) error
+}
+
+func (s *ArtFinalService) AddLayoutMessage(id int64, input models.LayoutMessageInput, userID int, access models.ArtFinalAccess) error {
+	input.Message = strings.TrimSpace(input.Message)
+	input.FileURL = strings.TrimSpace(input.FileURL)
+	if id < 1 || (input.Message == "" && input.FileURL == "") {
+		return fmt.Errorf("informe uma mensagem ou anexo")
+	}
+	return s.repo.AddLayoutMessage(id, input, userID, access)
 }
 
 func (s *ArtFinalService) ListLayoutRequests(access models.ArtFinalAccess) (json.RawMessage, error) {

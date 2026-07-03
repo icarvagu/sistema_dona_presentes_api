@@ -149,28 +149,46 @@ func (r *ArtFinalRepository) Dashboard(access models.ArtFinalAccess, filters mod
 func (r *ArtFinalRepository) ListLayoutRequests(access models.ArtFinalAccess) (json.RawMessage, error) {
 	var raw []byte
 	err := r.db.QueryRow(`SELECT COALESCE(jsonb_agg(row_to_json(x) ORDER BY x.priority DESC,x.due_at NULLS LAST,x.created_at DESC),'[]'::jsonb) FROM (
-		SELECT r.*,u.username assigned_name,COUNT(i.id) item_count,
+		SELECT r.*,u.username assigned_name,COALESCE(req.full_name,req.username,'Usuário') requested_name,
+		 CASE WHEN 'compras'=ANY(COALESCE(req.permissions,'{}'::text[])) THEN 'purchases' ELSE 'sales' END requested_sector,COUNT(i.id) item_count,
 		 COUNT(i.id) FILTER(WHERE i.status='approved') approved_items,
 		 MAX(v.version) latest_version
-		FROM layout_requests r LEFT JOIN users u ON u.id=r.assigned_to
+		FROM layout_requests r LEFT JOIN users u ON u.id=r.assigned_to LEFT JOIN users req ON req.id=r.requested_by
 		JOIN layout_request_items i ON i.request_id=r.id
 		LEFT JOIN item_layout_versions v ON v.request_item_id=i.id
 		WHERE ($1 OR $4 OR ($2 AND r.source_type='sale' AND EXISTS(SELECT 1 FROM sales s WHERE s.id=r.source_id AND s.seller_id=$3))
 		 OR ($2 AND r.source_type='quote' AND EXISTS(SELECT 1 FROM quotes q WHERE q.id=r.source_id AND q.seller_id=$3))
 		 OR ($5 AND r.source_type='sale' AND EXISTS(SELECT 1 FROM purchase_orders po WHERE po.sale_id=r.source_id AND (po.buyer_id=$3 OR po.buyer_id IS NULL))))
-		GROUP BY r.id,u.username) x`, access.Admin || access.ArtFinal, access.Sales, access.UserID, access.ProductionProfile, access.Purchases).Scan(&raw)
+		GROUP BY r.id,u.username,req.id) x`, access.Admin || access.ArtFinal, access.Sales, access.UserID, access.ProductionProfile, access.Purchases).Scan(&raw)
 	return json.RawMessage(raw), err
 }
 
 func (r *ArtFinalRepository) GetLayoutRequest(id int64, access models.ArtFinalAccess) (json.RawMessage, error) {
 	var raw []byte
 	err := r.db.QueryRow(`SELECT jsonb_build_object(
-		'request',to_jsonb(r),
+		'request',to_jsonb(r)||jsonb_build_object('requested_sector',COALESCE((SELECT CASE WHEN 'compras'=ANY(u.permissions) THEN 'purchases' ELSE 'sales' END FROM users u WHERE u.id=r.requested_by),'sales'),'requested_name',COALESCE((SELECT COALESCE(u.full_name,u.username) FROM users u WHERE u.id=r.requested_by),'Usuário')),
 		'groups',COALESCE((SELECT jsonb_agg(to_jsonb(g) ORDER BY g.group_key) FROM layout_request_groups g WHERE g.request_id=r.id),'[]'::jsonb),
 		'items',COALESCE((SELECT jsonb_agg(to_jsonb(i)||jsonb_build_object('versions',COALESCE((SELECT jsonb_agg(to_jsonb(v) ORDER BY v.version DESC) FROM item_layout_versions v WHERE v.request_item_id=i.id),'[]'::jsonb),'job_history',COALESCE((SELECT jsonb_agg(to_jsonb(j) ORDER BY j.kind,j.version DESC) FROM layout_job_versions j WHERE j.request_item_id=i.id),'[]'::jsonb),'corel',(SELECT to_jsonb(c) FROM layout_corel_jobs c WHERE c.request_item_id=i.id),'engraving',(SELECT to_jsonb(e) FROM layout_engraving_jobs e WHERE e.request_item_id=i.id)) ORDER BY i.id) FROM layout_request_items i WHERE i.request_id=r.id),'[]'::jsonb),
 		'timeline',COALESCE((SELECT jsonb_agg(to_jsonb(a) ORDER BY a.created_at DESC) FROM art_final_audit_log a WHERE a.entity_type IN ('layout_request','layout_item','layout_version','corel','engraving') AND (a.entity_type='layout_request' AND a.entity_id=r.id OR (a.details->>'request_id')::bigint=r.id)),'[]'::jsonb))
 		FROM layout_requests r WHERE r.id=$1 AND ($2 OR $5 OR ($3 AND r.source_type='sale' AND EXISTS(SELECT 1 FROM sales s WHERE s.id=r.source_id AND s.seller_id=$4)) OR ($3 AND r.source_type='quote' AND EXISTS(SELECT 1 FROM quotes q WHERE q.id=r.source_id AND q.seller_id=$4)) OR ($6 AND r.source_type='sale' AND EXISTS(SELECT 1 FROM purchase_orders po WHERE po.sale_id=r.source_id AND (po.buyer_id=$4 OR po.buyer_id IS NULL))))`, id, access.Admin || access.ArtFinal, access.Sales, access.UserID, access.ProductionProfile, access.Purchases).Scan(&raw)
 	return json.RawMessage(raw), err
+}
+
+func (r *ArtFinalRepository) AddLayoutMessage(id int64, input models.LayoutMessageInput, userID int, access models.ArtFinalAccess) error {
+	result, err := r.db.Exec(`INSERT INTO art_final_audit_log(entity_type,entity_id,action,details,user_id)
+		SELECT 'layout_request',$1,'message',jsonb_build_object('message',$2,'file_url',$3),$4
+		FROM layout_requests lr WHERE lr.id=$1 AND ($5 OR ($6 AND lr.source_type='sale' AND EXISTS(SELECT 1 FROM sales s WHERE s.id=lr.source_id AND s.seller_id=$4)) OR ($6 AND lr.source_type='quote' AND EXISTS(SELECT 1 FROM quotes q WHERE q.id=lr.source_id AND q.seller_id=$4)) OR ($7 AND lr.source_type='sale'))`, id, input.Message, input.FileURL, userID, access.Admin || access.ArtFinal, access.Sales, access.Purchases)
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("acesso negado a solicitacao")
+	}
+	return nil
 }
 
 func (r *ArtFinalRepository) CreateLayoutRequest(input models.LayoutRequestInput, userID int, access models.ArtFinalAccess) (int64, error) {

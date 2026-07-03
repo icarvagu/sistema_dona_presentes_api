@@ -44,6 +44,11 @@ type LayoutTransitionInput struct {
 	Note   string `json:"note"`
 }
 
+type LayoutMessageInput struct {
+	Message string `json:"message"`
+	FileURL string `json:"file_url"`
+}
+
 type LayoutVersionInput struct {
 	FileURL string `json:"file_url"`
 	Label   string `json:"label"`
