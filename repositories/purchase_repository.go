@@ -354,25 +354,16 @@ func (r *PurchaseRepository) FinancialSummary() ([]models.PurchaseFinancialSumma
 				('outros'::text,po.other_cost,NULL::integer)
 			) AS cost(cost_type,amount,supplier_id)
 			WHERE cost.amount > 0
-		), ranked_payments AS (
-			SELECT p.*,ROW_NUMBER() OVER (PARTITION BY p.purchase_id,p.cost_type ORDER BY p.updated_at DESC,p.id DESC) AS rn
-			FROM purchase_payments p
 		), financial_rows AS (
-			SELECT b.purchase_id,b.general_number,b.sale_id,b.updated_at,b.cost_type,
-			       b.amount,COALESCE(p.supplier_id,b.supplier_id) AS supplier_id,
-			       COALESCE(NULLIF(p.method,''),NULLIF(b.payment_method,''),'Não informado') AS method,
-			       COALESCE(p.status,'Pendente de Pagamento') AS status,
-			       COALESCE(p.receipt_url,'') AS receipt_url
-			FROM base_costs b
-			LEFT JOIN ranked_payments p ON p.purchase_id=b.purchase_id AND p.cost_type=b.cost_type AND p.rn=1
-			UNION ALL
-			SELECT po.id,po.general_number,po.sale_id,po.updated_at,p.cost_type,p.amount,
+			SELECT po.id,po.general_number,po.sale_id,p.updated_at,p.cost_type,p.amount,
 			       p.supplier_id,p.method,p.status,p.receipt_url
-			FROM ranked_payments p
+			FROM purchase_payments p
 			JOIN purchase_orders po ON po.id=p.purchase_id
-			WHERE p.rn=1 AND NOT EXISTS (
-				SELECT 1 FROM base_costs b WHERE b.purchase_id=p.purchase_id AND b.cost_type=p.cost_type
-			)
+			UNION ALL
+			SELECT b.purchase_id,b.general_number,b.sale_id,b.updated_at,b.cost_type,b.amount,
+			       b.supplier_id,COALESCE(NULLIF(b.payment_method,''),'Não informado'),'Pendente de Pagamento',''
+			FROM base_costs b
+			WHERE NOT EXISTS (SELECT 1 FROM purchase_payments p WHERE p.purchase_id=b.purchase_id AND p.cost_type=b.cost_type)
 		)
 		SELECT f.purchase_id,f.general_number,COALESCE(c.name,''),f.cost_type,
 		       COALESCE(sup.name,''),f.amount,f.method,f.status,f.receipt_url
