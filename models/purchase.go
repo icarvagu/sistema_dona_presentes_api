@@ -192,6 +192,7 @@ type PurchaseHistory struct {
 	ToStatus   string    `json:"to_status"`
 	Details    string    `json:"details"`
 	UserID     *int      `json:"user_id,omitempty"`
+	UserName   string    `json:"user_name"`
 	CreatedAt  time.Time `json:"created_at"`
 }
 

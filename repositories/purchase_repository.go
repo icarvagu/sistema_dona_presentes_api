@@ -499,7 +499,7 @@ func (r *PurchaseRepository) listIssues(id int) ([]models.PurchaseIssue, error) 
 }
 
 func (r *PurchaseRepository) listHistory(id int) ([]models.PurchaseHistory, error) {
-	rows, err := r.db.Query(`SELECT id,purchase_id,action,from_status,to_status,details,user_id,created_at FROM purchase_history WHERE purchase_id=$1 ORDER BY created_at DESC`, id)
+	rows, err := r.db.Query(`SELECT h.id,h.purchase_id,h.action,h.from_status,h.to_status,h.details,h.user_id,COALESCE(NULLIF(u.full_name,''),u.username,'Sistema'),h.created_at FROM purchase_history h LEFT JOIN users u ON u.id=h.user_id WHERE h.purchase_id=$1 ORDER BY h.created_at DESC`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -507,7 +507,7 @@ func (r *PurchaseRepository) listHistory(id int) ([]models.PurchaseHistory, erro
 	items := []models.PurchaseHistory{}
 	for rows.Next() {
 		var x models.PurchaseHistory
-		if err := rows.Scan(&x.ID, &x.PurchaseID, &x.Action, &x.FromStatus, &x.ToStatus, &x.Details, &x.UserID, &x.CreatedAt); err != nil {
+		if err := rows.Scan(&x.ID, &x.PurchaseID, &x.Action, &x.FromStatus, &x.ToStatus, &x.Details, &x.UserID, &x.UserName, &x.CreatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, x)
