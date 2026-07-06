@@ -156,7 +156,9 @@ type PurchaseIssue struct {
 	Attachments        json.RawMessage `json:"attachments"`
 	SupplierID         *int            `json:"supplier_id,omitempty"`
 	Solution           string          `json:"solution"`
+	OccurrenceDate     time.Time       `json:"occurrence_date"`
 	ResolutionDeadline time.Time       `json:"resolution_deadline"`
+	Priority           int             `json:"priority"`
 	Status             string          `json:"status"`
 	OpenedBy           *int            `json:"opened_by,omitempty"`
 	ResolvedBy         *int            `json:"resolved_by,omitempty"`
@@ -171,7 +173,9 @@ type PurchaseIssueInput struct {
 	Attachments        []string  `json:"attachments"`
 	SupplierID         *int      `json:"supplier_id,omitempty"`
 	Solution           string    `json:"solution"`
+	OccurrenceDate     time.Time `json:"occurrence_date"`
 	ResolutionDeadline time.Time `json:"resolution_deadline"`
+	Priority           int       `json:"priority"`
 }
 
 type PurchaseIssueUpdateInput struct {

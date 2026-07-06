@@ -237,8 +237,11 @@ func (s *PurchaseService) AddIssue(id, userID int, input *models.PurchaseIssueIn
 	if input.IssueType != "material" && input.IssueType != "gravacao" {
 		return nil, errors.New("tipo de pendência inválido")
 	}
-	if strings.TrimSpace(input.Description) == "" || input.ResolutionDeadline.IsZero() {
-		return nil, errors.New("descrição e prazo de resolução são obrigatórios")
+	if strings.TrimSpace(input.Description) == "" || input.OccurrenceDate.IsZero() || input.ResolutionDeadline.IsZero() {
+		return nil, errors.New("descrição, data da ocorrência e prazo de resolução são obrigatórios")
+	}
+	if input.Priority < 1 || input.Priority > 3 {
+		input.Priority = 1
 	}
 	if err := s.repo.AddIssue(id, userID, input); err != nil {
 		return nil, err
@@ -251,6 +254,7 @@ func (s *PurchaseService) AddIssue(id, userID int, input *models.PurchaseIssueIn
 		return nil, err
 	}
 	_ = s.repo.Notify(id, "compras", "pendencia_"+input.IssueType, input.Description, nil)
+	_ = s.repo.Notify(id, "producao", "pendencia_"+input.IssueType, input.Description, nil)
 	return s.repo.GetByID(id)
 }
 

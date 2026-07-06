@@ -135,7 +135,7 @@ func ReleaseSaleToPurchases(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdatePurchase(w http.ResponseWriter, r *http.Request) {
-	if !requirePurchasePermission(w, r, "compras") {
+	if !requirePurchasePermission(w, r, "compras", "producao") {
 		return
 	}
 	id, err := purchaseID(r)

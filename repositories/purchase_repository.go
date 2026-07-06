@@ -292,9 +292,9 @@ func (r *PurchaseRepository) ApprovePayment(paymentID, userID int, receiptURL st
 
 func (r *PurchaseRepository) AddIssue(purchaseID, userID int, input *models.PurchaseIssueInput) error {
 	attachments, _ := json.Marshal(input.Attachments)
-	_, err := r.db.Exec(`INSERT INTO purchase_issues (purchase_id,issue_type,description,attachments,supplier_id,solution,resolution_deadline,opened_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+	_, err := r.db.Exec(`INSERT INTO purchase_issues (purchase_id,issue_type,description,attachments,supplier_id,solution,occurrence_date,resolution_deadline,priority,opened_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
 		purchaseID, input.IssueType, input.Description, attachments, input.SupplierID,
-		input.Solution, input.ResolutionDeadline, userID)
+		input.Solution, input.OccurrenceDate, input.ResolutionDeadline, input.Priority, userID)
 	return err
 }
 
@@ -480,7 +480,7 @@ func (r *PurchaseRepository) listPayments(id int) ([]models.PurchasePayment, err
 }
 
 func (r *PurchaseRepository) listIssues(id int) ([]models.PurchaseIssue, error) {
-	rows, err := r.db.Query(`SELECT id,purchase_id,issue_type,description,attachments,supplier_id,solution,resolution_deadline,status,opened_by,resolved_by,created_at,updated_at,resolved_at FROM purchase_issues WHERE purchase_id=$1 ORDER BY created_at DESC`, id)
+	rows, err := r.db.Query(`SELECT id,purchase_id,issue_type,description,attachments,supplier_id,solution,occurrence_date,resolution_deadline,priority,status,opened_by,resolved_by,created_at,updated_at,resolved_at FROM purchase_issues WHERE purchase_id=$1 ORDER BY CASE WHEN status='Resolvida' THEN 1 ELSE 0 END,priority DESC,resolution_deadline ASC,created_at DESC`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -489,7 +489,7 @@ func (r *PurchaseRepository) listIssues(id int) ([]models.PurchaseIssue, error) 
 	for rows.Next() {
 		var x models.PurchaseIssue
 		var raw []byte
-		if err := rows.Scan(&x.ID, &x.PurchaseID, &x.IssueType, &x.Description, &raw, &x.SupplierID, &x.Solution, &x.ResolutionDeadline, &x.Status, &x.OpenedBy, &x.ResolvedBy, &x.CreatedAt, &x.UpdatedAt, &x.ResolvedAt); err != nil {
+		if err := rows.Scan(&x.ID, &x.PurchaseID, &x.IssueType, &x.Description, &raw, &x.SupplierID, &x.Solution, &x.OccurrenceDate, &x.ResolutionDeadline, &x.Priority, &x.Status, &x.OpenedBy, &x.ResolvedBy, &x.CreatedAt, &x.UpdatedAt, &x.ResolvedAt); err != nil {
 			return nil, err
 		}
 		x.Attachments = raw
