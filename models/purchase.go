@@ -27,6 +27,7 @@ type PurchaseOrder struct {
 	SaleID                 int                  `json:"sale_id"`
 	GeneralNumber          string               `json:"general_number"`
 	Status                 string               `json:"status"`
+	StatusUpdatedAt        time.Time            `json:"status_updated_at"`
 	BuyerID                *int                 `json:"buyer_id,omitempty"`
 	MaterialSupplierID     *int                 `json:"material_supplier_id,omitempty"`
 	EngravingSupplierID    *int                 `json:"engraving_supplier_id,omitempty"`

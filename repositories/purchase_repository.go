@@ -22,7 +22,7 @@ type scanner interface {
 }
 
 const purchaseColumns = `
-	id, sale_id, general_number, status, buyer_id, material_supplier_id,
+	id, sale_id, general_number, status, status_updated_at, buyer_id, material_supplier_id,
 	engraving_supplier_id, is_sample, sample_has_engraving, has_engraving,
 	corel_required, corel_requested_at, corel_requested_by, corel_attached_at,
 	corel_attached_by, material_unit_cost, material_total_cost, engraving_cost,
@@ -35,7 +35,7 @@ const purchaseColumns = `
 func scanPurchase(row scanner) (*models.PurchaseOrder, error) {
 	var p models.PurchaseOrder
 	err := row.Scan(
-		&p.ID, &p.SaleID, &p.GeneralNumber, &p.Status, &p.BuyerID,
+		&p.ID, &p.SaleID, &p.GeneralNumber, &p.Status, &p.StatusUpdatedAt, &p.BuyerID,
 		&p.MaterialSupplierID, &p.EngravingSupplierID, &p.IsSample,
 		&p.SampleHasEngraving, &p.HasEngraving, &p.CorelRequired,
 		&p.CorelRequestedAt, &p.CorelRequestedBy, &p.CorelAttachedAt,
@@ -204,9 +204,9 @@ func (r *PurchaseRepository) SetStatus(id int, status string, userID int, action
 		productionReleased = "now"
 	}
 	if productionReleased == nil {
-		_, err = tx.Exec(`UPDATE purchase_orders SET status=$1,updated_at=NOW() WHERE id=$2`, status, id)
+		_, err = tx.Exec(`UPDATE purchase_orders SET status=$1,status_updated_at=NOW(),updated_at=NOW() WHERE id=$2`, status, id)
 	} else {
-		_, err = tx.Exec(`UPDATE purchase_orders SET status=$1,production_released_at=NOW(),updated_at=NOW() WHERE id=$2`, status, id)
+		_, err = tx.Exec(`UPDATE purchase_orders SET status=$1,status_updated_at=NOW(),production_released_at=NOW(),updated_at=NOW() WHERE id=$2`, status, id)
 	}
 	if err != nil {
 		return err
