@@ -160,6 +160,17 @@ func (r *PurchaseRepository) ReleaseSale(saleID, userID int, isSample, sampleHas
 		if _, err = tx.Exec(`INSERT INTO notifications (purchase_id,recipient_permission,notification_type,message) VALUES ($1,'compras','pedido_compra',$2)`, purchaseID, fmt.Sprintf("Pedido %d pendente de compra", saleID)); err != nil {
 			return nil, err
 		}
+		var internalStockProducts string
+		if err = tx.QueryRow(`SELECT COALESCE(string_agg(p.product_name || ' (' || p.supplier_stock || ' disponível)', ', ' ORDER BY p.product_name),'')
+			FROM sale_items si JOIN products p ON p.id=si.product_id
+			WHERE si.sale_id=$1 AND p.supplier_stock > 0`, saleID).Scan(&internalStockProducts); err != nil {
+			return nil, err
+		}
+		if internalStockProducts != "" {
+			if _, err = tx.Exec(`INSERT INTO notifications (purchase_id,recipient_permission,notification_type,message) VALUES ($1,'compras','estoque_empresa',$2)`, purchaseID, "Atenção: há produto no estoque da empresa: "+internalStockProducts); err != nil {
+				return nil, err
+			}
+		}
 	}
 	if err = tx.Commit(); err != nil {
 		return nil, err

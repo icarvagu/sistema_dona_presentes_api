@@ -472,19 +472,17 @@ func (r *ProductRepository) UpdateLastCost(id int, p *models.Product) error {
 	return nil
 }
 
-func (r *ProductRepository) UpdateFromSync(id int, stock int, supplierStock int, supplierCode string, photos []string, costPrice float64, lastSyncedAt time.Time) error {
+func (r *ProductRepository) UpdateFromSync(id int, stock int, _ int, supplierCode string, photos []string, costPrice float64, lastSyncedAt time.Time) error {
 	_, err := r.db.Exec(
 		`UPDATE products
          SET stock=$1,
-             supplier_stock=$2,
-             supplier_code=CASE WHEN $3 != '' THEN $3 ELSE supplier_code END,
-             photos=$4,
-             cost_price=$5,
-             last_synced_at=$6,
+             supplier_code=CASE WHEN $2 != '' THEN $2 ELSE supplier_code END,
+             photos=$3,
+             cost_price=$4,
+             last_synced_at=$5,
              updated_at=NOW()
-         WHERE id=$7`,
+         WHERE id=$6`,
 		stock,
-		supplierStock,
 		supplierCode,
 		pq.Array(photos),
 		costPrice,
