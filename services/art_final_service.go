@@ -62,7 +62,10 @@ func (s *ArtFinalService) CreateLayoutRequest(input models.LayoutRequestInput, u
 	if input.Title == "" {
 		return 0, fmt.Errorf("titulo obrigatorio")
 	}
-	if input.FileMode != "common" && input.FileMode != "separate" {
+	if input.Instructions == "" {
+		return 0, fmt.Errorf("observacao do layout obrigatoria")
+	}
+	if input.FileMode != "none" && input.FileMode != "common" && input.FileMode != "separate" {
 		return 0, fmt.Errorf("modo de arquivo invalido")
 	}
 	if input.FileMode == "common" && input.CommonFileURL == "" {
