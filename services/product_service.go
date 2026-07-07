@@ -122,6 +122,8 @@ func (s *ProductService) validateItems(p *models.Product) error {
 }
 
 func (s *ProductService) Create(p *models.Product) (*models.Product, error) {
+	// Todo produto precisa passar pela análise tributária antes de ficar disponível.
+	p.PendingApproval = true
 
 	if err := s.validateRequiredFields(p); err != nil {
 		return nil, err
@@ -159,13 +161,15 @@ func (s *ProductService) Create(p *models.Product) (*models.Product, error) {
 
 func (s *ProductService) Update(id int, p *models.Product) (*models.Product, error) {
 
-	_, err := s.productRepo.GetByID(id)
+	existing, err := s.productRepo.GetByID(id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, apperrors.ErrProductNotFound
 		}
 		return nil, err
 	}
+	// A edição cadastral não substitui a autorização feita pela fila de aprovação.
+	p.PendingApproval = existing.PendingApproval
 
 	if err := s.validateRequiredFields(p); err != nil {
 		return nil, err

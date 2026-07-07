@@ -111,7 +111,7 @@ func scanProductRow(scanner rowScanner, withSupplier bool) (models.Product, *mod
 }
 
 func (r *ProductRepository) GetAll() ([]models.Product, error) {
-	rows, err := r.db.Query(productSelectWithSupplier)
+	rows, err := r.db.Query(productSelectWithSupplier + ` WHERE p.pending_approval = FALSE ORDER BY p.id`)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
 	}
@@ -139,12 +139,13 @@ func (r *ProductRepository) GetAllPaginated(page, limit int) ([]models.Product, 
 	offset := (page - 1) * limit
 
 	var total int
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM products`).Scan(&total)
+	err := r.db.QueryRow(`SELECT COUNT(*) FROM products WHERE pending_approval = FALSE`).Scan(&total)
 	if err != nil {
 		return nil, 0, apperrors.NewDatabaseError(err)
 	}
 
 	rows, err := r.db.Query(productSelectWithSupplier+` 
+		WHERE p.pending_approval = FALSE
 		ORDER BY p.id 
 		LIMIT $1 OFFSET $2`,
 		limit, offset)
@@ -185,7 +186,7 @@ func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
 }
 
 func (r *ProductRepository) GetGroups() ([]string, error) {
-	rows, err := r.db.Query(`SELECT DISTINCT product_group FROM products WHERE product_group IS NOT NULL AND product_group != '' ORDER BY product_group`)
+	rows, err := r.db.Query(`SELECT DISTINCT product_group FROM products WHERE pending_approval = FALSE AND product_group IS NOT NULL AND product_group != '' ORDER BY product_group`)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
 	}
@@ -202,7 +203,7 @@ func (r *ProductRepository) GetGroups() ([]string, error) {
 }
 
 func (r *ProductRepository) GetByGroup(group string) ([]models.Product, error) {
-	rows, err := r.db.Query(productSelectWithSupplier+` WHERE LOWER(p.product_group) = LOWER($1)`, group)
+	rows, err := r.db.Query(productSelectWithSupplier+` WHERE p.pending_approval = FALSE AND LOWER(p.product_group) = LOWER($1)`, group)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
 	}
@@ -226,11 +227,12 @@ func (r *ProductRepository) GetByGroup(group string) ([]models.Product, error) {
 func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, error) {
 	filterPattern := "%" + filter + "%"
 	rows, err := r.db.Query(productSelectWithSupplier+` 
-		WHERE LOWER(p.product_name) LIKE LOWER($1) 
+		WHERE p.pending_approval = FALSE AND (
+		      LOWER(p.product_name) LIKE LOWER($1)
 		   OR LOWER(p.internal_code) LIKE LOWER($1) 
 		   OR LOWER(p.supplier_code) LIKE LOWER($1)
 		   OR LOWER(p.product_group) LIKE LOWER($1)
-		   OR LOWER(p.color) LIKE LOWER($1)`,
+		   OR LOWER(p.color) LIKE LOWER($1))`,
 		filterPattern)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
@@ -390,7 +392,8 @@ func (r *ProductRepository) DeleteProductItems(productID int) error {
 
 func (r *ProductRepository) GetNewlyImported() ([]models.Product, error) {
 	rows, err := r.db.Query(productSelectWithSupplier + ` 
-		WHERE p.imported_at IS NOT NULL 
+		WHERE p.pending_approval = FALSE
+		  AND p.imported_at IS NOT NULL
 		  AND p.imported_at >= NOW() - INTERVAL '7 days'
 		ORDER BY p.imported_at DESC`)
 	if err != nil {
