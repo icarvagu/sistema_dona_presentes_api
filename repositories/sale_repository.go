@@ -360,7 +360,9 @@ func (r *SaleRepository) GetCustomerAddresses(customerID int) ([]models.Address,
 }
 
 func (r *SaleRepository) GetItems(saleID int) ([]models.SaleItem, error) {
-	rows, err := r.db.Query(`SELECT id, sale_id, product_id, quantity, unit_price, total_price, COALESCE(engravings,'[]'::jsonb), created_at, updated_at FROM sale_items WHERE sale_id=$1`, saleID)
+	rows, err := r.db.Query(`SELECT si.id, si.sale_id, si.product_id, si.quantity, si.unit_price, si.total_price,
+		COALESCE(qi.discount,0), COALESCE(si.engravings,'[]'::jsonb), si.created_at, si.updated_at
+		FROM sale_items si LEFT JOIN quote_items qi ON qi.id=si.quote_item_id WHERE si.sale_id=$1`, saleID)
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +371,7 @@ func (r *SaleRepository) GetItems(saleID int) ([]models.SaleItem, error) {
 	for rows.Next() {
 		var item models.SaleItem
 		var engravingsBytes []byte
-		err := rows.Scan(&item.ID, &item.SaleID, &item.ProductID, &item.Quantity, &item.UnitPrice, &item.TotalPrice, &engravingsBytes, &item.CreatedAt, &item.UpdatedAt)
+		err := rows.Scan(&item.ID, &item.SaleID, &item.ProductID, &item.Quantity, &item.UnitPrice, &item.TotalPrice, &item.Discount, &engravingsBytes, &item.CreatedAt, &item.UpdatedAt)
 		if err != nil {
 			return nil, err
 		}

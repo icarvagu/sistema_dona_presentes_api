@@ -44,6 +44,9 @@ type PurchaseOrder struct {
 	EngravingCost          float64              `json:"engraving_cost"`
 	FreightCost            float64              `json:"freight_cost"`
 	OtherCost              float64              `json:"other_cost"`
+	BuyerDiscount          float64              `json:"buyer_discount"`
+	NegotiationContact     string               `json:"negotiation_contact"`
+	NegotiationNotes       string               `json:"negotiation_notes"`
 	MaterialDeadline       *time.Time           `json:"material_deadline,omitempty"`
 	EngravingDeadline      *time.Time           `json:"engraving_deadline,omitempty"`
 	PaymentMethod          string               `json:"payment_method"`
@@ -82,6 +85,9 @@ type PurchaseUpdateInput struct {
 	EngravingCost          float64    `json:"engraving_cost"`
 	FreightCost            float64    `json:"freight_cost"`
 	OtherCost              float64    `json:"other_cost"`
+	BuyerDiscount          float64    `json:"buyer_discount"`
+	NegotiationContact     string     `json:"negotiation_contact"`
+	NegotiationNotes       string     `json:"negotiation_notes"`
 	MaterialDeadline       *time.Time `json:"material_deadline,omitempty"`
 	EngravingDeadline      *time.Time `json:"engraving_deadline,omitempty"`
 	PaymentMethod          string     `json:"payment_method"`
