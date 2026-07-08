@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"donapresentes/logger"
 	"donapresentes/repositories"
 )
 
@@ -21,6 +22,14 @@ func (s *AuditService) Log(userID *int, action, resource, details, ipAddress str
 	if s == nil || s.auditRepo == nil {
 		return
 	}
+
+	logger.Log(logger.Entry{
+		Level:      "audit",
+		Message:    action + " " + resource,
+		RemoteAddr: ipAddress,
+		Error:      details,
+	})
+
 	go func() {
 		_ = s.auditRepo.Insert(userID, action, resource, details, ipAddress, time.Now())
 	}()

@@ -78,6 +78,7 @@ func main() {
 	r := mux.NewRouter()
 	r.StrictSlash(true)
 
+	r.Use(middleware.TracingMiddleware)
 	r.Use(middleware.CORSMiddleware)
 	middleware.ApplyCORSFallbackHandlers(r)
 	r.Use(middleware.SecurityHeadersMiddleware)
@@ -85,9 +86,10 @@ func main() {
 	r.Use(middleware.RateLimitMiddlewarePerRoute)
 	r.Use(middleware.TimeoutMiddleware(30 * time.Second))
 	r.Use(middleware.NormalizePathMiddleware)
-	r.Use(middleware.LoggingMiddleware)
+	r.Use(middleware.StructuredLoggingMiddleware)
 	r.Use(middleware.RecoveryMiddleware)
 
+	r.HandleFunc("/health", controllers.HealthCheck).Methods("GET", "OPTIONS")
 	routes.RegisterAuthRoutes(r)
 
 	authService := services.NewAuthService(
