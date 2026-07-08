@@ -6,17 +6,18 @@ import (
 )
 
 type SaleItem struct {
-	ID         int             `json:"id"`
-	SaleID     int             `json:"sale_id"`
-	ProductID  int             `json:"product_id"`
-	Product    *Product        `json:"product,omitempty"`
-	Quantity   int             `json:"quantity"`
-	UnitPrice  float64         `json:"unit_price"`
-	TotalPrice float64         `json:"total_price"`
-	Discount   float64         `json:"discount"`
-	Engravings json.RawMessage `json:"engravings,omitempty"`
-	CreatedAt  time.Time       `json:"created_at"`
-	UpdatedAt  time.Time       `json:"updated_at"`
+	ID             int             `json:"id"`
+	SaleID         int             `json:"sale_id"`
+	ProductID      int             `json:"product_id"`
+	Product        *Product        `json:"product,omitempty"`
+	Quantity       int             `json:"quantity"`
+	UnitPrice      float64         `json:"unit_price"`
+	TotalPrice     float64         `json:"total_price"`
+	Discount       float64         `json:"discount"`
+	PriceFormation json.RawMessage `json:"price_formation,omitempty"`
+	Engravings     json.RawMessage `json:"engravings,omitempty"`
+	CreatedAt      time.Time       `json:"created_at"`
+	UpdatedAt      time.Time       `json:"updated_at"`
 }
 
 type Sale struct {
