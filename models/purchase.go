@@ -12,7 +12,7 @@ const (
 	PurchaseCorelReady         = "Corel Anexado - Liberado para Compra"
 	PurchaseMaterialEmailSent  = "E-mail Material Enviado"
 	PurchaseEngravingEmailSent = "E-mail Gravação Enviado"
-	PurchaseWaitingAcceptance  = "Aguardando Aceite dos Fornecedores"
+	PurchaseWaitingAcceptance  = "Awaiting Supplier Acceptance"
 	PurchaseWaitingPayment     = "Aguardando Pagamento"
 	PurchaseBought             = "Pedido Comprado"
 	PurchaseReleased           = "Liberado para Produção"

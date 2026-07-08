@@ -133,7 +133,7 @@ func (r *PurchaseRepository) ReleaseSale(saleID, userID int, isSample, sampleHas
 			       $4, CASE WHEN $3 THEN $4 ELSE COALESCE(BOOL_OR(COALESCE(si.engravings,'[]'::jsonb) <> '[]'::jsonb OR COALESCE(si.personalization_type,'') <> ''),FALSE) END,
 			       CASE WHEN $3 THEN $4 ELSE COALESCE(BOOL_OR(COALESCE(si.engravings,'[]'::jsonb) <> '[]'::jsonb OR COALESCE(si.personalization_type,'') <> ''),FALSE) END,
 			       COALESCE(MIN(p.cost_price),0), COALESCE(SUM(si.quantity*p.cost_price),0),
-			       COALESCE(s.payment_method,''), COALESCE(s.observacoes_internas,'')
+			       COALESCE(s.payment_method,''), COALESCE(s.internal_notes,'')
 			FROM sales s
 			LEFT JOIN sale_items si ON si.sale_id=s.id
 			LEFT JOIN products p ON p.id=si.product_id
@@ -199,7 +199,7 @@ func (r *PurchaseRepository) Update(id int, input *models.PurchaseUpdateInput, u
 		input.RequiresAdvancePayment, input.FirstPieceRequired,
 		input.CommercialNotes, input.PurchaseNotes, id)
 	if err == nil {
-		err = r.AddHistory(id, "Dados da compra atualizados", "", "", "Valores, fornecedores e prazos conferidos", userID)
+		err = r.AddHistory(id, "Purchase data updated", "", "", "Values, suppliers and deadlines checked", userID)
 	}
 	return err
 }

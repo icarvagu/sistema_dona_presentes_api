@@ -44,7 +44,7 @@ type pedidoTemplateData struct {
 	LogoDataURI         template.URL
 	SellerName          string
 	DataPedido          string
-	EmailFinanceiro     string
+	FinancialEmail     string
 	IsPF                bool
 	ClienteNome         string
 	ClienteEndereco     string
@@ -66,8 +66,8 @@ type pedidoTemplateData struct {
 	Observacoes         string
 	PrazoPagamento      string
 	Parcelas            []parcItem
-	ObservacoesExternas string
-	ObservacoesInternas string
+	ExternalNotes string
+	InternalNotes string
 	LayoutURLs          []template.URL
 	Items               []pedidoItemData
 }
@@ -158,7 +158,7 @@ func (s *PDFService) buildTemplateData(sale *models.Sale) pedidoTemplateData {
 		LogoDataURI:     loadLogoDataURI(),
 		SellerName:      "-",
 		DataPedido:      sale.CreatedAt.Format("02/01/2006"),
-		EmailFinanceiro: "-",
+		FinancialEmail: "-",
 		Vencimento:      "/  /",
 		ValorTotal:      formatMoney(sale.TotalValue),
 		ValorProdutos:   formatMoney(sale.TotalValue),
@@ -212,8 +212,8 @@ func (s *PDFService) buildTemplateData(sale *models.Sale) pedidoTemplateData {
 	if sale.PaymentTermDays > 0 {
 		data.PrazoPagamento = fmt.Sprintf("%d dias", sale.PaymentTermDays)
 	}
-	data.ObservacoesExternas = sale.ObservacoesExternas
-	data.ObservacoesInternas = sale.ObservacoesInternas
+	data.ExternalNotes = sale.ExternalNotes
+	data.InternalNotes = sale.InternalNotes
 	for _, u := range sale.LayoutURLs {
 		data.LayoutURLs = append(data.LayoutURLs, template.URL(u))
 	}

@@ -69,7 +69,7 @@ var (
 
 	ErrSupplierNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Fornecedor não encontrado",
+		Message: "Supplier not found",
 	}
 
 	ErrProductNotFound = &AppError{
@@ -79,7 +79,7 @@ var (
 
 	ErrCarrierNotFound = &AppError{
 		Code:    http.StatusNotFound,
-		Message: "Transportadora não encontrada",
+		Message: "Carrier not found",
 	}
 
 	ErrSaleNotFound = &AppError{

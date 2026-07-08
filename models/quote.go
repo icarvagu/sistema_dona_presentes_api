@@ -81,10 +81,10 @@ type Quote struct {
 	FreightValue        float64         `json:"freight_value"`
 
 	// Freight info
-	FreightCNPJSolicitante string          `json:"freight_cnpj_solicitante"`
-	FreightCNPJCPFOrigem   string          `json:"freight_cnpj_cpf_origem"`
-	FreightCNPJCPFDestino  string          `json:"freight_cnpj_cpf_destino"`
-	FreightCNPJDevedor     string          `json:"freight_cnpj_devedor"`
+	FreightTaxIDSender string          `json:"freight_tax_id_sender"`
+	FreightTaxIDOrigin   string          `json:"freight_tax_id_origin"`
+	FreightTaxIDDest  string          `json:"freight_tax_id_dest"`
+	FreightTaxIDPayer     string          `json:"freight_tax_id_payer"`
 	FreightTipoTransporte  string          `json:"freight_tipo_transporte"`
 	FreightContato         string          `json:"freight_contato"`
 	FreightCidadeOrigem    string          `json:"freight_cidade_origem"`
@@ -125,10 +125,10 @@ type QuoteInput struct {
 	FreightValue        float64         `json:"freight_value"`
 
 	// Freight info
-	FreightCNPJSolicitante string          `json:"freight_cnpj_solicitante"`
-	FreightCNPJCPFOrigem   string          `json:"freight_cnpj_cpf_origem"`
-	FreightCNPJCPFDestino  string          `json:"freight_cnpj_cpf_destino"`
-	FreightCNPJDevedor     string          `json:"freight_cnpj_devedor"`
+	FreightTaxIDSender string          `json:"freight_tax_id_sender"`
+	FreightTaxIDOrigin   string          `json:"freight_tax_id_origin"`
+	FreightTaxIDDest  string          `json:"freight_tax_id_dest"`
+	FreightTaxIDPayer     string          `json:"freight_tax_id_payer"`
 	FreightTipoTransporte  string          `json:"freight_tipo_transporte"`
 	FreightContato         string          `json:"freight_contato"`
 	FreightCidadeOrigem    string          `json:"freight_cidade_origem"`

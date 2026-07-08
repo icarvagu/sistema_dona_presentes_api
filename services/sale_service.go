@@ -101,7 +101,7 @@ func (s *SaleService) ValidateSale(input *models.SaleInput) error {
 			_, err := s.carrierRepo.GetByID(carrierID)
 			if err != nil {
 				if err == sql.ErrNoRows {
-					return apperrors.NewNotFoundError("Transportadora não encontrada")
+					return apperrors.NewNotFoundError("Carrier not found")
 				}
 				return apperrors.NewDatabaseError(err)
 			}

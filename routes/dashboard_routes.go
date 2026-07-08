@@ -8,5 +8,5 @@ import (
 )
 
 func RegisterDashboardRoutes(r *mux.Router) {
-	r.HandleFunc("/dashboard/vendedor/{id}", controllers.GetVendedorDashboard).Methods(http.MethodGet)
+	r.HandleFunc("/dashboard/seller/{id}", controllers.GetSellerDashboard).Methods(http.MethodGet)
 }

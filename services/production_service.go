@@ -218,7 +218,7 @@ func (s *ProductionService) CreateSupply(in models.ProductionSupplyInput, a mode
 		return 0, errors.New("nome e unidade obrigatórios")
 	}
 	if in.CurrentQuantity != 0 {
-		return 0, errors.New("cadastre o insumo com saldo zero e registre a entrada com fornecedor e nota fiscal")
+		return 0, errors.New("register the supply with zero balance then record the entry with supplier and invoice")
 	}
 	return s.repo.CreateSupply(in)
 }
@@ -230,7 +230,7 @@ func (s *ProductionService) MoveSupply(in models.ProductionSupplyMovementInput, 
 		return errors.New("quantidade deve ser positiva")
 	}
 	if in.MovementType == "ENTRADA" && (in.SupplierID == nil || strings.TrimSpace(in.InvoiceNumber) == "" || strings.TrimSpace(in.InvoiceURL) == "") {
-		return errors.New("entrada de insumo exige fornecedor, nota fiscal e arquivo")
+		return errors.New("supply entry requires supplier, invoice and file")
 	}
 	return s.repo.MoveSupply(in, a.UserID)
 }

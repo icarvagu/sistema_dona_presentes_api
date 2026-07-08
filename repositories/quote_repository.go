@@ -24,7 +24,7 @@ func NewQuoteRepository(db *sql.DB) *QuoteRepository {
 
 func (r *QuoteRepository) GetAll() ([]models.Quote, error) {
 	rows, err := r.db.Query(`SELECT id, COALESCE(quote_number, ''), seller_id, customer_id, COALESCE(responsible_name, ''), quote_valid_until, COALESCE(production_lead_time, ''), total_value,
-		COALESCE(freight_cnpj_solicitante,''), COALESCE(freight_cnpj_cpf_origem,''), COALESCE(freight_cnpj_cpf_destino,''), COALESCE(freight_cnpj_devedor,''),
+		COALESCE(freight_tax_id_sender,''), COALESCE(freight_tax_id_origin,''), COALESCE(freight_tax_id_dest,''), COALESCE(freight_tax_id_payer,''),
 		COALESCE(freight_tipo_transporte,''), COALESCE(freight_contato,''), COALESCE(freight_cidade_origem,''), COALESCE(freight_cidade_destino,''),
 		COALESCE(freight_material,''), COALESCE(freight_tipo_frete,''), COALESCE(freight_produto,''), COALESCE(freight_tipo_embalagem,''),
 		COALESCE(freight_quantidade,0), COALESCE(freight_volumes,'[]'::jsonb), COALESCE(freight_valor_nota,0), COALESCE(freight_peso_real,0),
@@ -43,7 +43,7 @@ func (r *QuoteRepository) GetAll() ([]models.Quote, error) {
 		var installmentDates []byte
 		var carrierID sql.NullInt64
 		err := rows.Scan(&quote.ID, &quote.QuoteNumber, &quote.SellerID, &quote.CustomerID, &quote.ResponsibleName, &quote.QuoteValidUntil, &quote.ProductionLeadTime, &quote.TotalValue,
-			&quote.FreightCNPJSolicitante, &quote.FreightCNPJCPFOrigem, &quote.FreightCNPJCPFDestino, &quote.FreightCNPJDevedor,
+			&quote.FreightTaxIDSender, &quote.FreightTaxIDOrigin, &quote.FreightTaxIDDest, &quote.FreightTaxIDPayer,
 			&quote.FreightTipoTransporte, &quote.FreightContato, &quote.FreightCidadeOrigem, &quote.FreightCidadeDestino,
 			&quote.FreightMaterial, &quote.FreightTipoFrete, &quote.FreightProduto, &quote.FreightTipoEmbalagem,
 			&quote.FreightQuantidade, &freightVolumes, &quote.FreightValorNota, &quote.FreightPesoReal,
@@ -81,7 +81,7 @@ func (r *QuoteRepository) GetAll() ([]models.Quote, error) {
 
 func (r *QuoteRepository) GetBySellerID(sellerID int) ([]models.Quote, error) {
 	rows, err := r.db.Query(`SELECT id, COALESCE(quote_number, ''), seller_id, customer_id, COALESCE(responsible_name, ''), quote_valid_until, COALESCE(production_lead_time, ''), total_value,
-		COALESCE(freight_cnpj_solicitante,''), COALESCE(freight_cnpj_cpf_origem,''), COALESCE(freight_cnpj_cpf_destino,''), COALESCE(freight_cnpj_devedor,''),
+		COALESCE(freight_tax_id_sender,''), COALESCE(freight_tax_id_origin,''), COALESCE(freight_tax_id_dest,''), COALESCE(freight_tax_id_payer,''),
 		COALESCE(freight_tipo_transporte,''), COALESCE(freight_contato,''), COALESCE(freight_cidade_origem,''), COALESCE(freight_cidade_destino,''),
 		COALESCE(freight_material,''), COALESCE(freight_tipo_frete,''), COALESCE(freight_produto,''), COALESCE(freight_tipo_embalagem,''),
 		COALESCE(freight_quantidade,0), COALESCE(freight_volumes,'[]'::jsonb), COALESCE(freight_valor_nota,0), COALESCE(freight_peso_real,0),
@@ -100,7 +100,7 @@ func (r *QuoteRepository) GetBySellerID(sellerID int) ([]models.Quote, error) {
 		var installmentDates []byte
 		var carrierID sql.NullInt64
 		err := rows.Scan(&quote.ID, &quote.QuoteNumber, &quote.SellerID, &quote.CustomerID, &quote.ResponsibleName, &quote.QuoteValidUntil, &quote.ProductionLeadTime, &quote.TotalValue,
-			&quote.FreightCNPJSolicitante, &quote.FreightCNPJCPFOrigem, &quote.FreightCNPJCPFDestino, &quote.FreightCNPJDevedor,
+			&quote.FreightTaxIDSender, &quote.FreightTaxIDOrigin, &quote.FreightTaxIDDest, &quote.FreightTaxIDPayer,
 			&quote.FreightTipoTransporte, &quote.FreightContato, &quote.FreightCidadeOrigem, &quote.FreightCidadeDestino,
 			&quote.FreightMaterial, &quote.FreightTipoFrete, &quote.FreightProduto, &quote.FreightTipoEmbalagem,
 			&quote.FreightQuantidade, &freightVolumes, &quote.FreightValorNota, &quote.FreightPesoReal,
@@ -140,7 +140,7 @@ func (r *QuoteRepository) GetByID(id int) (*models.Quote, error) {
 	var installmentDates []byte
 	var carrierID sql.NullInt64
 	err := r.db.QueryRow(`SELECT id, COALESCE(quote_number, ''), seller_id, customer_id, COALESCE(responsible_name, ''), quote_valid_until, COALESCE(production_lead_time, ''), total_value,
-		COALESCE(freight_cnpj_solicitante,''), COALESCE(freight_cnpj_cpf_origem,''), COALESCE(freight_cnpj_cpf_destino,''), COALESCE(freight_cnpj_devedor,''),
+		COALESCE(freight_tax_id_sender,''), COALESCE(freight_tax_id_origin,''), COALESCE(freight_tax_id_dest,''), COALESCE(freight_tax_id_payer,''),
 		COALESCE(freight_tipo_transporte,''), COALESCE(freight_contato,''), COALESCE(freight_cidade_origem,''), COALESCE(freight_cidade_destino,''),
 		COALESCE(freight_material,''), COALESCE(freight_tipo_frete,''), COALESCE(freight_produto,''), COALESCE(freight_tipo_embalagem,''),
 		COALESCE(freight_quantidade,0), COALESCE(freight_volumes,'[]'::jsonb), COALESCE(freight_valor_nota,0), COALESCE(freight_peso_real,0),
@@ -148,7 +148,7 @@ func (r *QuoteRepository) GetByID(id int) (*models.Quote, error) {
 		quote_date, COALESCE(care_of,''), COALESCE(sales_channel,''), COALESCE(observations,''), feedback_datetime, COALESCE(feedback_observation,''), COALESCE(payment_method,''), COALESCE(installments,1), COALESCE(installment_dates,'[]'::jsonb), carrier_id, COALESCE(freight_value,0)
 		FROM quotes WHERE id=$1`, id).
 		Scan(&quote.ID, &quote.QuoteNumber, &quote.SellerID, &quote.CustomerID, &quote.ResponsibleName, &quote.QuoteValidUntil, &quote.ProductionLeadTime, &quote.TotalValue,
-			&quote.FreightCNPJSolicitante, &quote.FreightCNPJCPFOrigem, &quote.FreightCNPJCPFDestino, &quote.FreightCNPJDevedor,
+			&quote.FreightTaxIDSender, &quote.FreightTaxIDOrigin, &quote.FreightTaxIDDest, &quote.FreightTaxIDPayer,
 			&quote.FreightTipoTransporte, &quote.FreightContato, &quote.FreightCidadeOrigem, &quote.FreightCidadeDestino,
 			&quote.FreightMaterial, &quote.FreightTipoFrete, &quote.FreightProduto, &quote.FreightTipoEmbalagem,
 			&quote.FreightQuantidade, &freightVolumes, &quote.FreightValorNota, &quote.FreightPesoReal,
@@ -212,14 +212,14 @@ func (r *QuoteRepository) Create(input *models.QuoteInput) (*models.Quote, error
 	var quote models.Quote
 	err := r.db.QueryRow(
 		`INSERT INTO quotes (quote_number, seller_id, customer_id, responsible_name, quote_valid_until, production_lead_time, total_value,
-			freight_cnpj_solicitante, freight_cnpj_cpf_origem, freight_cnpj_cpf_destino, freight_cnpj_devedor,
+			freight_tax_id_sender, freight_tax_id_origin, freight_tax_id_dest, freight_tax_id_payer,
 			freight_tipo_transporte, freight_contato, freight_cidade_origem, freight_cidade_destino,
 			freight_material, freight_tipo_frete, freight_produto, freight_tipo_embalagem,
 			freight_quantidade, freight_volumes, freight_valor_nota, freight_peso_real,
 			quote_date, care_of, sales_channel, observations, feedback_datetime, feedback_observation, payment_method, installments, installment_dates, carrier_id, freight_value)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34) RETURNING id, quote_number, total_value, created_at, updated_at`,
 		input.QuoteNumber, input.SellerID, input.CustomerID, input.ResponsibleName, input.QuoteValidUntil, input.ProductionLeadTime, totalValue,
-		input.FreightCNPJSolicitante, input.FreightCNPJCPFOrigem, input.FreightCNPJCPFDestino, input.FreightCNPJDevedor,
+		input.FreightTaxIDSender, input.FreightTaxIDOrigin, input.FreightTaxIDDest, input.FreightTaxIDPayer,
 		input.FreightTipoTransporte, input.FreightContato, input.FreightCidadeOrigem, input.FreightCidadeDestino,
 		input.FreightMaterial, input.FreightTipoFrete, input.FreightProduto, input.FreightTipoEmbalagem,
 		input.FreightQuantidade, freightVolumesJSON, input.FreightValorNota, input.FreightPesoReal,
@@ -329,14 +329,14 @@ func (r *QuoteRepository) Update(id int, input *models.QuoteInput) (*models.Quot
 
 	_, err = tx.Exec(
 		`UPDATE quotes SET quote_number=$1, seller_id=$2, customer_id=$3, responsible_name=$4, quote_valid_until=$5, production_lead_time=$6, total_value=$7,
-			freight_cnpj_solicitante=$8, freight_cnpj_cpf_origem=$9, freight_cnpj_cpf_destino=$10, freight_cnpj_devedor=$11,
+			freight_tax_id_sender=$8, freight_tax_id_origin=$9, freight_tax_id_dest=$10, freight_tax_id_payer=$11,
 			freight_tipo_transporte=$12, freight_contato=$13, freight_cidade_origem=$14, freight_cidade_destino=$15,
 			freight_material=$16, freight_tipo_frete=$17, freight_produto=$18, freight_tipo_embalagem=$19,
 			freight_quantidade=$20, freight_volumes=$21, freight_valor_nota=$22, freight_peso_real=$23,
 			quote_date=$24, care_of=$25, sales_channel=$26, observations=$27, feedback_datetime=$28, feedback_observation=$29, payment_method=$30, installments=$31, installment_dates=$32, carrier_id=$33, freight_value=$34,
 			updated_at=NOW() WHERE id=$35`,
 		input.QuoteNumber, input.SellerID, input.CustomerID, input.ResponsibleName, input.QuoteValidUntil, input.ProductionLeadTime, totalValue,
-		input.FreightCNPJSolicitante, input.FreightCNPJCPFOrigem, input.FreightCNPJCPFDestino, input.FreightCNPJDevedor,
+		input.FreightTaxIDSender, input.FreightTaxIDOrigin, input.FreightTaxIDDest, input.FreightTaxIDPayer,
 		input.FreightTipoTransporte, input.FreightContato, input.FreightCidadeOrigem, input.FreightCidadeDestino,
 		input.FreightMaterial, input.FreightTipoFrete, input.FreightProduto, input.FreightTipoEmbalagem,
 		input.FreightQuantidade, updateFreightVolumes, input.FreightValorNota, input.FreightPesoReal,

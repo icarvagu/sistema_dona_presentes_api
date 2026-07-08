@@ -23,7 +23,7 @@ func ensureActiveArtFinalUser(tx *sql.Tx, id *int, permissions ...string) error 
 		return err
 	}
 	if !ok {
-		return fmt.Errorf("responsavel inexistente ou inativo")
+		return fmt.Errorf("responsible inexistente ou inativo")
 	}
 	return nil
 }

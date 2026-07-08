@@ -39,11 +39,11 @@ type Sale struct {
 	ArrivalDate           *time.Time      `json:"arrival_date,omitempty"`
 	Priority              string          `json:"priority"`
 	CareOf                string          `json:"care_of"`
-	EmailNF               string          `json:"email_nf"`
-	EmailFinanceiro       string          `json:"email_financeiro"`
-	OrdemCompra           string          `json:"ordem_compra"`
-	ObservacoesExternas   string          `json:"observacoes_externas"`
-	ObservacoesInternas   string          `json:"observacoes_internas"`
+	InvoiceEmail               string          `json:"invoice_email"`
+	FinancialEmail       string          `json:"financial_email"`
+	PurchaseOrder           string          `json:"purchase_order"`
+	ExternalNotes   string          `json:"external_notes"`
+	InternalNotes   string          `json:"internal_notes"`
 	LayoutURLs            []string        `json:"layout_urls,omitempty"`
 	TotalValue            float64         `json:"total"`
 	Items                 []SaleItem      `json:"items,omitempty"`
@@ -68,11 +68,11 @@ type SaleInput struct {
 	ArrivalDate           *time.Time      `json:"arrival_date,omitempty"`
 	Priority              string          `json:"priority"`
 	CareOf                string          `json:"care_of"`
-	EmailNF               string          `json:"email_nf"`
-	EmailFinanceiro       string          `json:"email_financeiro"`
-	OrdemCompra           string          `json:"ordem_compra"`
-	ObservacoesExternas   string          `json:"observacoes_externas"`
-	ObservacoesInternas   string          `json:"observacoes_internas"`
+	InvoiceEmail               string          `json:"invoice_email"`
+	FinancialEmail       string          `json:"financial_email"`
+	PurchaseOrder           string          `json:"purchase_order"`
+	ExternalNotes   string          `json:"external_notes"`
+	InternalNotes   string          `json:"internal_notes"`
 	LayoutURLs            []string        `json:"layout_urls,omitempty"`
 	Items                 []SaleItemInput `json:"items,omitempty"`
 	CarrierIDs            []int           `json:"carrier_ids,omitempty"`

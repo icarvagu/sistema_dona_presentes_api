@@ -20,7 +20,7 @@ func InitDashboardService(service *services.DashboardService) {
 
 type DashboardResponse = services.DashboardResponse
 
-func GetVendedorDashboard(w http.ResponseWriter, r *http.Request) {
+func GetSellerDashboard(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {

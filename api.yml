@@ -94,11 +94,11 @@ components:
         customer_type: { type: string }
         status: { type: string }
         name: { type: string }
-        fantasy_name: { type: string }
-        razao_social: { type: string }
-        inscricao_estadual: { type: string }
-        inscricao_municipal: { type: string }
-        responsavel: { type: string }
+        trade_name: { type: string }
+        company_name: { type: string }
+        state_registration: { type: string }
+        city_registration: { type: string }
+        responsible: { type: string }
         contact_financial_name: { type: string }
         contact_financial_email: { type: string }
         contact_financial_phone: { type: string }
@@ -291,11 +291,11 @@ components:
         arrival_date: { type: string, format: date, nullable: true }
         priority: { type: string }
         care_of: { type: string }
-        email_nf: { type: string }
-        email_financeiro: { type: string }
-        ordem_compra: { type: string }
-        observacoes_externas: { type: string }
-        observacoes_internas: { type: string }
+        invoice_email: { type: string }
+        financial_email: { type: string }
+        purchase_order: { type: string }
+        external_notes: { type: string }
+        internal_notes: { type: string }
         payment_method: { type: string }
         installments: { type: integer }
         total_value: { type: number, format: float }

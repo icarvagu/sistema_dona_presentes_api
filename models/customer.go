@@ -26,11 +26,11 @@ type Customer struct {
     CustomerType           string              `json:"customer_type"`
     Status                 string              `json:"status"`
     Name                   string              `json:"name"`
-    FantasyName            string              `json:"fantasy_name,omitempty"`
-    RazaoSocial            string              `json:"razao_social,omitempty"`
-    InscricaoEstadual      string              `json:"inscricao_estadual,omitempty"`
-    InscricaoMunicipal     string              `json:"inscricao_municipal,omitempty"`
-    Responsavel            string              `json:"responsavel,omitempty"`
+    TradeName            string              `json:"trade_name,omitempty"`
+    CompanyName            string              `json:"company_name,omitempty"`
+    StateRegistration      string              `json:"state_registration,omitempty"`
+    CityRegistration     string              `json:"city_registration,omitempty"`
+    Responsible            string              `json:"responsible,omitempty"`
     ContactFinancialName   string              `json:"contact_financial_name,omitempty"`
     ContactFinancialEmail  string              `json:"contact_financial_email,omitempty"`
     ContactFinancialPhone  string              `json:"contact_financial_phone,omitempty"`

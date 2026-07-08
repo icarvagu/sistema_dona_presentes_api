@@ -51,6 +51,6 @@ func TestCreateSupplyRequiresAuditedOpeningBalance(t *testing.T) {
 		CurrentQuantity: 10,
 	}, models.ProductionAccess{Admin: true})
 	if err == nil {
-		t.Fatal("saldo inicial deve ser registrado por uma entrada com fornecedor e nota fiscal")
+		t.Fatal("initial balance must be recorded by an entry with supplier and invoice")
 	}
 }
