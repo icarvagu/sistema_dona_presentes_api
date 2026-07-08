@@ -40,11 +40,19 @@ func (r *statusRecorder) WriteHeader(code int) {
 	r.ResponseWriter.WriteHeader(code)
 }
 
+func safeErrorMessage(err error) string {
+	if appErr, ok := err.(*errors.AppError); ok {
+		return appErr.Message
+	}
+	log.Printf("[ERROR] raw error (sanitized for response): %s", err.Error())
+	return "Erro interno do servidor"
+}
+
 func ErrorHandler(w http.ResponseWriter, err error, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := errors.ErrorResponse{
-		Error: err.Error(),
+		Error: safeErrorMessage(err),
 		Code:  statusCode,
 	}
 
