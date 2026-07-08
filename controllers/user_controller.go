@@ -19,8 +19,11 @@ var userService *services.UserService
 
 func InitUserService() {
 	userRepo := repositories.NewUserRepository(config.DB)
-	authService := services.NewAuthService(userRepo)
-	userService = services.NewUserService(userRepo, authService)
+	refreshRepo := repositories.NewRefreshTokenRepository(config.DB)
+	auditService := services.NewAuditService(config.DB)
+	authService := services.NewAuthService(userRepo, refreshRepo, auditService)
+	cryptoService := services.NewCryptoService()
+	userService = services.NewUserService(userRepo, authService, cryptoService)
 }
 
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {

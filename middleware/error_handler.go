@@ -103,6 +103,7 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		for _, allowed := range allowedOrigins {
 			if origin == allowed {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Set("Access-Control-Allow-Credentials", "true")
 				break
 			}
 		}

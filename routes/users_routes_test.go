@@ -8,6 +8,7 @@ import (
 )
 
 func TestRegisterUsersRoutes_PutProfileHasPriorityOverID(t *testing.T) {
+	t.Setenv("JWT_SECRET", "test-secret-key-for-testing-only")
 	router := mux.NewRouter()
 	RegisterUsersRoutes(router)
 

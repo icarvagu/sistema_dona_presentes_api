@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"strings"
 
 	apperrors "donapresentes/errors"
@@ -13,20 +12,27 @@ import (
 func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			tokenString := ""
 
 			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
+			if authHeader != "" {
+				parts := strings.Split(authHeader, " ")
+				if len(parts) == 2 && parts[0] == "Bearer" {
+					tokenString = parts[1]
+				}
+			}
+
+			if tokenString == "" {
+				cookie, err := r.Cookie("access_token")
+				if err == nil {
+					tokenString = cookie.Value
+				}
+			}
+
+			if tokenString == "" {
 				ErrorHandler(w, apperrors.NewValidationError("Token de autenticação não fornecido"), http.StatusUnauthorized)
 				return
 			}
-
-			parts := strings.Split(authHeader, " ")
-			if len(parts) != 2 || parts[0] != "Bearer" {
-				ErrorHandler(w, apperrors.NewValidationError("Formato de token inválido"), http.StatusUnauthorized)
-				return
-			}
-
-			tokenString := parts[1]
 
 			claims, err := authService.ValidateToken(tokenString)
 			if err != nil {
@@ -38,7 +44,6 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 			username, _ := claims["username"].(string)
 			role, _ := claims["role"].(string)
 
-			// Extract permissions from JWT claims
 			var permissions []string
 			if rawPerms, ok := claims["permissions"].([]interface{}); ok {
 				for _, p := range rawPerms {
@@ -53,10 +58,6 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 			ctx = context.WithValue(ctx, "role", role)
 			ctx = context.WithValue(ctx, "permissions", permissions)
 
-			r.Header.Set("X-User-ID", strconv.Itoa(int(userID)))
-			r.Header.Set("X-Username", username)
-			r.Header.Set("X-User-Role", role)
-
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -65,7 +66,10 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 func AdminOnlyMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			role := r.Header.Get("X-User-Role")
+			role := ""
+			if roleVal := r.Context().Value("role"); roleVal != nil {
+				role = roleVal.(string)
+			}
 			if role != "admin" {
 				ErrorHandler(w, apperrors.NewValidationError("Acesso negado. Apenas administradores podem acessar este recurso"), http.StatusForbidden)
 				return
@@ -87,24 +91,9 @@ func GetUserFromRequest(r *http.Request) (userID int, username string, role stri
 		role = roleVal.(string)
 	}
 
-	if userID == 0 {
-		userIDStr := r.Header.Get("X-User-ID")
-		if userIDStr != "" {
-			if id, err := strconv.Atoi(userIDStr); err == nil {
-				userID = id
-			}
-		}
-	}
-	if username == "" {
-		username = r.Header.Get("X-Username")
-	}
-	if role == "" {
-		role = r.Header.Get("X-User-Role")
-	}
 	return
 }
 
-// HasPermission returns true if the user has the given permission OR is an admin.
 func HasPermission(r *http.Request, permission string) bool {
 	_, _, role := GetUserFromRequest(r)
 	if role == "admin" {
@@ -122,7 +111,6 @@ func HasPermission(r *http.Request, permission string) bool {
 	return false
 }
 
-// GetPermissionsFromRequest returns a defensive copy of the permission keys in the JWT.
 func GetPermissionsFromRequest(r *http.Request) []string {
 	if permsVal := r.Context().Value("permissions"); permsVal != nil {
 		if perms, ok := permsVal.([]string); ok {

@@ -10,19 +10,34 @@ import (
 )
 
 type UserService struct {
-	userRepo    *repositories.UserRepository
-	authService *AuthService
+	userRepo      *repositories.UserRepository
+	authService   *AuthService
+	cryptoService *CryptoService
 }
 
-func NewUserService(userRepo *repositories.UserRepository, authService *AuthService) *UserService {
+func NewUserService(userRepo *repositories.UserRepository, authService *AuthService, cryptoService *CryptoService) *UserService {
 	return &UserService{
-		userRepo:    userRepo,
-		authService: authService,
+		userRepo:      userRepo,
+		authService:   authService,
+		cryptoService: cryptoService,
 	}
 }
 
 func (s *UserService) GetAll() ([]models.User, error) {
-	return s.userRepo.GetAll()
+	users, err := s.userRepo.GetAll()
+	if err != nil {
+		return nil, err
+	}
+	for i := range users {
+		users[i].PasswordHash = ""
+		if s.cryptoService != nil && users[i].CPF != "" {
+			decrypted, err := s.cryptoService.Decrypt(users[i].CPF)
+			if err == nil {
+				users[i].CPF = decrypted
+			}
+		}
+	}
+	return users, nil
 }
 
 func (s *UserService) GetByID(id int) (*models.User, error) {
@@ -35,10 +50,22 @@ func (s *UserService) GetByID(id int) (*models.User, error) {
 	}
 
 	user.PasswordHash = ""
+
+	if s.cryptoService != nil && user.CPF != "" {
+		decrypted, err := s.cryptoService.Decrypt(user.CPF)
+		if err == nil {
+			user.CPF = decrypted
+		}
+	}
+
 	return user, nil
 }
 
 func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
+	input.Username = SanitizeUsername(input.Username)
+	input.FullName = SanitizeString(input.FullName)
+	input.CPF = SanitizeCPF(input.CPF)
+	input.Password = SanitizePassword(input.Password)
 
 	if err := s.validateUserInput(input, true); err != nil {
 		return nil, err
@@ -50,7 +77,8 @@ func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
 	}
 
 	if input.CPF != "" {
-		_, err := s.userRepo.GetByCPF(input.CPF)
+		cpfHash := s.cryptoService.Hash(input.CPF)
+		_, err := s.userRepo.GetByCPFHash(cpfHash)
 		if err == nil {
 			return nil, apperrors.NewValidationError("CPF já cadastrado")
 		}
@@ -61,21 +89,35 @@ func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
 		return nil, apperrors.NewDatabaseError(err)
 	}
 
+	encryptedCPF := input.CPF
+	if s.cryptoService != nil && input.CPF != "" {
+		encryptedCPF, err = s.cryptoService.Encrypt(input.CPF)
+		if err != nil {
+			return nil, apperrors.NewDatabaseError(err)
+		}
+	}
+
+	cpfHash := ""
+	if input.CPF != "" {
+		cpfHash = s.cryptoService.Hash(input.CPF)
+	}
+
 	user := &models.User{
-		Username:     input.Username,
-		PasswordHash: passwordHash,
-		Role:         input.Role,
-		Permissions:  input.Permissions,
-		FullName:     input.FullName,
-		CPF:          input.CPF,
-		RG:           input.RG,
-		BirthDate:    input.BirthDate,
-		Gender:       input.Gender,
-		Status:       input.Status,
-		ContactEmail: input.ContactEmail,
-		FullAddress:  input.FullAddress,
-		ContactPhone: input.ContactPhone,
-		Notes:        input.Notes,
+		Username:            input.Username,
+		PasswordHash:        passwordHash,
+		Role:                input.Role,
+		Permissions:         input.Permissions,
+		FullName:            input.FullName,
+		CPF:                 encryptedCPF,
+		RG:                  input.RG,
+		BirthDate:           input.BirthDate,
+		Gender:              input.Gender,
+		Status:              input.Status,
+		ContactEmail:        input.ContactEmail,
+		FullAddress:         input.FullAddress,
+		ContactPhone:        input.ContactPhone,
+		Notes:               input.Notes,
+		MustChangePassword:  input.MustChangePassword,
 	}
 
 	if user.Status == "" {
@@ -87,11 +129,20 @@ func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
 		return nil, apperrors.NewDatabaseError(err)
 	}
 
+	if cpfHash != "" {
+		_ = s.userRepo.UpdateCPFHash(created.ID, cpfHash)
+	}
+
 	created.PasswordHash = ""
+	created.CPF = input.CPF
 	return created, nil
 }
 
 func (s *UserService) Update(id int, input *models.UserInput) (*models.User, error) {
+	input.Username = SanitizeUsername(input.Username)
+	input.FullName = SanitizeString(input.FullName)
+	input.CPF = SanitizeCPF(input.CPF)
+	input.Password = SanitizePassword(input.Password)
 
 	existingUser, err := s.userRepo.GetByID(id)
 	if err != nil {
@@ -112,11 +163,22 @@ func (s *UserService) Update(id int, input *models.UserInput) (*models.User, err
 		}
 	}
 
+	encryptedCPF := input.CPF
+	cpfHash := ""
 	if input.CPF != "" && input.CPF != existingUser.CPF {
-		_, err := s.userRepo.GetByCPF(input.CPF)
+		cpfHash = s.cryptoService.Hash(input.CPF)
+		_, err := s.userRepo.GetByCPFHash(cpfHash)
 		if err == nil {
 			return nil, apperrors.NewValidationError("CPF já cadastrado")
 		}
+		if s.cryptoService != nil {
+			encryptedCPF, err = s.cryptoService.Encrypt(input.CPF)
+			if err != nil {
+				return nil, apperrors.NewDatabaseError(err)
+			}
+		}
+	} else if input.CPF == existingUser.CPF {
+		encryptedCPF = existingUser.CPF
 	}
 
 	user := &models.User{
@@ -124,7 +186,7 @@ func (s *UserService) Update(id int, input *models.UserInput) (*models.User, err
 		Role:         input.Role,
 		Permissions:  input.Permissions,
 		FullName:     input.FullName,
-		CPF:          input.CPF,
+		CPF:          encryptedCPF,
 		RG:           input.RG,
 		BirthDate:    input.BirthDate,
 		Gender:       input.Gender,
@@ -155,7 +217,12 @@ func (s *UserService) Update(id int, input *models.UserInput) (*models.User, err
 		return nil, apperrors.NewDatabaseError(err)
 	}
 
+	if cpfHash != "" {
+		_ = s.userRepo.UpdateCPFHash(updated.ID, cpfHash)
+	}
+
 	updated.PasswordHash = ""
+	updated.CPF = input.CPF
 	return updated, nil
 }
 
@@ -173,7 +240,14 @@ func (s *UserService) Delete(id int) error {
 }
 
 func (s *UserService) SearchByFilter(filter string) ([]models.User, error) {
-	return s.userRepo.SearchByFilter(filter)
+	users, err := s.userRepo.SearchByFilter(filter)
+	if err != nil {
+		return nil, err
+	}
+	for i := range users {
+		users[i].PasswordHash = ""
+	}
+	return users, nil
 }
 
 func (s *UserService) validateUserInput(input *models.UserInput, requirePassword bool) error {
@@ -189,8 +263,8 @@ func (s *UserService) validateUserInput(input *models.UserInput, requirePassword
 		if strings.TrimSpace(input.Password) == "" {
 			return apperrors.NewValidationError("Senha é obrigatória")
 		}
-		if len(input.Password) < 6 {
-			return apperrors.NewValidationError("Senha deve ter pelo menos 6 caracteres")
+		if err := s.authService.ValidatePasswordComplexity(input.Password); err != nil {
+			return err
 		}
 	}
 

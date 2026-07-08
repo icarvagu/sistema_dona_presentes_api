@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"donapresentes/controllers"
 	"donapresentes/controllers/config"
@@ -25,6 +26,11 @@ func bootstrap() error {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		return fmt.Errorf("DATABASE_URL environment variable is required")
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		return fmt.Errorf("JWT_SECRET environment variable is required")
 	}
 
 	if err := config.Connect(dsn); err != nil {
@@ -74,13 +80,21 @@ func main() {
 
 	r.Use(middleware.CORSMiddleware)
 	middleware.ApplyCORSFallbackHandlers(r)
+	r.Use(middleware.SecurityHeadersMiddleware)
+	r.Use(middleware.InputValidationMiddleware)
+	r.Use(middleware.RateLimitMiddlewarePerRoute)
+	r.Use(middleware.TimeoutMiddleware(30 * time.Second))
 	r.Use(middleware.NormalizePathMiddleware)
 	r.Use(middleware.LoggingMiddleware)
 	r.Use(middleware.RecoveryMiddleware)
 
 	routes.RegisterAuthRoutes(r)
 
-	authService := services.NewAuthService(repositories.NewUserRepository(config.DB))
+	authService := services.NewAuthService(
+		repositories.NewUserRepository(config.DB),
+		repositories.NewRefreshTokenRepository(config.DB),
+		services.NewAuditService(config.DB),
+	)
 	protectedRouter := r.PathPrefix("").Subrouter()
 	protectedRouter.Use(middleware.AuthMiddleware(authService))
 
@@ -107,6 +121,14 @@ func main() {
 	adminRouter.HandleFunc("/users/{id}", controllers.DeleteUser).Methods("DELETE", "OPTIONS")
 	adminRouter.HandleFunc("/products-xbz/sync", controllers.SyncProductsFromXBZHandler).Methods("POST", "OPTIONS")
 
-	log.Printf("Server starting on %s\n", port)
-	log.Fatal(http.ListenAndServe(port, r))
+	tlsCert := os.Getenv("TLS_CERT_FILE")
+	tlsKey := os.Getenv("TLS_KEY_FILE")
+
+	if tlsCert != "" && tlsKey != "" {
+		log.Printf("Server starting on %s with TLS\n", port)
+		log.Fatal(http.ListenAndServeTLS(port, tlsCert, tlsKey, r))
+	} else {
+		log.Printf("Server starting on %s (plain HTTP - configure TLS for production)\n", port)
+		log.Fatal(http.ListenAndServe(port, r))
+	}
 }

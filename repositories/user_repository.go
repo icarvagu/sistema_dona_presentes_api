@@ -2,11 +2,22 @@ package repositories
 
 import (
 	"database/sql"
+	"time"
+
 	apperrors "donapresentes/errors"
 	"donapresentes/models"
 
 	"github.com/lib/pq"
 )
+
+type PasswordResetToken struct {
+	ID        int
+	UserID    int
+	TokenHash string
+	ExpiresAt time.Time
+	Used      bool
+	CreatedAt time.Time
+}
 
 type UserRepository struct {
 	db *sql.DB
@@ -19,15 +30,15 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
-	var birthDate sql.NullTime
+	var birthDate, lockedUntil sql.NullTime
 
 	err := r.db.QueryRow(
 		`SELECT id, username, password_hash, role, permissions, full_name, cpf, rg, birth_date, gender, status,
-		 contact_email, full_address, contact_phone, notes, created_at, updated_at
+		 contact_email, full_address, contact_phone, notes, failed_login_attempts, locked_until, must_change_password, created_at, updated_at
 		 FROM users WHERE username=$1`,
 		username,
 	).Scan(&u.ID, &u.Username, &u.PasswordHash, &u.Role, pq.Array(&u.Permissions), &u.FullName, &u.CPF, &rg, &birthDate,
-		&gender, &u.Status, &contactEmail, &fullAddress, &contactPhone, &notes, &u.CreatedAt, &u.UpdatedAt)
+		&gender, &u.Status, &contactEmail, &fullAddress, &contactPhone, &notes, &u.FailedLoginAttempts, &lockedUntil, &u.MustChangePassword, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, apperrors.NewNotFoundError("Usuário não encontrado")
@@ -56,6 +67,9 @@ func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 	}
 	if birthDate.Valid {
 		u.BirthDate = &birthDate.Time
+	}
+	if lockedUntil.Valid {
+		u.LockedUntil = &lockedUntil.Time
 	}
 	
 	return &u, nil
@@ -64,15 +78,15 @@ func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 func (r *UserRepository) GetByID(id int) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
-	var birthDate sql.NullTime
+	var birthDate, lockedUntil sql.NullTime
 
 	err := r.db.QueryRow(
 		`SELECT id, username, password_hash, role, permissions, full_name, cpf, rg, birth_date, gender, status,
-		 contact_email, full_address, contact_phone, notes, created_at, updated_at
+		 contact_email, full_address, contact_phone, notes, failed_login_attempts, locked_until, must_change_password, created_at, updated_at
 		 FROM users WHERE id=$1`,
 		id,
 	).Scan(&u.ID, &u.Username, &u.PasswordHash, &u.Role, pq.Array(&u.Permissions), &u.FullName, &u.CPF, &rg, &birthDate,
-		&gender, &u.Status, &contactEmail, &fullAddress, &contactPhone, &notes, &u.CreatedAt, &u.UpdatedAt)
+		&gender, &u.Status, &contactEmail, &fullAddress, &contactPhone, &notes, &u.FailedLoginAttempts, &lockedUntil, &u.MustChangePassword, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, apperrors.NewNotFoundError("Usuário não encontrado")
@@ -101,6 +115,9 @@ func (r *UserRepository) GetByID(id int) (*models.User, error) {
 	}
 	if birthDate.Valid {
 		u.BirthDate = &birthDate.Time
+	}
+	if lockedUntil.Valid {
+		u.LockedUntil = &lockedUntil.Time
 	}
 	
 	return &u, nil
@@ -112,11 +129,11 @@ func (r *UserRepository) Create(u *models.User) (*models.User, error) {
 	}
 	err := r.db.QueryRow(
 		`INSERT INTO users (username, password_hash, role, permissions, full_name, cpf, rg, birth_date, gender, status,
-		 contact_email, full_address, contact_phone, notes)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+		 contact_email, full_address, contact_phone, notes, must_change_password)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
 		 RETURNING id, created_at, updated_at`,
 		u.Username, u.PasswordHash, u.Role, pq.Array(u.Permissions), u.FullName, u.CPF, u.RG, u.BirthDate, u.Gender, u.Status,
-		u.ContactEmail, u.FullAddress, u.ContactPhone, u.Notes,
+		u.ContactEmail, u.FullAddress, u.ContactPhone, u.Notes, u.MustChangePassword,
 	).Scan(&u.ID, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		return nil, apperrors.NewDatabaseError(err)
@@ -198,7 +215,7 @@ func (r *UserRepository) Update(id int, u *models.User) (*models.User, error) {
 }
 
 func (r *UserRepository) UpdatePassword(id int, passwordHash string) error {
-	_, err := r.db.Exec(`UPDATE users SET password_hash=$1, updated_at=NOW() WHERE id=$2`, passwordHash, id)
+	_, err := r.db.Exec(`UPDATE users SET password_hash=$1, must_change_password=FALSE, updated_at=NOW() WHERE id=$2`, passwordHash, id)
 	if err != nil {
 		return apperrors.NewDatabaseError(err)
 	}
@@ -223,15 +240,15 @@ func (r *UserRepository) Delete(id int) error {
 func (r *UserRepository) GetByCPF(cpf string) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
-	var birthDate sql.NullTime
+	var birthDate, lockedUntil sql.NullTime
 
 	err := r.db.QueryRow(
 		`SELECT id, username, password_hash, role, permissions, full_name, cpf, rg, birth_date, gender, status,
-		 contact_email, full_address, contact_phone, notes, created_at, updated_at
+		 contact_email, full_address, contact_phone, notes, failed_login_attempts, locked_until, must_change_password, created_at, updated_at
 		 FROM users WHERE cpf=$1`,
 		cpf,
 	).Scan(&u.ID, &u.Username, &u.PasswordHash, &u.Role, pq.Array(&u.Permissions), &u.FullName, &u.CPF, &rg, &birthDate,
-		&gender, &u.Status, &contactEmail, &fullAddress, &contactPhone, &notes, &u.CreatedAt, &u.UpdatedAt)
+		&gender, &u.Status, &contactEmail, &fullAddress, &contactPhone, &notes, &u.FailedLoginAttempts, &lockedUntil, &u.MustChangePassword, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, apperrors.NewNotFoundError("Usuário não encontrado")
@@ -260,6 +277,9 @@ func (r *UserRepository) GetByCPF(cpf string) (*models.User, error) {
 	}
 	if birthDate.Valid {
 		u.BirthDate = &birthDate.Time
+	}
+	if lockedUntil.Valid {
+		u.LockedUntil = &lockedUntil.Time
 	}
 	
 	return &u, nil
@@ -321,4 +341,87 @@ func (r *UserRepository) SearchByFilter(filter string) ([]models.User, error) {
 		users = append(users, u)
 	}
 	return users, nil
+}
+
+func (r *UserRepository) UpdateFailedAttempts(id int, attempts int, lockedUntil *time.Time) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET failed_login_attempts=$1, locked_until=$2, updated_at=NOW() WHERE id=$3`,
+		attempts, lockedUntil, id,
+	)
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+	return nil
+}
+
+func (r *UserRepository) ResetFailedAttempts(id int) error {
+	_, err := r.db.Exec(
+		`UPDATE users SET failed_login_attempts=0, locked_until=NULL, updated_at=NOW() WHERE id=$1`,
+		id,
+	)
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+	return nil
+}
+
+func (r *UserRepository) UpdateCPFHash(id int, cpfHash string) error {
+	_, err := r.db.Exec(`UPDATE users SET cpf_hash=$1 WHERE id=$2`, cpfHash, id)
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+	return nil
+}
+
+func (r *UserRepository) GetByCPFHash(cpfHash string) (*models.User, error) {
+	var u models.User
+	err := r.db.QueryRow(
+		`SELECT id, username, role, full_name FROM users WHERE cpf_hash=$1`,
+		cpfHash,
+	).Scan(&u.ID, &u.Username, &u.Role, &u.FullName)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, apperrors.NewNotFoundError("Usuário não encontrado")
+		}
+		return nil, apperrors.NewDatabaseError(err)
+	}
+	return &u, nil
+}
+
+func (r *UserRepository) CreatePasswordResetToken(userID int, tokenHash string, expiresAt time.Time) (*PasswordResetToken, error) {
+	var prt PasswordResetToken
+	err := r.db.QueryRow(
+		`INSERT INTO password_reset_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3) RETURNING id, created_at`,
+		userID, tokenHash, expiresAt,
+	).Scan(&prt.ID, &prt.CreatedAt)
+	if err != nil {
+		return nil, apperrors.NewDatabaseError(err)
+	}
+	prt.UserID = userID
+	prt.TokenHash = tokenHash
+	prt.ExpiresAt = expiresAt
+	return &prt, nil
+}
+
+func (r *UserRepository) FindPasswordResetToken(tokenHash string) (*PasswordResetToken, error) {
+	var prt PasswordResetToken
+	err := r.db.QueryRow(
+		`SELECT id, user_id, token_hash, expires_at, used, created_at FROM password_reset_tokens WHERE token_hash=$1`,
+		tokenHash,
+	).Scan(&prt.ID, &prt.UserID, &prt.TokenHash, &prt.ExpiresAt, &prt.Used, &prt.CreatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, apperrors.NewNotFoundError("Token não encontrado")
+		}
+		return nil, apperrors.NewDatabaseError(err)
+	}
+	return &prt, nil
+}
+
+func (r *UserRepository) MarkPasswordResetTokenUsed(id int) error {
+	_, err := r.db.Exec(`UPDATE password_reset_tokens SET used=TRUE WHERE id=$1`, id)
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+	return nil
 }
