@@ -23,5 +23,4 @@ func RegisterSalesWorkflowRoutes(r *mux.Router) {
 	r.HandleFunc("/sale-items/{itemId}/engraving-approvals", controllers.AddEngravingApproval).Methods(http.MethodPost)
 	r.HandleFunc("/engraving-approvals/{id}/record", controllers.RecordEngravingApproval).Methods(http.MethodPatch)
 	r.HandleFunc("/sales/{id}/seller-approval", controllers.SellerApproveSale).Methods(http.MethodPatch)
-	r.HandleFunc("/sales-targets/{sellerId}", controllers.SetSellerMonthlyTarget).Methods(http.MethodPut)
 }

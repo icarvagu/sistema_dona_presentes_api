@@ -164,12 +164,6 @@ func (s *SalesWorkflowService) RecordEngravingChannel(id int64, userID int, chan
 	}
 	return s.repo.RecordEngravingChannel(id, userID, channel)
 }
-func (s *SalesWorkflowService) SetTarget(sellerID, userID int, month time.Time, value float64) error {
-	if value < 0 {
-		return fmt.Errorf("target_value must be non-negative")
-	}
-	return s.repo.SetTarget(sellerID, userID, month, value)
-}
 func (s *SalesWorkflowService) ApproveSeller(saleID, userID int) error {
 	return s.repo.SetSellerApproval(saleID, userID)
 }

@@ -342,12 +342,6 @@ func (r *SalesWorkflowRepository) RecordEngravingChannel(id int64, userID int, c
 	return nil
 }
 
-func (r *SalesWorkflowRepository) SetTarget(sellerID, userID int, month time.Time, value float64) error {
-	month = time.Date(month.Year(), month.Month(), 1, 0, 0, 0, 0, time.UTC)
-	_, err := r.db.Exec(`INSERT INTO seller_monthly_targets(seller_id,month,target_value,created_by) VALUES($1,$2,$3,$4) ON CONFLICT(seller_id,month) DO UPDATE SET target_value=EXCLUDED.target_value,updated_at=now()`, sellerID, month, value, userID)
-	return err
-}
-
 func (r *SalesWorkflowRepository) SetSellerApproval(saleID, userID int) error {
 	if err := r.validateChecklist(r.db, saleID, false); err != nil {
 		return err

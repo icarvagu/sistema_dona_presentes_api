@@ -418,31 +418,6 @@ func SellerApproveSale(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
-func SetSellerMonthlyTarget(w http.ResponseWriter, r *http.Request) {
-	if !middleware.HasPermission(r, "vendas:metas") {
-		workflowForbidden(w)
-		return
-	}
-	sellerID, err := workflowID(r, "sellerId")
-	if err != nil {
-		workflowError(w, err)
-		return
-	}
-	var input struct {
-		Month       time.Time `json:"month"`
-		TargetValue float64   `json:"target_value"`
-	}
-	if err = json.NewDecoder(r.Body).Decode(&input); err != nil {
-		workflowError(w, err)
-		return
-	}
-	user, _, _ := middleware.GetUserFromRequest(r)
-	if err = salesWorkflowService.SetTarget(sellerID, user, input.Month, input.TargetValue); err != nil {
-		workflowError(w, err)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
-}
 func GetSalesWorkflowDashboard(w http.ResponseWriter, r *http.Request) {
 	user, _, _ := middleware.GetUserFromRequest(r)
 	canSeeAll := middleware.HasPermission(r, "vendas:ver_todos") || middleware.HasPermission(r, "arte_final") ||
