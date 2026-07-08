@@ -18,7 +18,7 @@ func NewAuditService(db *sql.DB) *AuditService {
 	}
 }
 
-func (s *AuditService) Log(userID *int, action, resource, details, ipAddress string) {
+func (s *AuditService) Log(userID *int, action, resource, details, ipAddress, requestID string) {
 	if s == nil || s.auditRepo == nil {
 		return
 	}
@@ -27,10 +27,15 @@ func (s *AuditService) Log(userID *int, action, resource, details, ipAddress str
 		Level:      "audit",
 		Message:    action + " " + resource,
 		RemoteAddr: ipAddress,
+		RequestID:  requestID,
 		Error:      details,
 	})
 
 	go func() {
-		_ = s.auditRepo.Insert(userID, action, resource, details, ipAddress, time.Now())
+		_ = s.auditRepo.Insert(userID, action, resource, details, ipAddress, requestID, time.Now())
 	}()
+}
+
+func (s *AuditService) LogSimple(userID *int, action, resource, details, ipAddress string) {
+	s.Log(userID, action, resource, details, ipAddress, "")
 }

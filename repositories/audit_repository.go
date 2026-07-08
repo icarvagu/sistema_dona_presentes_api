@@ -11,10 +11,6 @@ type AuditRepository struct {
 	db *sql.DB
 }
 
-func NewAuditRepository(db *sql.DB) *AuditRepository {
-	return &AuditRepository{db: db}
-}
-
 type AuditLog struct {
 	ID        int       `json:"id"`
 	UserID    *int      `json:"user_id,omitempty"`
@@ -22,13 +18,18 @@ type AuditLog struct {
 	Resource  string    `json:"resource,omitempty"`
 	Details   string    `json:"details,omitempty"`
 	IPAddress string    `json:"ip_address,omitempty"`
+	RequestID string    `json:"request_id,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func (r *AuditRepository) Insert(userID *int, action, resource, details, ipAddress string, createdAt time.Time) error {
+func NewAuditRepository(db *sql.DB) *AuditRepository {
+	return &AuditRepository{db: db}
+}
+
+func (r *AuditRepository) Insert(userID *int, action, resource, details, ipAddress, requestID string, createdAt time.Time) error {
 	_, err := r.db.Exec(
-		`INSERT INTO audit_logs (user_id, action, resource, details, ip_address, created_at) VALUES ($1, $2, $3, $4, $5, $6)`,
-		userID, action, resource, details, ipAddress, createdAt,
+		`INSERT INTO audit_logs (user_id, action, resource, details, ip_address, request_id, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		userID, action, resource, details, ipAddress, requestID, createdAt,
 	)
 	if err != nil {
 		return apperrors.NewDatabaseError(err)

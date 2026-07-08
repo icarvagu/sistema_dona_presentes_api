@@ -99,7 +99,7 @@ func (s *AuthService) Login(input *models.LoginInput, ipAddress string) (*models
 	}
 
 	if user.LockedUntil != nil && time.Now().Before(*user.LockedUntil) {
-		s.auditService.Log(&user.ID, "login_blocked", "user", "Account locked due to too many failed attempts", ipAddress)
+		s.auditService.LogSimple(&user.ID, "login_blocked", "user", "Account locked due to too many failed attempts", ipAddress)
 		return nil, apperrors.NewValidationError("Conta temporariamente bloqueada por muitas tentativas. Tente novamente mais tarde")
 	}
 
@@ -118,7 +118,7 @@ func (s *AuthService) Login(input *models.LoginInput, ipAddress string) (*models
 			lockUntil = &t
 		}
 		_ = s.userRepo.UpdateFailedAttempts(user.ID, newAttempts, lockUntil)
-		s.auditService.Log(&user.ID, "login_failed", "user", fmt.Sprintf("Failed login attempt %d/5", newAttempts), ipAddress)
+		s.auditService.LogSimple(&user.ID, "login_failed", "user", fmt.Sprintf("Failed login attempt %d/5", newAttempts), ipAddress)
 		return nil, apperrors.NewValidationError("Usuário ou senha inválidos")
 	}
 
@@ -136,7 +136,7 @@ func (s *AuthService) Login(input *models.LoginInput, ipAddress string) (*models
 
 	user.PasswordHash = ""
 
-	s.auditService.Log(&user.ID, "login_success", "user", "Login successful", ipAddress)
+	s.auditService.LogSimple(&user.ID, "login_success", "user", "Login successful", ipAddress)
 
 	return &models.LoginResponse{
 		Token:        accessToken,
@@ -227,7 +227,7 @@ func (s *AuthService) RefreshAccessToken(refreshToken, ipAddress string) (*model
 
 	user.PasswordHash = ""
 
-	s.auditService.Log(&user.ID, "token_refreshed", "auth", "Access token refreshed", ipAddress)
+	s.auditService.LogSimple(&user.ID, "token_refreshed", "auth", "Access token refreshed", ipAddress)
 
 	return &models.LoginResponse{
 		Token:        accessToken,
@@ -241,7 +241,7 @@ func (s *AuthService) Logout(userID int, ipAddress string) error {
 	if err != nil {
 		return err
 	}
-	s.auditService.Log(&userID, "logout", "auth", "User logged out", ipAddress)
+	s.auditService.LogSimple(&userID, "logout", "auth", "User logged out", ipAddress)
 	return nil
 }
 
@@ -290,7 +290,7 @@ func (s *AuthService) InitiatePasswordReset(username string) (string, error) {
 		return "", err
 	}
 
-	s.auditService.Log(&user.ID, "password_reset_requested", "user", "Password reset requested", "")
+	s.auditService.LogSimple(&user.ID, "password_reset_requested", "user", "Password reset requested", "")
 
 	return token, nil
 }
@@ -339,7 +339,7 @@ func (s *AuthService) ResetPassword(token, newPassword string) error {
 
 	_ = s.refreshRepo.RevokeAllForUser(prt.UserID)
 
-	s.auditService.Log(&prt.UserID, "password_reset_completed", "user", "Password reset completed", "")
+	s.auditService.LogSimple(&prt.UserID, "password_reset_completed", "user", "Password reset completed", "")
 
 	return nil
 }
