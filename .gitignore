@@ -2,3 +2,6 @@
 *.exe
 *.log
 tmp/
+
+# Compiled binaries
+main
