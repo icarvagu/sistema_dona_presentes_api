@@ -75,6 +75,11 @@ func main() {
 	scheduler.Start()
 	defer scheduler.Stop()
 
+	requestLogRepo := repositories.NewRequestLogRepository(config.DB)
+	requestLoggerSvc := services.NewRequestLoggerService(requestLogRepo)
+	defer requestLoggerSvc.Shutdown()
+	middleware.InitRequestLogger(requestLoggerSvc)
+
 	r := mux.NewRouter()
 	r.StrictSlash(true)
 

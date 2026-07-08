@@ -8,11 +8,18 @@ import (
 	"time"
 
 	"donapresentes/logger"
+	"donapresentes/services"
 )
 
 type ctxKey string
 
 const RequestIDKey ctxKey = "request_id"
+
+var requestLogger *services.RequestLoggerService
+
+func InitRequestLogger(s *services.RequestLoggerService) {
+	requestLogger = s
+}
 
 func generateRequestID() string {
 	b := make([]byte, 16)
@@ -53,6 +60,8 @@ func StructuredLoggingMiddleware(next http.Handler) http.Handler {
 
 		duration := time.Since(startTime)
 		requestID := GetRequestID(r)
+		durationMs := int(duration.Milliseconds())
+		slow := duration > 5*time.Second
 
 		entry := logger.Entry{
 			Level:      "info",
@@ -64,13 +73,12 @@ func StructuredLoggingMiddleware(next http.Handler) http.Handler {
 			RemoteAddr: r.RemoteAddr,
 			UserAgent:  r.UserAgent(),
 			Message:    "request completed",
+			Slow:       slow,
 		}
 
-		if duration > 5*time.Second {
-			entry.Slow = true
+		if slow {
 			entry.Level = "warn"
 		}
-
 		if rec.statusCode >= 500 {
 			entry.Level = "error"
 		} else if rec.statusCode >= 400 {
@@ -78,6 +86,24 @@ func StructuredLoggingMiddleware(next http.Handler) http.Handler {
 		}
 
 		logger.Log(entry)
+
+		if requestLogger != nil {
+			var userID *int
+			if uid, ok := r.Context().Value("user_id").(int); ok && uid > 0 {
+				userID = &uid
+			}
+			requestLogger.Log(services.RequestLogEntry{
+				RequestID:  requestID,
+				Method:     r.Method,
+				Path:       r.URL.Path,
+				Status:     rec.statusCode,
+				DurationMs: durationMs,
+				RemoteAddr: r.RemoteAddr,
+				UserAgent:  r.UserAgent(),
+				UserID:     userID,
+				Slow:       slow,
+			})
+		}
 	})
 }
 
