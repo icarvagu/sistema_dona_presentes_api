@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"donapresentes/controllers/config"
+	apperrors "donapresentes/errors"
 	"donapresentes/middleware"
 	"donapresentes/models"
 	"donapresentes/repositories"
@@ -26,9 +27,7 @@ func writePurchaseError(w http.ResponseWriter, err error) {
 	if err == sql.ErrNoRows {
 		status = http.StatusNotFound
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+	middleware.ErrorHandler(w, err, status)
 }
 
 func requirePurchasePermission(w http.ResponseWriter, r *http.Request, permissions ...string) bool {
@@ -37,9 +36,7 @@ func requirePurchasePermission(w http.ResponseWriter, r *http.Request, permissio
 			return true
 		}
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusForbidden)
-	_ = json.NewEncoder(w).Encode(map[string]string{"error": "acesso negado para esta etapa do módulo de Compras"})
+	middleware.ErrorHandler(w, apperrors.NewForbiddenError("Acesso negado para esta etapa do módulo de Compras"), http.StatusForbidden)
 	return false
 }
 

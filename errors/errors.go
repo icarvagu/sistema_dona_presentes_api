@@ -158,6 +158,13 @@ func NewUnauthorizedError(message string) *AppError {
 	}
 }
 
+func NewForbiddenError(message string) *AppError {
+	return &AppError{
+		Code:    http.StatusForbidden,
+		Message: message,
+	}
+}
+
 func IsNotFound(err error) bool {
 	if appErr, ok := err.(*AppError); ok {
 		return appErr.Code == http.StatusNotFound
