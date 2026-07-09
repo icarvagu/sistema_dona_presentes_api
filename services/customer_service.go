@@ -8,10 +8,10 @@ import (
 )
 
 type CustomerService struct {
-	customerRepo *repositories.CustomerRepository
+	customerRepo repositories.CustomerRepositoryInterface
 }
 
-func NewCustomerService(customerRepo *repositories.CustomerRepository) *CustomerService {
+func NewCustomerService(customerRepo repositories.CustomerRepositoryInterface) *CustomerService {
 	return &CustomerService{
 		customerRepo: customerRepo,
 	}
