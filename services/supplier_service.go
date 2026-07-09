@@ -8,10 +8,10 @@ import (
 )
 
 type SupplierService struct {
-	supplierRepo *repositories.SupplierRepository
+	supplierRepo repositories.SupplierRepositoryInterface
 }
 
-func NewSupplierService(supplierRepo *repositories.SupplierRepository) *SupplierService {
+func NewSupplierService(supplierRepo repositories.SupplierRepositoryInterface) *SupplierService {
 	return &SupplierService{
 		supplierRepo: supplierRepo,
 	}

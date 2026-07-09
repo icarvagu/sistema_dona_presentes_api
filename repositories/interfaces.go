@@ -62,6 +62,18 @@ type ProductRepositoryInterface interface {
 	Create(p *models.Product) (*models.Product, error)
 	Update(id int, p *models.Product) (*models.Product, error)
 	Delete(id int) error
+	GetAllPaginated(filter string, page, limit int) (*models.PaginatedProductResponse, error)
+	SearchByFilter(filter string, limit int) ([]models.Product, error)
+	GetGroups() ([]string, error)
+	GetPendingApproval() ([]models.Product, error)
+	ApproveProduct(id int, origin string) error
+	BulkApproveAll(origin string) (int64, error)
+	UpdateLastCost(id int, cost float64, date *time.Time, qty1 int, qty2 int, qty3 int, val1 float64, val2 float64, val3 float64, user string) error
+	GetByGroup(group string) ([]models.Product, error)
+	GetFinancialReport() ([]models.FinancialReportItem, error)
+	CreateProductItem(item *models.ProductItem) error
+	DeleteProductItems(parentID int) error
+	GetNewlyImported() ([]int, error)
 }
 
 type AuditServiceInterface interface {

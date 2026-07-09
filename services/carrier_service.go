@@ -8,10 +8,10 @@ import (
 )
 
 type CarrierService struct {
-	carrierRepo *repositories.CarrierRepository
+	carrierRepo repositories.CarrierRepositoryInterface
 }
 
-func NewCarrierService(carrierRepo *repositories.CarrierRepository) *CarrierService {
+func NewCarrierService(carrierRepo repositories.CarrierRepositoryInterface) *CarrierService {
 	return &CarrierService{
 		carrierRepo: carrierRepo,
 	}
