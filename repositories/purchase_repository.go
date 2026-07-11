@@ -370,7 +370,7 @@ func (r *PurchaseRepository) FinancialSummary() ([]models.PurchaseFinancialSumma
 			) AS cost(cost_type,amount,supplier_id)
 			WHERE cost.amount > 0
 		), financial_rows AS (
-			SELECT po.id,po.general_number,po.sale_id,p.updated_at,p.cost_type,p.amount,
+			SELECT po.id AS purchase_id,po.general_number,po.sale_id,p.updated_at,p.cost_type,p.amount,
 			       p.supplier_id,p.method,p.status,p.receipt_url
 			FROM purchase_payments p
 			JOIN purchase_orders po ON po.id=p.purchase_id
