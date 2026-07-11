@@ -62,12 +62,11 @@ func InputValidationMiddleware(next http.Handler) http.Handler {
 
 		for key, values := range r.Header {
 			uk := strings.ToUpper(key)
-			if strings.HasPrefix(uk, "X-FORWARDED") || strings.HasPrefix(uk, "X-REAL-") || key == "Cookie" || key == "Authorization" || key == "Content-Type" || key == "Accept" || key == "Origin" || key == "Referer" || key == "User-Agent" || strings.HasPrefix(uk, "SEC-") {
+			if strings.HasPrefix(uk, "X-FORWARDED") || strings.HasPrefix(uk, "X-REAL-") || key == "Cookie" || key == "Authorization" || key == "Content-Type" || key == "Accept" || key == "Origin" || key == "Referer" || key == "User-Agent" || strings.HasPrefix(uk, "SEC-") || key == "Accept-Language" || key == "Accept-Encoding" {
 				continue
 			}
 			for _, v := range values {
 				if len(v) > 8192 || isSuspicious(v) {
-					log.Printf("[DEBUG-HEADER] key=%q value=%q", key, v)
 					ErrorHandler(w, apperrors.NewValidationError("Header inválido"), http.StatusBadRequest)
 					return
 				}
