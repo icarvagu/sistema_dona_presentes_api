@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -60,6 +61,7 @@ func InputValidationMiddleware(next http.Handler) http.Handler {
 		}
 
 		for key, values := range r.Header {
+			log.Printf("[DEBUG-ALLHEADERS] key=%q values=%q", key, values)
 			uk := strings.ToUpper(key)
 			if strings.HasPrefix(uk, "X-FORWARDED") || strings.HasPrefix(uk, "X-REAL-") || key == "Cookie" || key == "Authorization" || key == "Content-Type" || key == "Accept" || key == "Origin" || key == "Referer" || key == "User-Agent" || strings.HasPrefix(uk, "SEC-") || key == "Accept-Language" || key == "Accept-Encoding" {
 				continue
