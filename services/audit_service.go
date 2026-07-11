@@ -31,9 +31,15 @@ func (s *AuditService) Log(userID *int, action, resource, details, ipAddress, re
 		Error:      details,
 	})
 
-	go func() {
-		_ = s.auditRepo.Insert(userID, action, resource, details, ipAddress, requestID, time.Now())
-	}()
+		go func() {
+					if err := s.auditRepo.Insert(userID, action, resource, details, ipAddress, requestID, time.Now()); err != nil {
+									logger.Log(logger.Entry{
+														Level:   "error",
+														Message: "falha ao persistir audit log: " + action + " " + resource,
+														Error:   err.Error(),
+													})
+								}
+				}()
 }
 
 func (s *AuditService) LogSimple(userID *int, action, resource, details, ipAddress string) {
