@@ -61,7 +61,7 @@ func InputValidationMiddleware(next http.Handler) http.Handler {
 
 		for key, values := range r.Header {
 			uk := strings.ToUpper(key)
-			if strings.HasPrefix(uk, "X-FORWARDED") || strings.HasPrefix(uk, "X-REAL-") || key == "Cookie" || key == "Authorization" || key == "Content-Type" || key == "Accept" || key == "Origin" || key == "Referer" {
+			if strings.HasPrefix(uk, "X-FORWARDED") || strings.HasPrefix(uk, "X-REAL-") || key == "Cookie" || key == "Authorization" || key == "Content-Type" || key == "Accept" || key == "Origin" || key == "Referer" || key == "User-Agent" || strings.HasPrefix(uk, "SEC-") {
 				continue
 			}
 			for _, v := range values {
