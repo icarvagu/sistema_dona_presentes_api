@@ -24,14 +24,14 @@ func InitAuthService() {
 }
 
 func setTokenCookie(w http.ResponseWriter, token string) {
-	secure := os.Getenv("ENABLE_HTTPS") == "true"
+	secure := true	
 	http.SetCookie(w, &http.Cookie{
 		Name:     "access_token",
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   secure,
-		SameSite: http.SameSiteStrictMode,
+		SameSite: http.SameSiteNoneMode,	
 		MaxAge:   86400,
 	})
 }
@@ -42,8 +42,8 @@ func clearTokenCookie(w http.ResponseWriter) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   os.Getenv("ENABLE_HTTPS") == "true",
-		SameSite: http.SameSiteStrictMode,
+		Secure:   true,		
+		SameSite: http.SameSiteNoneMode,	
 		MaxAge:   -1,
 	})
 }
