@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -13,7 +12,7 @@ import (
 
 var (
 	reXSS        = regexp.MustCompile(`(?i)<script|javascript:|onerror=|onload=|onclick=|onmouseover|alert\(|prompt\(|confirm\(`)
-	reSQLInj     = regexp.MustCompile(`(?i)('|--|/\*|;|\bunion\b|\bselect\b|\bdrop\b|\bdelete\b|\binsert\b|\bupdate\b|\bcreate\b|\balter\b|\bexec\b|\bxp_\b)`)
+	reSQLInj      = regexp.MustCompile(`(?i)('|--|/\*|;--|;\s*\bdrop\b|;\s*\bdelete\b|\bunion\b|\bselect\b|\bdrop\b|\bdelete\b|\binsert\b|\bupdate\b|\bcreate\b|\balter\b|\bexec\b|\bxp_\b)`)
 	reNoSQLInj   = regexp.MustCompile(`(?i)\$where|\$gt|\$lt|\$ne|\$regex|\$nin|\$in`)
 	rePathTraver = regexp.MustCompile(`(?i)\.\./|\.\.\\|/etc/passwd|/proc/self|%00|null|boot\.ini`)
 	reBinary     = regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F]`)
