@@ -6,8 +6,9 @@ var reNonPrintable = regexp.MustCompile(`[\x00-\x08\x0B\x0C\x0E-\x1F]`)
 
 func SanitizeString(s string) string {
 	cleaned := reNonPrintable.ReplaceAllString(s, "")
-	if len(cleaned) > 1000 {
-		cleaned = cleaned[:1000]
+	runes := []rune(cleaned)
+	if len(runes) > 1000 {
+		cleaned = string(runes[:1000])
 	}
 	return cleaned
 }

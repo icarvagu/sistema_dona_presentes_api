@@ -3,17 +3,17 @@ package models
 import "time"
 
 type Carrier struct {
-    ID              int       `json:"id"`
-    Name            string    `json:"name"`
-    CNPJ            string    `json:"cnpj"`
-    CarrierType     string    `json:"carrier_type"`
-    Email           string    `json:"email"`
-    LandlinePhone   string    `json:"landline_phone"`
-    MobilePhone     string    `json:"mobile_phone"`
-    FullAddress     string    `json:"full_address"`
-    ContactName     string    `json:"contact_name"`
-    ContactPhone    string    `json:"contact_phone"`
-    Website         string    `json:"website"`
-    CreatedAt       time.Time `json:"created_at"`
-    UpdatedAt       time.Time `json:"updated_at"`
+    ID              int        `json:"id"`
+    Name            string     `json:"name"`
+    CNPJ            *string    `json:"cnpj,omitempty"`
+    CarrierType     string     `json:"carrier_type"`
+    Email           *string    `json:"email,omitempty"`
+    LandlinePhone   *string    `json:"landline_phone,omitempty"`
+    MobilePhone     *string    `json:"mobile_phone,omitempty"`
+    FullAddress     *string    `json:"full_address,omitempty"`
+    ContactName     *string    `json:"contact_name,omitempty"`
+    ContactPhone    *string    `json:"contact_phone,omitempty"`
+    Website         *string    `json:"website,omitempty"`
+    CreatedAt       time.Time  `json:"created_at"`
+    UpdatedAt       time.Time  `json:"updated_at"`
 }

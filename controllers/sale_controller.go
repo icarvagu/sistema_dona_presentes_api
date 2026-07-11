@@ -27,7 +27,7 @@ func InitSaleService() {
 	productRepo := repositories.NewProductRepository(config.DB)
 	customerRepo := repositories.NewCustomerRepository(config.DB)
 	carrierRepo := repositories.NewCarrierRepository(config.DB)
-	saleService = services.NewSaleService(saleRepo, userRepo, productRepo, customerRepo, carrierRepo)
+	saleService = services.NewSaleService(saleRepo, userRepo, productRepo, customerRepo, carrierRepo, auditService)
 
 	var err error
 	pdfService, err = services.NewPDFService()

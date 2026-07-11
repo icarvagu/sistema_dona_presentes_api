@@ -20,7 +20,7 @@ import (
 var salesWorkflowService *services.SalesWorkflowService
 
 func InitSalesWorkflowService() {
-	salesWorkflowService = services.NewSalesWorkflowService(repositories.NewSalesWorkflowRepository(config.DB))
+	salesWorkflowService = services.NewSalesWorkflowService(repositories.NewSalesWorkflowRepository(config.DB), auditService)
 }
 
 func workflowError(w http.ResponseWriter, err error) {

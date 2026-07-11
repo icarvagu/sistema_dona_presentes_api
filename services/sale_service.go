@@ -2,26 +2,30 @@ package services
 
 import (
 	"database/sql"
+	"fmt"
+
 	apperrors "donapresentes/errors"
 	"donapresentes/models"
 	"donapresentes/repositories"
 )
 
 type SaleService struct {
-	saleRepo     *repositories.SaleRepository
-	userRepo     *repositories.UserRepository
-	productRepo  *repositories.ProductRepository
-	customerRepo *repositories.CustomerRepository
-	carrierRepo  *repositories.CarrierRepository
+	saleRepo      *repositories.SaleRepository
+	userRepo      *repositories.UserRepository
+	productRepo   *repositories.ProductRepository
+	customerRepo  *repositories.CustomerRepository
+	carrierRepo   *repositories.CarrierRepository
+	auditService  *AuditService
 }
 
-func NewSaleService(saleRepo *repositories.SaleRepository, userRepo *repositories.UserRepository, productRepo *repositories.ProductRepository, customerRepo *repositories.CustomerRepository, carrierRepo *repositories.CarrierRepository) *SaleService {
+func NewSaleService(saleRepo *repositories.SaleRepository, userRepo *repositories.UserRepository, productRepo *repositories.ProductRepository, customerRepo *repositories.CustomerRepository, carrierRepo *repositories.CarrierRepository, auditService *AuditService) *SaleService {
 	return &SaleService{
 		saleRepo:     saleRepo,
 		userRepo:     userRepo,
 		productRepo:  productRepo,
 		customerRepo: customerRepo,
 		carrierRepo:  carrierRepo,
+		auditService: auditService,
 	}
 }
 
@@ -82,15 +86,13 @@ func (s *SaleService) ValidateSale(input *models.SaleInput) error {
 			return apperrors.NewInvalidFieldError("item", "unit_price must be > 0")
 		}
 
-		product, err := s.productRepo.GetByID(item.ProductID)
+		_, err := s.productRepo.GetByID(item.ProductID)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return apperrors.ErrProductNotFound
 			}
 			return apperrors.NewDatabaseError(err)
 		}
-
-		_ = product
 	}
 
 	if len(input.CarrierIDs) > 0 {
@@ -117,7 +119,11 @@ func (s *SaleService) Create(input *models.SaleInput) (*models.Sale, error) {
 		return nil, err
 	}
 
-	return s.saleRepo.Create(input)
+	sale, err := s.saleRepo.Create(input)
+	if err == nil {
+		s.auditService.LogSimple(&input.SellerID, "sale_created", "sale", fmt.Sprintf("id=%d customer_id=%d", sale.ID, input.CustomerID), "")
+	}
+	return sale, err
 }
 
 func (s *SaleService) Update(id int, input *models.SaleInput) (*models.Sale, error) {
@@ -134,11 +140,19 @@ func (s *SaleService) Update(id int, input *models.SaleInput) (*models.Sale, err
 		return nil, err
 	}
 
-	return s.saleRepo.Update(id, input)
+	sale, err := s.saleRepo.Update(id, input)
+	if err == nil {
+		s.auditService.LogSimple(&sale.SellerID, "sale_updated", "sale", fmt.Sprintf("id=%d", id), "")
+	}
+	return sale, err
 }
 
 func (s *SaleService) Delete(id int) error {
-	return s.saleRepo.Delete(id)
+	err := s.saleRepo.Delete(id)
+	if err == nil {
+		s.auditService.LogSimple(nil, "sale_deleted", "sale", fmt.Sprintf("id=%d", id), "")
+	}
+	return err
 }
 
 func (s *SaleService) UpdateLayoutURLs(id int, urls []string) error {

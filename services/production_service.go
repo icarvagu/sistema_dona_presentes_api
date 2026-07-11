@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"donapresentes/models"
@@ -9,11 +10,12 @@ import (
 )
 
 type ProductionService struct {
-	repo *repositories.ProductionRepository
+	repo         *repositories.ProductionRepository
+	auditService *AuditService
 }
 
-func NewProductionService(repo *repositories.ProductionRepository) *ProductionService {
-	return &ProductionService{repo: repo}
+func NewProductionService(repo *repositories.ProductionRepository, auditService *AuditService) *ProductionService {
+	return &ProductionService{repo: repo, auditService: auditService}
 }
 
 var productionTransitions = map[string]map[string]bool{
@@ -92,7 +94,11 @@ func (s *ProductionService) Assign(id int64, in models.ProductionAssignmentInput
 	if in.Priority < 0 || in.Priority > 3 {
 		return errors.New("prioridade deve estar entre 0 e 3")
 	}
-	return s.repo.Assign(id, in, a.UserID)
+	err := s.repo.Assign(id, in, a.UserID)
+	if err == nil {
+		s.auditService.LogSimple(&a.UserID, "production_assigned", "production", fmt.Sprintf("order_id=%d", id), "")
+	}
+	return err
 }
 func (s *ProductionService) Receipt(id int64, in models.ProductionReceiptInput, a models.ProductionAccess) (*models.ProductionOrder, error) {
 	if !a.CanOperate() && !a.Purchases {
@@ -106,7 +112,11 @@ func (s *ProductionService) Receipt(id int64, in models.ProductionReceiptInput, 
 			return nil, errors.New("item e quantidade devem ser válidos")
 		}
 	}
-	return s.repo.AddReceipt(id, in, a.UserID)
+	p, err := s.repo.AddReceipt(id, in, a.UserID)
+	if err == nil {
+		s.auditService.LogSimple(&a.UserID, "production_receipt", "production", fmt.Sprintf("order_id=%d items=%d", id, len(in.Items)), "")
+	}
+	return p, err
 }
 func (s *ProductionService) Occurrence(id int64, in models.ProductionOccurrenceInput, a models.ProductionAccess) (*models.ProductionOrder, error) {
 	if !a.CanOperate() && !a.Purchases {
@@ -160,7 +170,11 @@ func (s *ProductionService) Transition(id int64, in models.ProductionTransitionI
 	if o.Status == models.ProductionAwaitingFirstPiece && to == models.ProductionAwaitingFirstPiece && strings.TrimSpace(in.Note) == "" {
 		return errors.New("informe o motivo da reprovação")
 	}
-	return s.repo.Transition(id, o.Status, to, in.Note, in.ExpectedVersion, a.UserID)
+	err := s.repo.Transition(id, o.Status, to, in.Note, in.ExpectedVersion, a.UserID)
+	if err == nil {
+		s.auditService.LogSimple(&a.UserID, "production_transition", "production", fmt.Sprintf("order_id=%d from=%s to=%s", id, o.Status, to), "")
+	}
+	return err
 }
 func (s *ProductionService) Event(id int64, in models.ProductionEventInput, a models.ProductionAccess) error {
 	if !(a.Admin || a.Production || a.Logistics || a.Driver) {

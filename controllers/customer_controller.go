@@ -20,7 +20,7 @@ var customerService *services.CustomerService
 
 func InitCustomerService() {
 	customerRepo := repositories.NewCustomerRepository(config.DB)
-	customerService = services.NewCustomerService(customerRepo)
+	customerService = services.NewCustomerService(customerRepo, auditService)
 }
 
 func GetCustomers(w http.ResponseWriter, r *http.Request) {

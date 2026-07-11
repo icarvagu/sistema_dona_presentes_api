@@ -11,11 +11,12 @@ import (
 )
 
 type SalesWorkflowService struct {
-	repo *repositories.SalesWorkflowRepository
+	repo         *repositories.SalesWorkflowRepository
+	auditService *AuditService
 }
 
-func NewSalesWorkflowService(repo *repositories.SalesWorkflowRepository) *SalesWorkflowService {
-	return &SalesWorkflowService{repo: repo}
+func NewSalesWorkflowService(repo *repositories.SalesWorkflowRepository, auditService *AuditService) *SalesWorkflowService {
+	return &SalesWorkflowService{repo: repo, auditService: auditService}
 }
 
 func (s *SalesWorkflowService) QuoteOwner(id int) (int, error) { return s.repo.QuoteOwner(id) }
@@ -50,10 +51,18 @@ func (s *SalesWorkflowService) ApproveLayout(id int64, userID int, status, note 
 	if !valid[status] {
 		return fmt.Errorf("invalid layout approval status")
 	}
-	return s.repo.ApproveLayout(id, userID, status, note)
+	err := s.repo.ApproveLayout(id, userID, status, note)
+	if err == nil {
+		s.auditService.LogSimple(&userID, "layout_approved", "sales_workflow", fmt.Sprintf("version_id=%d status=%s", id, status), "")
+	}
+	return err
 }
 func (s *SalesWorkflowService) ConvertQuote(id, userID int, input models.QuoteConversionInput) (int, error) {
-	return s.repo.ConvertQuote(id, userID, input.WithdrawalDates)
+	saleID, err := s.repo.ConvertQuote(id, userID, input.WithdrawalDates)
+	if err == nil {
+		s.auditService.LogSimple(&userID, "quote_converted", "sales_workflow", fmt.Sprintf("quote_id=%d sale_id=%d", id, saleID), "")
+	}
+	return saleID, err
 }
 
 var allowedFinancialTags = map[string]bool{
@@ -91,7 +100,11 @@ func (s *SalesWorkflowService) UpsertFinancial(saleID, userID int, input models.
 	if input.Status == "rejected" && !contains(input.Tags, "NEGADO") {
 		input.Tags = append(input.Tags, "NEGADO")
 	}
-	return s.repo.UpsertFinancial(saleID, userID, input)
+	err := s.repo.UpsertFinancial(saleID, userID, input)
+	if err == nil {
+		s.auditService.LogSimple(&userID, "financial_upsert", "sales_workflow", fmt.Sprintf("sale_id=%d status=%s", saleID, input.Status), "")
+	}
+	return err
 }
 func normalizeFinancialTag(tag string) string {
 	tag = strings.TrimSpace(tag)
@@ -165,7 +178,11 @@ func (s *SalesWorkflowService) RecordEngravingChannel(id int64, userID int, chan
 	return s.repo.RecordEngravingChannel(id, userID, channel)
 }
 func (s *SalesWorkflowService) ApproveSeller(saleID, userID int) error {
-	return s.repo.SetSellerApproval(saleID, userID)
+	err := s.repo.SetSellerApproval(saleID, userID)
+	if err == nil {
+		s.auditService.LogSimple(&userID, "seller_approved", "sales_workflow", fmt.Sprintf("sale_id=%d", saleID), "")
+	}
+	return err
 }
 func (s *SalesWorkflowService) EnsureReadyForPurchases(saleID int) error {
 	return s.repo.EnsureReadyForPurchases(saleID)

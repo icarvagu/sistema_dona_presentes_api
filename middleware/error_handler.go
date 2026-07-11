@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -9,7 +10,14 @@ import (
 	"time"
 
 	"donapresentes/errors"
+	"donapresentes/repositories"
 )
+
+var errorLogRepo *repositories.ErrorLogRepository
+
+func InitErrorLogRepo(repo *repositories.ErrorLogRepository) {
+	errorLogRepo = repo
+}
 
 func getAllowedOrigins() []string {
 	origins := []string{
@@ -69,6 +77,44 @@ func ErrorHandler(w http.ResponseWriter, err error, statusCode int) {
 	json.NewEncoder(w).Encode(response)
 }
 
+func ErrorHandlerWithRequest(w http.ResponseWriter, r *http.Request, err error, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+
+	response := errors.ErrorResponse{
+		Error: safeErrorMessage(err),
+		Code:  statusCode,
+	}
+
+	finalStatusCode := statusCode
+	if appErr, ok := err.(*errors.AppError); ok {
+		response.Details = appErr.Details
+		finalStatusCode = appErr.Code
+		if appErr.LogMessage != "" {
+			log.Printf("[ERROR] %s: %s", appErr.Message, appErr.LogMessage)
+		}
+	}
+
+	if errorLogRepo != nil && statusCode >= 500 {
+		requestID := GetRequestID(r)
+		var userID *int
+		if uid, ok := r.Context().Value("user_id").(int); ok && uid > 0 {
+			userID = &uid
+		}
+		errorLogRepo.Insert(&repositories.ErrorLogRecord{
+			RequestID:    requestID,
+			UserID:       userID,
+			ErrorCode:    finalStatusCode,
+			ErrorMessage: err.Error(),
+			Path:         r.URL.Path,
+			Method:       r.Method,
+			CreatedAt:    time.Now(),
+		})
+	}
+
+	w.WriteHeader(finalStatusCode)
+	json.NewEncoder(w).Encode(response)
+}
+
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
@@ -85,7 +131,30 @@ func RecoveryMiddleware(next http.Handler) http.Handler {
 		defer func() {
 			if err := recover(); err != nil {
 				log.Printf("[PANIC] %v", err)
-				ErrorHandler(w, errors.ErrInternalServer, http.StatusInternalServerError)
+				if errorLogRepo != nil {
+					requestID := GetRequestID(r)
+					var userID *int
+					if uid, ok := r.Context().Value("user_id").(int); ok && uid > 0 {
+						userID = &uid
+					}
+					errMsg := ""
+					switch v := err.(type) {
+					case error:
+						errMsg = v.Error()
+					default:
+						errMsg = fmt.Sprintf("%v", v)
+					}
+					errorLogRepo.Insert(&repositories.ErrorLogRecord{
+						RequestID:    requestID,
+						UserID:       userID,
+						ErrorCode:    http.StatusInternalServerError,
+						ErrorMessage: errMsg,
+						Path:         r.URL.Path,
+						Method:       r.Method,
+						CreatedAt:    time.Now(),
+					})
+				}
+				ErrorHandlerWithRequest(w, r, errors.ErrInternalServer, http.StatusInternalServerError)
 			}
 		}()
 		next.ServeHTTP(w, r)

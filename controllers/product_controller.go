@@ -21,7 +21,7 @@ var productService *services.ProductService
 func InitProductService() {
 	productRepo := repositories.NewProductRepository(config.DB)
 	supplierRepo := repositories.NewSupplierRepository(config.DB)
-	productService = services.NewProductService(productRepo, supplierRepo)
+	productService = services.NewProductService(productRepo, supplierRepo, auditService)
 }
 
 func GetProductGroups(w http.ResponseWriter, r *http.Request) {

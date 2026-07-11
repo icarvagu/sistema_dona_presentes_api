@@ -20,7 +20,7 @@ var supplierService *services.SupplierService
 
 func InitSupplierService() {
 	supplierRepo := repositories.NewSupplierRepository(config.DB)
-	supplierService = services.NewSupplierService(supplierRepo)
+	supplierService = services.NewSupplierService(supplierRepo, auditService)
 }
 
 func GetSuppliers(w http.ResponseWriter, r *http.Request) {

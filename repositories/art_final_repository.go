@@ -435,9 +435,14 @@ func (r *ArtFinalRepository) UpsertLayoutJob(kind string, requestItemID int64, i
 	if !allowed {
 		return sql.ErrNoRows
 	}
-	table := "layout_engraving_jobs"
-	if kind == "corel" {
+	var table string
+	switch kind {
+	case "engraving":
+		table = "layout_engraving_jobs"
+	case "corel":
 		table = "layout_corel_jobs"
+	default:
+		return fmt.Errorf("invalid layout job kind: %s", kind)
 	}
 	var current sql.NullString
 	scanErr := tx.QueryRow(`SELECT status FROM `+table+` WHERE request_item_id=$1 FOR UPDATE`, requestItemID).Scan(&current)

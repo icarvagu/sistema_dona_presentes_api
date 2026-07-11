@@ -41,41 +41,41 @@ func InputValidationMiddleware(next http.Handler) http.Handler {
 					r.URL.Path = SanitizeInput(r.URL.Path)
 					r.URL.RawQuery = SanitizeInput(r.URL.RawQuery)
 
-					if strings.Count(r.URL.Path, "/") > 20 {
-									ErrorHandler(w, apperrors.NewValidationError("URL inválida"), http.StatusBadRequest)
-									return
-								}
+				if strings.Count(r.URL.Path, "/") > 20 {
+					ErrorHandlerWithRequest(w, r, apperrors.NewValidationError("URL inválida"), http.StatusBadRequest)
+					return
+				}
 
-					for key, values := range r.URL.Query() {
-									if len(key) > 256 {
-														ErrorHandler(w, apperrors.NewValidationError("Parâmetro inválido"), http.StatusBadRequest)
-														return
-													}
-									for _, v := range values {
-														if len(v) > 4096 || isSuspicious(key) || isSuspicious(v) {
-																				ErrorHandler(w, apperrors.NewValidationError("Conteúdo suspeito detectado"), http.StatusBadRequest)
-																				return
-																			}
-													}
-								}
+				for key, values := range r.URL.Query() {
+					if len(key) > 256 {
+						ErrorHandlerWithRequest(w, r, apperrors.NewValidationError("Parâmetro inválido"), http.StatusBadRequest)
+						return
+					}
+					for _, v := range values {
+						if len(v) > 4096 || isSuspicious(key) || isSuspicious(v) {
+							ErrorHandlerWithRequest(w, r, apperrors.NewValidationError("Conteúdo suspeito detectado"), http.StatusBadRequest)
+							return
+						}
+					}
+				}
 
-					for key, values := range r.Header {
-									uk := strings.ToUpper(key)
-									if strings.HasPrefix(uk, "X-FORWARDED") || strings.HasPrefix(uk, "X-REAL-") || key == "Cookie" || key == "Authorization" || key == "Content-Type" || key == "Accept" || key == "Origin" || key == "Referer" || key == "User-Agent" || strings.HasPrefix(uk, "SEC-") || key == "Accept-Language" || key == "Accept-Encoding" {
-														continue
-													}
-									for _, v := range values {
-														if len(v) > 8192 || isSuspicious(v) {
-																				ErrorHandler(w, apperrors.NewValidationError("Header inválido"), http.StatusBadRequest)
-																				return
-																			}
-													}
-								}
+				for key, values := range r.Header {
+					uk := strings.ToUpper(key)
+					if strings.HasPrefix(uk, "X-FORWARDED") || strings.HasPrefix(uk, "X-REAL-") || key == "Cookie" || key == "Authorization" || key == "Content-Type" || key == "Accept" || key == "Origin" || key == "Referer" || key == "User-Agent" || strings.HasPrefix(uk, "SEC-") || key == "Accept-Language" || key == "Accept-Encoding" {
+						continue
+					}
+					for _, v := range values {
+						if len(v) > 8192 || isSuspicious(v) {
+							ErrorHandlerWithRequest(w, r, apperrors.NewValidationError("Header inválido"), http.StatusBadRequest)
+							return
+						}
+					}
+				}
 
-					if r.ContentLength > 10<<20 {
-									ErrorHandler(w, apperrors.NewValidationError("Corpo da requisição muito grande"), http.StatusRequestEntityTooLarge)
-									return
-								}
+				if r.ContentLength > 10<<20 {
+					ErrorHandlerWithRequest(w, r, apperrors.NewValidationError("Corpo da requisição muito grande"), http.StatusRequestEntityTooLarge)
+					return
+				}
 
 					r.Body = http.MaxBytesReader(w, r.Body, 10<<20)
 

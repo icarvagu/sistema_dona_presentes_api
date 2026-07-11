@@ -54,6 +54,6 @@ func (s *Scheduler) Stop() {
 	s.cron.Stop()
 }
 
-func NewSyncServiceWithRepos(xbz *services.XBZService, productRepo *repositories.ProductRepository, supplierRepo *repositories.SupplierRepository) *services.SyncService {
-	return services.NewSyncService(xbz, productRepo, supplierRepo)
+func NewSyncServiceWithRepos(xbz *services.XBZService, productRepo *repositories.ProductRepository, supplierRepo *repositories.SupplierRepository, auditService *services.AuditService) *services.SyncService {
+	return services.NewSyncService(xbz, productRepo, supplierRepo, auditService)
 }

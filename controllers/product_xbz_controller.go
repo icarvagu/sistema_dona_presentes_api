@@ -65,7 +65,7 @@ func SyncProductsFromXBZHandler(w http.ResponseWriter, r *http.Request) {
 		productRepo := repositories.NewProductRepository(config.DB)
 		supplierRepo := repositories.NewSupplierRepository(config.DB)
 
-		syncService := services.NewSyncService(xbzService, productRepo, supplierRepo)
+		syncService := services.NewSyncService(xbzService, productRepo, supplierRepo, services.NewAuditService(config.DB))
 		result, err := syncService.Synchronize()
 		if err != nil {
 			log.Printf("[XBZ Sync] Erro na sincronização: %v", err)

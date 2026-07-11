@@ -16,7 +16,7 @@ import (
 var productionService *services.ProductionService
 
 func InitProductionService() {
-	productionService = services.NewProductionService(repositories.NewProductionRepository(config.DB))
+	productionService = services.NewProductionService(repositories.NewProductionRepository(config.DB), auditService)
 }
 
 func productionAccess(r *http.Request) models.ProductionAccess {

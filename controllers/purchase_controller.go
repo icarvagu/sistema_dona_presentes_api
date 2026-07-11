@@ -19,7 +19,7 @@ import (
 var purchaseService *services.PurchaseService
 
 func InitPurchaseService() {
-	purchaseService = services.NewPurchaseService(repositories.NewPurchaseRepository(config.DB))
+	purchaseService = services.NewPurchaseService(repositories.NewPurchaseRepository(config.DB), auditService)
 }
 
 func writePurchaseError(w http.ResponseWriter, err error) {

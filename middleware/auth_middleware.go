@@ -30,17 +30,21 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 			}
 
 			if tokenString == "" {
-				ErrorHandler(w, apperrors.NewValidationError("Token de autenticação não fornecido"), http.StatusUnauthorized)
+				ErrorHandlerWithRequest(w, r, apperrors.NewValidationError("Token de autenticação não fornecido"), http.StatusUnauthorized)
 				return
 			}
 
 			claims, err := authService.ValidateToken(tokenString)
 			if err != nil {
-				ErrorHandler(w, apperrors.NewValidationError("Token inválido ou expirado"), http.StatusUnauthorized)
+				ErrorHandlerWithRequest(w, r, apperrors.NewValidationError("Token inválido ou expirado"), http.StatusUnauthorized)
 				return
 			}
 
-			userID, _ := claims["user_id"].(float64)
+			userID, ok := claims["user_id"].(float64)
+			if !ok {
+				ErrorHandlerWithRequest(w, r, apperrors.NewValidationError("Token inválido: user_id ausente"), http.StatusUnauthorized)
+				return
+			}
 			username, _ := claims["username"].(string)
 			role, _ := claims["role"].(string)
 
@@ -71,7 +75,7 @@ func AdminOnlyMiddleware() func(http.Handler) http.Handler {
 				role = roleVal.(string)
 			}
 			if role != "admin" {
-				ErrorHandler(w, apperrors.NewValidationError("Acesso negado. Apenas administradores podem acessar este recurso"), http.StatusForbidden)
+				ErrorHandlerWithRequest(w, r, apperrors.NewValidationError("Acesso negado. Apenas administradores podem acessar este recurso"), http.StatusForbidden)
 				return
 			}
 			next.ServeHTTP(w, r)

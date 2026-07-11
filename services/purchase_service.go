@@ -11,12 +11,13 @@ import (
 )
 
 type PurchaseService struct {
-	repo   *repositories.PurchaseRepository
-	mailer PurchaseMailer
+	repo         *repositories.PurchaseRepository
+	mailer       PurchaseMailer
+	auditService *AuditService
 }
 
-func NewPurchaseService(repo *repositories.PurchaseRepository) *PurchaseService {
-	return &PurchaseService{repo: repo, mailer: NewSMTPPurchaseMailerFromEnv()}
+func NewPurchaseService(repo *repositories.PurchaseRepository, auditService *AuditService) *PurchaseService {
+	return &PurchaseService{repo: repo, mailer: NewSMTPPurchaseMailerFromEnv(), auditService: auditService}
 }
 
 func (s *PurchaseService) List(isSample *bool) ([]models.PurchaseOrder, error) {
@@ -35,7 +36,12 @@ func (s *PurchaseService) ReleaseSale(saleID, userID int, isSample, sampleHasEng
 	if saleID <= 0 {
 		return nil, errors.New("pedido inválido")
 	}
-	return s.repo.ReleaseSale(saleID, userID, isSample, sampleHasEngraving)
+	p, err := s.repo.ReleaseSale(saleID, userID, isSample, sampleHasEngraving)
+	if err == nil {
+		detail := fmt.Sprintf("sale_id=%d is_sample=%v", saleID, isSample)
+		s.auditService.LogSimple(&userID, "purchase_released", "purchase", detail, "")
+	}
+	return p, err
 }
 
 func (s *PurchaseService) Update(id, userID int, input *models.PurchaseUpdateInput) (*models.PurchaseOrder, error) {
@@ -183,6 +189,7 @@ func (s *PurchaseService) ExecuteAction(id, userID int, input *models.PurchaseAc
 	if err != nil {
 		return nil, err
 	}
+	s.auditService.LogSimple(&userID, "purchase_action_"+action, "purchase", fmt.Sprintf("purchase_id=%d user_id=%d", id, userID), "")
 	return s.repo.GetByID(id)
 }
 
@@ -219,6 +226,7 @@ func (s *PurchaseService) AddPayment(id, userID int, input *models.PurchasePayme
 		_ = s.repo.Notify(id, "diretoria_financeira", "pagamento_aprovacao", fmt.Sprintf("%s de R$ %.2f aguarda aprovação", input.Method, input.Amount), nil)
 	}
 	_ = s.repo.SetStatus(id, models.PurchaseWaitingPayment, userID, "Pagamento registrado", input.Justification)
+	s.auditService.LogSimple(&userID, "purchase_payment_added", "purchase", fmt.Sprintf("purchase_id=%d amount=%.2f method=%s", id, input.Amount, input.Method), "")
 	return s.repo.GetByID(id)
 }
 
@@ -230,6 +238,7 @@ func (s *PurchaseService) ApprovePayment(paymentID, userID int, receiptURL strin
 	_ = s.repo.AddHistory(purchaseID, "Pagamento aprovado", "", "Pagamento Registrado", "Comprovante/liberação financeira registrada", userID)
 	_ = s.repo.Notify(purchaseID, "compras", "pagamento_aprovado", "Pagamento aprovado e registrado", nil)
 	_ = s.repo.Notify(purchaseID, "financeiro", "pagamento_aprovado", "Pagamento aprovado e registrado", nil)
+	s.auditService.LogSimple(&userID, "purchase_payment_approved", "purchase", fmt.Sprintf("purchase_id=%d payment_id=%d", purchaseID, paymentID), "")
 	return s.repo.GetByID(purchaseID)
 }
 

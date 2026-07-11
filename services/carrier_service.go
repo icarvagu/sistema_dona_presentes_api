@@ -2,18 +2,22 @@ package services
 
 import (
 	"database/sql"
+	"fmt"
+
 	apperrors "donapresentes/errors"
 	"donapresentes/models"
 	"donapresentes/repositories"
 )
 
 type CarrierService struct {
-	carrierRepo repositories.CarrierRepositoryInterface
+	carrierRepo  repositories.CarrierRepositoryInterface
+	auditService *AuditService
 }
 
-func NewCarrierService(carrierRepo repositories.CarrierRepositoryInterface) *CarrierService {
+func NewCarrierService(carrierRepo repositories.CarrierRepositoryInterface, auditService *AuditService) *CarrierService {
 	return &CarrierService{
 		carrierRepo: carrierRepo,
+		auditService: auditService,
 	}
 }
 
@@ -38,13 +42,17 @@ func (s *CarrierService) Create(c *models.Carrier) error {
 		return apperrors.NewInvalidFieldError("carrier_type", "must be 'Pessoa Jurídica' or 'Pessoa Física'")
 	}
 
-	if c.Email != "" {
-		if err := ValidateEmail(c.Email); err != nil {
+	if c.Email != nil && *c.Email != "" {
+		if err := ValidateEmail(*c.Email); err != nil {
 			return err
 		}
 	}
 
-	return s.carrierRepo.Create(c)
+	err := s.carrierRepo.Create(c)
+	if err == nil {
+		s.auditService.LogSimple(nil, "carrier_created", "carrier", fmt.Sprintf("name=%s", c.Name), "")
+	}
+	return err
 }
 
 func (s *CarrierService) Update(id int, c *models.Carrier) error {
@@ -68,15 +76,23 @@ func (s *CarrierService) Update(id int, c *models.Carrier) error {
 		return apperrors.NewInvalidFieldError("carrier_type", "must be 'Pessoa Jurídica' or 'Pessoa Física'")
 	}
 
-	if c.Email != "" {
-		if err := ValidateEmail(c.Email); err != nil {
+	if c.Email != nil && *c.Email != "" {
+		if err := ValidateEmail(*c.Email); err != nil {
 			return err
 		}
 	}
 
-	return s.carrierRepo.Update(id, c)
+	err = s.carrierRepo.Update(id, c)
+	if err == nil {
+		s.auditService.LogSimple(nil, "carrier_updated", "carrier", fmt.Sprintf("id=%d name=%s", id, c.Name), "")
+	}
+	return err
 }
 
 func (s *CarrierService) Delete(id int) error {
-	return s.carrierRepo.Delete(id)
+	err := s.carrierRepo.Delete(id)
+	if err == nil {
+		s.auditService.LogSimple(nil, "carrier_deleted", "carrier", fmt.Sprintf("id=%d", id), "")
+	}
+	return err
 }

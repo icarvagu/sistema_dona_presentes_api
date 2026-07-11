@@ -2,6 +2,7 @@ package services
 
 import (
 	"database/sql"
+	"fmt"
 	"time"
 
 	"donapresentes/models"
@@ -12,17 +13,20 @@ type SyncService struct {
 	provider           ExternalAPIProvider
 	productRepository  *repositories.ProductRepository
 	supplierRepository *repositories.SupplierRepository
+	auditService       *AuditService
 }
 
 func NewSyncService(
 	provider ExternalAPIProvider,
 	productRepo *repositories.ProductRepository,
 	supplierRepo *repositories.SupplierRepository,
+	auditService *AuditService,
 ) *SyncService {
 	return &SyncService{
 		provider:           provider,
 		productRepository:  productRepo,
 		supplierRepository: supplierRepo,
+		auditService:       auditService,
 	}
 }
 
@@ -85,6 +89,7 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 		}
 	}
 
+	s.auditService.LogSimple(nil, "sync_completed", "sync", fmt.Sprintf("total=%d created=%d updated=%d errors=%d", result.Total, result.Criados, result.Atualizados, result.Erros), "")
 	return result, nil
 }
 

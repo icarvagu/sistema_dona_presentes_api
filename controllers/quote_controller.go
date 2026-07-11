@@ -27,7 +27,7 @@ func InitQuoteService() {
 	userRepo := repositories.NewUserRepository(config.DB)
 	productRepo := repositories.NewProductRepository(config.DB)
 	customerRepo := repositories.NewCustomerRepository(config.DB)
-	quoteService = services.NewQuoteService(quoteRepo, userRepo, productRepo, customerRepo)
+	quoteService = services.NewQuoteService(quoteRepo, userRepo, productRepo, customerRepo, auditService)
 
 	var err error
 	quotePDFService, err = services.NewQuotePDFService()

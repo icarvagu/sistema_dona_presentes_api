@@ -13,11 +13,12 @@ import (
 )
 
 var authService *services.AuthService
+var auditService *services.AuditService
 
 func InitAuthService() {
 	userRepo := repositories.NewUserRepository(config.DB)
 	refreshRepo := repositories.NewRefreshTokenRepository(config.DB)
-	auditService := services.NewAuditService(config.DB)
+	auditService = services.NewAuditService(config.DB)
 	authService = services.NewAuthService(userRepo, refreshRepo, auditService)
 }
 

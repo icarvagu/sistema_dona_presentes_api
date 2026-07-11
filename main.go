@@ -68,7 +68,7 @@ func main() {
 	productRepo := repositories.NewProductRepository(config.DB)
 	supplierRepo := repositories.NewSupplierRepository(config.DB)
 	xbzService := services.NewXBZService(os.Getenv("XBZ_CNPJ"), os.Getenv("XBZ_TOKEN"))
-	syncService := services.NewSyncService(xbzService, productRepo, supplierRepo)
+	syncService := services.NewSyncService(xbzService, productRepo, supplierRepo, services.NewAuditService(config.DB))
 
 	scheduler := jobs.NewScheduler(syncService, xbzService)
 	scheduler.RegisterJobs()
@@ -79,6 +79,11 @@ func main() {
 	requestLoggerSvc := services.NewRequestLoggerService(requestLogRepo)
 	defer requestLoggerSvc.Shutdown()
 	middleware.InitRequestLogger(requestLoggerSvc)
+
+	errorLogRepo := repositories.NewErrorLogRepository(config.DB)
+	middleware.InitErrorLogRepo(errorLogRepo)
+
+	config.DB.Exec("SELECT cleanup_old_logs()")
 
 	r := mux.NewRouter()
 	r.StrictSlash(true)

@@ -2,6 +2,8 @@ package services
 
 import (
 	"database/sql"
+	"fmt"
+
 	apperrors "donapresentes/errors"
 	"donapresentes/models"
 	"donapresentes/repositories"
@@ -10,12 +12,14 @@ import (
 type ProductService struct {
 	productRepo  *repositories.ProductRepository
 	supplierRepo *repositories.SupplierRepository
+	auditService *AuditService
 }
 
-func NewProductService(productRepo *repositories.ProductRepository, supplierRepo *repositories.SupplierRepository) *ProductService {
+func NewProductService(productRepo *repositories.ProductRepository, supplierRepo *repositories.SupplierRepository, auditService *AuditService) *ProductService {
 	return &ProductService{
 		productRepo:  productRepo,
 		supplierRepo: supplierRepo,
+		auditService: auditService,
 	}
 }
 
@@ -44,11 +48,19 @@ func (s *ProductService) GetPendingApproval() ([]models.Product, error) {
 }
 
 func (s *ProductService) ApproveProduct(id int, origin string) error {
-	return s.productRepo.ApproveProduct(id, origin)
+	err := s.productRepo.ApproveProduct(id, origin)
+	if err == nil {
+		s.auditService.LogSimple(nil, "product_approved", "product", fmt.Sprintf("id=%d origin=%s", id, origin), "")
+	}
+	return err
 }
 
 func (s *ProductService) BulkApproveAll(origin string) (int64, error) {
-	return s.productRepo.BulkApproveAll(origin)
+	count, err := s.productRepo.BulkApproveAll(origin)
+	if err == nil {
+		s.auditService.LogSimple(nil, "product_bulk_approved", "product", fmt.Sprintf("count=%d origin=%s", count, origin), "")
+	}
+	return count, err
 }
 
 func (s *ProductService) UpdateLastCost(id int, p *models.Product) error {
@@ -156,7 +168,11 @@ func (s *ProductService) Create(p *models.Product) (*models.Product, error) {
 		}
 	}
 
-	return s.productRepo.GetByID(created.ID)
+	finalProduct, err := s.productRepo.GetByID(created.ID)
+	if err == nil {
+		s.auditService.LogSimple(nil, "product_created", "product", fmt.Sprintf("id=%d name=%s", finalProduct.ID, finalProduct.ProductName), "")
+	}
+	return finalProduct, err
 }
 
 func (s *ProductService) Update(id int, p *models.Product) (*models.Product, error) {
@@ -204,11 +220,19 @@ func (s *ProductService) Update(id int, p *models.Product) (*models.Product, err
 		}
 	}
 
-	return s.productRepo.GetByID(id)
+	result, err := s.productRepo.GetByID(id)
+	if err == nil {
+		s.auditService.LogSimple(nil, "product_updated", "product", fmt.Sprintf("id=%d name=%s", id, result.ProductName), "")
+	}
+	return result, err
 }
 
 func (s *ProductService) Delete(id int) error {
-	return s.productRepo.Delete(id)
+	err := s.productRepo.Delete(id)
+	if err == nil {
+		s.auditService.LogSimple(nil, "product_deleted", "product", fmt.Sprintf("id=%d", id), "")
+	}
+	return err
 }
 
 func (s *ProductService) GetNewlyImported() ([]models.Product, error) {

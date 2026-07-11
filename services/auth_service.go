@@ -1,8 +1,10 @@
 package services
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
@@ -173,13 +175,12 @@ func (s *AuthService) GenerateAccessToken(user *models.User) (string, error) {
 }
 
 func (s *AuthService) GenerateRefreshToken(userID int) (string, error) {
-	tokenBytes := make([]byte, 32)
-	for i := range tokenBytes {
-		tokenBytes[i] = byte(time.Now().UnixNano() & 0xFF)
+	randomBytes := make([]byte, 32)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", apperrors.NewDatabaseError(err)
 	}
 
-	randomData := fmt.Sprintf("%d-%d", userID, time.Now().UnixNano())
-	token := fmt.Sprintf("%x", sha256.Sum256([]byte(randomData)))[:64]
+	token := hex.EncodeToString(randomBytes)
 
 	tokenHash := fmt.Sprintf("%x", sha256.Sum256([]byte(token)))
 	expiresAt := time.Now().Add(s.refreshExpiry)
@@ -296,7 +297,12 @@ func (s *AuthService) InitiatePasswordReset(username string) (string, error) {
 }
 
 func (s *AuthService) GeneratePasswordResetToken(userID int) (string, error) {
-	token := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%d-%d", userID, time.Now().UnixNano()))))[:64]
+	randomBytes := make([]byte, 32)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", apperrors.NewDatabaseError(err)
+	}
+
+	token := hex.EncodeToString(randomBytes)
 	tokenHash := fmt.Sprintf("%x", sha256.Sum256([]byte(token)))
 	expiresAt := time.Now().Add(1 * time.Hour)
 

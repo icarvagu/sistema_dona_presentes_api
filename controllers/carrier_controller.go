@@ -20,7 +20,7 @@ var carrierService *services.CarrierService
 
 func InitCarrierService() {
 	carrierRepo := repositories.NewCarrierRepository(config.DB)
-	carrierService = services.NewCarrierService(carrierRepo)
+	carrierService = services.NewCarrierService(carrierRepo, auditService)
 }
 
 func GetCarriers(w http.ResponseWriter, r *http.Request) {

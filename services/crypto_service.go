@@ -3,6 +3,7 @@ package services
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
@@ -13,7 +14,8 @@ import (
 )
 
 type CryptoService struct {
-	key []byte
+	key  []byte
+	salt []byte
 }
 
 func NewCryptoService() *CryptoService {
@@ -22,7 +24,8 @@ func NewCryptoService() *CryptoService {
 		return nil
 	}
 	key := sha256.Sum256([]byte(keyHex))
-	return &CryptoService{key: key[:]}
+	salt := sha256.Sum256([]byte(keyHex + ":salt"))
+	return &CryptoService{key: key[:], salt: salt[:]}
 }
 
 func (s *CryptoService) Encrypt(plaintext string) (string, error) {
@@ -90,6 +93,7 @@ func (s *CryptoService) Decrypt(cipherB64 string) (string, error) {
 }
 
 func (s *CryptoService) Hash(value string) string {
-	h := sha256.Sum256([]byte(value))
-	return fmt.Sprintf("%x", h)
+	mac := hmac.New(sha256.New, s.salt)
+	mac.Write([]byte(value))
+	return fmt.Sprintf("%x", mac.Sum(nil))
 }

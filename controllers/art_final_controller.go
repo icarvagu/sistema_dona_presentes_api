@@ -18,7 +18,7 @@ import (
 var artFinalService *services.ArtFinalService
 
 func InitArtFinalService() {
-	artFinalService = services.NewArtFinalService(repositories.NewArtFinalRepository(config.DB))
+	artFinalService = services.NewArtFinalService(repositories.NewArtFinalRepository(config.DB), auditService)
 }
 
 func artFinalAccess(r *http.Request) models.ArtFinalAccess {

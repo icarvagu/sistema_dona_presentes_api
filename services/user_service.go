@@ -2,6 +2,8 @@ package services
 
 import (
 	"database/sql"
+	"fmt"
+	"log"
 	"strings"
 
 	apperrors "donapresentes/errors"
@@ -13,13 +15,15 @@ type UserService struct {
 	userRepo      *repositories.UserRepository
 	authService   *AuthService
 	cryptoService *CryptoService
+	auditService  *AuditService
 }
 
-func NewUserService(userRepo *repositories.UserRepository, authService *AuthService, cryptoService *CryptoService) *UserService {
+func NewUserService(userRepo *repositories.UserRepository, authService *AuthService, cryptoService *CryptoService, auditService *AuditService) *UserService {
 	return &UserService{
 		userRepo:      userRepo,
 		authService:   authService,
 		cryptoService: cryptoService,
+		auditService:  auditService,
 	}
 }
 
@@ -130,11 +134,16 @@ func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
 	}
 
 	if cpfHash != "" {
-		_ = s.userRepo.UpdateCPFHash(created.ID, cpfHash)
+		if err := s.userRepo.UpdateCPFHash(created.ID, cpfHash); err != nil {
+			log.Printf("failed to update CPF hash for user %d: %v", created.ID, err)
+		}
 	}
 
 	created.PasswordHash = ""
 	created.CPF = input.CPF
+	if created != nil {
+		s.auditService.LogSimple(&created.ID, "user_created", "user", fmt.Sprintf("username=%s role=%s", created.Username, created.Role), "")
+	}
 	return created, nil
 }
 
@@ -218,11 +227,16 @@ func (s *UserService) Update(id int, input *models.UserInput) (*models.User, err
 	}
 
 	if cpfHash != "" {
-		_ = s.userRepo.UpdateCPFHash(updated.ID, cpfHash)
+		if err := s.userRepo.UpdateCPFHash(updated.ID, cpfHash); err != nil {
+			log.Printf("failed to update CPF hash for user %d: %v", updated.ID, err)
+		}
 	}
 
 	updated.PasswordHash = ""
 	updated.CPF = input.CPF
+	if updated != nil {
+		s.auditService.LogSimple(&updated.ID, "user_updated", "user", fmt.Sprintf("id=%d username=%s", id, updated.Username), "")
+	}
 	return updated, nil
 }
 
@@ -236,7 +250,11 @@ func (s *UserService) Delete(id int) error {
 		return apperrors.NewDatabaseError(err)
 	}
 
-	return s.userRepo.Delete(id)
+	err = s.userRepo.Delete(id)
+	if err == nil {
+		s.auditService.LogSimple(nil, "user_deleted", "user", fmt.Sprintf("id=%d", id), "")
+	}
+	return err
 }
 
 func (s *UserService) SearchByFilter(filter string) ([]models.User, error) {

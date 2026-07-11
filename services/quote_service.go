@@ -2,10 +2,12 @@ package services
 
 import (
 	"database/sql"
+	"fmt"
+	"time"
+
 	apperrors "donapresentes/errors"
 	"donapresentes/models"
 	"donapresentes/repositories"
-	"time"
 )
 
 type QuoteService struct {
@@ -13,14 +15,16 @@ type QuoteService struct {
 	userRepo     *repositories.UserRepository
 	productRepo  *repositories.ProductRepository
 	customerRepo *repositories.CustomerRepository
+	auditService *AuditService
 }
 
-func NewQuoteService(quoteRepo *repositories.QuoteRepository, userRepo *repositories.UserRepository, productRepo *repositories.ProductRepository, customerRepo *repositories.CustomerRepository) *QuoteService {
+func NewQuoteService(quoteRepo *repositories.QuoteRepository, userRepo *repositories.UserRepository, productRepo *repositories.ProductRepository, customerRepo *repositories.CustomerRepository, auditService *AuditService) *QuoteService {
 	return &QuoteService{
 		quoteRepo:    quoteRepo,
 		userRepo:     userRepo,
 		productRepo:  productRepo,
 		customerRepo: customerRepo,
+		auditService: auditService,
 	}
 }
 
@@ -95,7 +99,11 @@ func (s *QuoteService) Create(input *models.QuoteInput) (*models.Quote, error) {
 	if err := s.ValidateQuote(input); err != nil {
 		return nil, err
 	}
-	return s.quoteRepo.Create(input)
+	quote, err := s.quoteRepo.Create(input)
+	if err == nil {
+		s.auditService.LogSimple(&input.SellerID, "quote_created", "quote", fmt.Sprintf("id=%d customer_id=%d", quote.ID, input.CustomerID), "")
+	}
+	return quote, err
 }
 
 func (s *QuoteService) Update(id int, input *models.QuoteInput) (*models.Quote, error) {
@@ -109,7 +117,11 @@ func (s *QuoteService) Update(id int, input *models.QuoteInput) (*models.Quote, 
 	if err := s.ValidateQuote(input); err != nil {
 		return nil, err
 	}
-	return s.quoteRepo.Update(id, input)
+	quote, err := s.quoteRepo.Update(id, input)
+	if err == nil {
+		s.auditService.LogSimple(nil, "quote_updated", "quote", fmt.Sprintf("id=%d", id), "")
+	}
+	return quote, err
 }
 
 func (s *QuoteService) UpdateFeedback(id int, feedbackDatetime *time.Time, feedbackObservation string) (*models.Quote, error) {
@@ -122,9 +134,17 @@ func (s *QuoteService) UpdateFeedback(id int, feedbackDatetime *time.Time, feedb
 	if err := s.quoteRepo.UpdateFeedback(id, feedbackDatetime, feedbackObservation); err != nil {
 		return nil, err
 	}
-	return s.quoteRepo.GetByID(id)
+	updated, err := s.quoteRepo.GetByID(id)
+	if err == nil {
+		s.auditService.LogSimple(nil, "quote_feedback_updated", "quote", fmt.Sprintf("id=%d", id), "")
+	}
+	return updated, err
 }
 
 func (s *QuoteService) Delete(id int) error {
-	return s.quoteRepo.Delete(id)
+	err := s.quoteRepo.Delete(id)
+	if err == nil {
+		s.auditService.LogSimple(nil, "quote_deleted", "quote", fmt.Sprintf("id=%d", id), "")
+	}
+	return err
 }

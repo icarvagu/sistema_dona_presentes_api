@@ -2,6 +2,8 @@ package services
 
 import (
 	"database/sql"
+	"fmt"
+
 	apperrors "donapresentes/errors"
 	"donapresentes/models"
 	"donapresentes/repositories"
@@ -9,11 +11,13 @@ import (
 
 type SupplierService struct {
 	supplierRepo repositories.SupplierRepositoryInterface
+	auditService *AuditService
 }
 
-func NewSupplierService(supplierRepo repositories.SupplierRepositoryInterface) *SupplierService {
+func NewSupplierService(supplierRepo repositories.SupplierRepositoryInterface, auditService *AuditService) *SupplierService {
 	return &SupplierService{
 		supplierRepo: supplierRepo,
+		auditService: auditService,
 	}
 }
 
@@ -43,7 +47,11 @@ func (s *SupplierService) Create(supplier *models.Supplier) error {
 		}
 	}
 
-	return s.supplierRepo.Create(supplier)
+	err := s.supplierRepo.Create(supplier)
+	if err == nil {
+		s.auditService.LogSimple(nil, "supplier_created", "supplier", fmt.Sprintf("name=%s", supplier.Name), "")
+	}
+	return err
 }
 
 func (s *SupplierService) Update(id int, supplier *models.Supplier) error {
@@ -72,9 +80,17 @@ func (s *SupplierService) Update(id int, supplier *models.Supplier) error {
 		}
 	}
 
-	return s.supplierRepo.Update(id, supplier)
+	err = s.supplierRepo.Update(id, supplier)
+	if err == nil {
+		s.auditService.LogSimple(nil, "supplier_updated", "supplier", fmt.Sprintf("id=%d name=%s", id, supplier.Name), "")
+	}
+	return err
 }
 
 func (s *SupplierService) Delete(id int) error {
-	return s.supplierRepo.Delete(id)
+	err := s.supplierRepo.Delete(id)
+	if err == nil {
+		s.auditService.LogSimple(nil, "supplier_deleted", "supplier", fmt.Sprintf("id=%d", id), "")
+	}
+	return err
 }

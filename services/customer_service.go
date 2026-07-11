@@ -2,6 +2,8 @@ package services
 
 import (
 	"database/sql"
+	"fmt"
+
 	apperrors "donapresentes/errors"
 	"donapresentes/models"
 	"donapresentes/repositories"
@@ -9,11 +11,13 @@ import (
 
 type CustomerService struct {
 	customerRepo repositories.CustomerRepositoryInterface
+	auditService *AuditService
 }
 
-func NewCustomerService(customerRepo repositories.CustomerRepositoryInterface) *CustomerService {
+func NewCustomerService(customerRepo repositories.CustomerRepositoryInterface, auditService *AuditService) *CustomerService {
 	return &CustomerService{
 		customerRepo: customerRepo,
+		auditService: auditService,
 	}
 }
 
@@ -65,7 +69,11 @@ func (s *CustomerService) Create(c *models.Customer) error {
 		}
 	}
 
-	return s.customerRepo.Create(c)
+	err := s.customerRepo.Create(c)
+	if err == nil {
+		s.auditService.LogSimple(nil, "customer_created", "customer", fmt.Sprintf("name=%s", c.Name), "")
+	}
+	return err
 }
 
 func (s *CustomerService) Update(id int, c *models.Customer) error {
@@ -116,9 +124,17 @@ func (s *CustomerService) Update(id int, c *models.Customer) error {
 		}
 	}
 
-	return s.customerRepo.Update(id, c)
+	err = s.customerRepo.Update(id, c)
+	if err == nil {
+		s.auditService.LogSimple(nil, "customer_updated", "customer", fmt.Sprintf("id=%d name=%s", id, c.Name), "")
+	}
+	return err
 }
 
 func (s *CustomerService) Delete(id int) error {
-	return s.customerRepo.Delete(id)
+	err := s.customerRepo.Delete(id)
+	if err == nil {
+		s.auditService.LogSimple(nil, "customer_deleted", "customer", fmt.Sprintf("id=%d", id), "")
+	}
+	return err
 }

@@ -105,7 +105,11 @@ func (s *ArtFinalService) CreateLayoutRequest(input models.LayoutRequestInput, u
 			groups[item.GroupKey] = item.SourceFileURL
 		}
 	}
-	return s.repo.CreateLayoutRequest(input, userID, access)
+	id, err := s.repo.CreateLayoutRequest(input, userID, access)
+	if err == nil {
+		s.auditService.LogSimple(&userID, "layout_request_created", "art_final", fmt.Sprintf("source_type=%s source_id=%d request_id=%d", input.SourceType, input.SourceID, id), "")
+	}
+	return id, err
 }
 
 func (s *ArtFinalService) TransitionLayoutRequest(id int64, next, note string, userID int) error {
@@ -117,7 +121,11 @@ func (s *ArtFinalService) TransitionLayoutRequest(id int64, next, note string, u
 	if !allowed[next] {
 		return fmt.Errorf("status de layout invalido")
 	}
-	return s.repo.TransitionLayoutRequest(id, next, strings.TrimSpace(note), userID)
+	err := s.repo.TransitionLayoutRequest(id, next, strings.TrimSpace(note), userID)
+	if err == nil {
+		s.auditService.LogSimple(&userID, "layout_transition", "art_final", fmt.Sprintf("request_id=%d to=%s", id, next), "")
+	}
+	return err
 }
 func (s *ArtFinalService) AddLayoutVersion(itemID int64, input models.LayoutVersionInput, userID int) (int64, error) {
 	input.FileURL = strings.TrimSpace(input.FileURL)
@@ -139,7 +147,11 @@ func (s *ArtFinalService) DecideLayoutVersion(versionID int64, input models.Layo
 	if input.Status == "changes_requested" && input.Note == "" {
 		return fmt.Errorf("motivo da alteracao obrigatorio")
 	}
-	return s.repo.DecideLayoutVersion(versionID, input.Status, input.Note, userID, access)
+	err := s.repo.DecideLayoutVersion(versionID, input.Status, input.Note, userID, access)
+	if err == nil {
+		s.auditService.LogSimple(&userID, "layout_version_decided", "art_final", fmt.Sprintf("version_id=%d status=%s", versionID, input.Status), "")
+	}
+	return err
 }
 func (s *ArtFinalService) UpsertLayoutJob(kind string, itemID int64, input models.LayoutJobInput, userID int, access models.ArtFinalAccess) error {
 	kind = strings.ToLower(strings.TrimSpace(kind))
@@ -154,7 +166,11 @@ func (s *ArtFinalService) UpsertLayoutJob(kind string, itemID int64, input model
 	if (kind == "corel" && input.Status == "received" || kind == "engraving" && (input.Status == "ready" || input.Status == "approved")) && input.FileURL == "" {
 		return fmt.Errorf("arquivo obrigatorio para concluir")
 	}
-	return s.repo.UpsertLayoutJob(kind, itemID, input, userID, access)
+	err := s.repo.UpsertLayoutJob(kind, itemID, input, userID, access)
+	if err == nil {
+		s.auditService.LogSimple(&userID, "layout_job_upsert", "art_final", fmt.Sprintf("item_id=%d kind=%s status=%s", itemID, kind, input.Status), "")
+	}
+	return err
 }
 func (s *ArtFinalService) ConfirmProductReceived(itemID int64, received bool, userID int, access models.ArtFinalAccess) error {
 	if itemID < 1 {
@@ -175,13 +191,16 @@ func (s *ArtFinalService) UpdateStoryLifecycle(id int64, input models.StoryLifec
 	return s.repo.UpdateStoryLifecycle(id, input, userID)
 }
 
-type ArtFinalService struct{ repo ArtFinalRepositoryPort }
-
-func NewArtFinalService(repo *repositories.ArtFinalRepository) *ArtFinalService {
-	return &ArtFinalService{repo: repo}
+type ArtFinalService struct {
+	repo         ArtFinalRepositoryPort
+	auditService *AuditService
 }
-func NewArtFinalServiceWithRepository(repo ArtFinalRepositoryPort) *ArtFinalService {
-	return &ArtFinalService{repo: repo}
+
+func NewArtFinalService(repo *repositories.ArtFinalRepository, auditService *AuditService) *ArtFinalService {
+	return &ArtFinalService{repo: repo, auditService: auditService}
+}
+func NewArtFinalServiceWithRepository(repo ArtFinalRepositoryPort, auditService *AuditService) *ArtFinalService {
+	return &ArtFinalService{repo: repo, auditService: auditService}
 }
 
 func (s *ArtFinalService) Dashboard(access models.ArtFinalAccess, filters models.ArtFinalFilters) (map[string]interface{}, error) {
