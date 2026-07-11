@@ -144,11 +144,21 @@ func NewMissingFieldError(fields ...string) *AppError {
 }
 
 func NewDatabaseError(err error) *AppError {
-	return &AppError{
-		Code:       http.StatusInternalServerError,
-		Message:    "Erro ao acessar banco de dados",
-		LogMessage: err.Error(),
-	}
+		if inner, ok := err.(*AppError); ok {
+					if inner.LogMessage != "" {
+									return inner
+								}
+					return &AppError{
+									Code:       http.StatusInternalServerError,
+									Message:    "Erro ao acessar banco de dados",
+									LogMessage: inner.Message,
+								}
+				}
+		return &AppError{
+					Code:       http.StatusInternalServerError,
+					Message:    "Erro ao acessar banco de dados",
+					LogMessage: err.Error(),
+				}
 }
 
 func NewUnauthorizedError(message string) *AppError {
