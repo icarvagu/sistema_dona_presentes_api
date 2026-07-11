@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
-	"os"
-
 	"donapresentes/controllers/config"
 	apperrors "donapresentes/errors"
 	"donapresentes/middleware"
