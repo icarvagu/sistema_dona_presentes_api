@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -66,6 +67,7 @@ func InputValidationMiddleware(next http.Handler) http.Handler {
 			}
 			for _, v := range values {
 				if len(v) > 8192 || isSuspicious(v) {
+					log.Printf("[DEBUG-HEADER] key=%q value=%q", key, v)
 					ErrorHandler(w, apperrors.NewValidationError("Header inválido"), http.StatusBadRequest)
 					return
 				}
