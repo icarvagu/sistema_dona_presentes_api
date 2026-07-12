@@ -216,6 +216,15 @@ components:
         quantity: { type: integer }
         product: { $ref: '#/components/schemas/Product' }
 
+    PaginatedProductResponse:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Product' } }
+        total: { type: integer }
+        page: { type: integer }
+        limit: { type: integer }
+        total_pages: { type: integer }
+
     # ───────────────────────────── Quote ────────────────────────────
     Quote:
       type: object
@@ -243,6 +252,22 @@ components:
         carrier_id: { type: integer, nullable: true }
         carrier: { $ref: '#/components/schemas/Carrier' }
         freight_value: { type: number, format: float }
+        freight_tax_id_sender: { type: string }
+        freight_tax_id_origin: { type: string }
+        freight_tax_id_dest: { type: string }
+        freight_tax_id_payer: { type: string }
+        freight_tipo_transporte: { type: string }
+        freight_contato: { type: string }
+        freight_cidade_origem: { type: string }
+        freight_cidade_destino: { type: string }
+        freight_material: { type: string }
+        freight_tipo_frete: { type: string }
+        freight_produto: { type: string }
+        freight_tipo_embalagem: { type: string }
+        freight_quantidade: { type: integer }
+        freight_volumes: { type: object }
+        freight_valor_nota: { type: number, format: float }
+        freight_peso_real: { type: number, format: float }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
     QuoteItem:
@@ -271,8 +296,104 @@ components:
         seller_commission_percent: { type: number, format: float }
         sale_unit_value: { type: number, format: float }
         margin_percent_calc: { type: number, format: float }
+        extra_unit_cost1: { type: number, format: float }
+        extra_unit_cost2: { type: number, format: float }
+        loss_index_percent: { type: number, format: float }
+        imported_labor_percent: { type: number, format: float }
+        mgmt_commission_percent: { type: number, format: float }
+        agency_commission_percent: { type: number, format: float }
+        publicity_percent: { type: number, format: float }
+        scrap_index: { type: number, format: float }
+        over_percent: { type: number, format: float }
+        financial_factor: { type: number, format: float }
+        financial_percent: { type: number, format: float }
+        transport_apart: { type: number, format: float }
+        production_cost_calc: { type: number, format: float }
+        transport_cost_calc: { type: number, format: float }
+        additional_costs_calc: { type: number, format: float }
+        profit_calc: { type: number, format: float }
+        cost_unit_calc: { type: number, format: float }
         has_price_formation: { type: boolean }
         engravings: { type: object }
+
+    QuoteInput:
+      type: object
+      required: [seller_id, customer_id, responsible_name, quote_valid_until, items]
+      properties:
+        quote_number: { type: string }
+        seller_id: { type: integer }
+        customer_id: { type: integer }
+        responsible_name: { type: string }
+        quote_date: { type: string, format: date }
+        care_of: { type: string }
+        quote_valid_until: { type: string, format: date }
+        sales_channel: { type: string }
+        production_lead_time: { type: string }
+        observations: { type: string }
+        items: { type: array, items: { $ref: '#/components/schemas/QuoteItemInput' } }
+        freight_value: { type: number, format: float }
+        carrier_id: { type: integer, nullable: true }
+        payment_method: { type: string }
+        installments: { type: integer }
+        installment_dates: { type: object }
+        freight_tax_id_sender: { type: string }
+        freight_tax_id_origin: { type: string }
+        freight_tax_id_dest: { type: string }
+        freight_tax_id_payer: { type: string }
+        freight_tipo_transporte: { type: string }
+        freight_contato: { type: string }
+        freight_cidade_origem: { type: string }
+        freight_cidade_destino: { type: string }
+        freight_material: { type: string }
+        freight_tipo_frete: { type: string }
+        freight_produto: { type: string }
+        freight_tipo_embalagem: { type: string }
+        freight_quantidade: { type: integer }
+        freight_volumes: { type: object }
+        freight_valor_nota: { type: number, format: float }
+        freight_peso_real: { type: number, format: float }
+    QuoteItemInput:
+      type: object
+      required: [product_id, quantity, unit_price]
+      properties:
+        product_id: { type: integer }
+        quantity: { type: integer }
+        unit_price: { type: number, format: float }
+        discount: { type: number, format: float }
+        personalization_type: { type: string }
+        dn_code: { type: string }
+        description_summary: { type: string }
+        is_kit: { type: boolean }
+        engravings: { type: object }
+        has_price_formation: { type: boolean }
+        base_cost_unit: { type: number, format: float }
+        labor_cost: { type: number, format: float }
+        extra_unit_cost1: { type: number, format: float }
+        extra_unit_cost2: { type: number, format: float }
+        engraving_cost: { type: number, format: float }
+        urgency_fee: { type: number, format: float }
+        logistics_cost: { type: number, format: float }
+        freight_cost: { type: number, format: float }
+        tax_percent: { type: number, format: float }
+        st_percent: { type: number, format: float }
+        loss_index_percent: { type: number, format: float }
+        imported_labor_percent: { type: number, format: float }
+        mgmt_commission_percent: { type: number, format: float }
+        seller_commission_percent: { type: number, format: float }
+        agency_commission_percent: { type: number, format: float }
+        publicity_percent: { type: number, format: float }
+        scrap_index: { type: number, format: float }
+        over_percent: { type: number, format: float }
+        financial_factor: { type: number, format: float }
+        financial_percent: { type: number, format: float }
+        sale_unit_value: { type: number, format: float }
+        transport_apart: { type: number, format: float }
+        production_cost_calc: { type: number, format: float }
+        transport_cost_calc: { type: number, format: float }
+        additional_costs_calc: { type: number, format: float }
+        profit_calc: { type: number, format: float }
+        margin_percent_calc: { type: number, format: float }
+        cost_unit_calc: { type: number, format: float }
 
     # ───────────────────────────── Sale ─────────────────────────────
     Sale:
@@ -314,6 +435,42 @@ components:
         total_price: { type: number, format: float }
         discount: { type: number, format: float }
         price_formation: { type: object }
+        engravings: { type: object }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    SaleInput:
+      type: object
+      required: [seller_id, customer_id, payment_method, items]
+      properties:
+        seller_id: { type: integer }
+        customer_id: { type: integer }
+        payment_method: { type: string }
+        installments: { type: integer }
+        payment_term_days: { type: integer }
+        first_installment_start: { type: string, format: date, nullable: true }
+        installment_dates: { type: object }
+        status: { type: string }
+        is_event: { type: boolean }
+        delivery_address: { type: string }
+        delivery_date: { type: string, format: date, nullable: true }
+        departure_date: { type: string, format: date, nullable: true }
+        arrival_date: { type: string, format: date, nullable: true }
+        priority: { type: string }
+        care_of: { type: string }
+        invoice_email: { type: string }
+        financial_email: { type: string }
+        purchase_order: { type: string }
+        external_notes: { type: string }
+        internal_notes: { type: string }
+        layout_urls: { type: array, items: { type: string } }
+        items: { type: array, items: { $ref: '#/components/schemas/SaleItemInput' } }
+        carrier_ids: { type: array, items: { type: integer } }
+    SaleItemInput:
+      type: object
+      properties:
+        product_id: { type: integer }
+        quantity: { type: integer }
+        unit_price: { type: number, format: float }
         engravings: { type: object }
 
     # ───────────────────────────── Purchase ─────────────────────────
@@ -424,6 +581,13 @@ components:
       properties:
         error: { type: string }
         details: { type: string }
+        code: { type: integer }
+    ErrorResponse:
+      type: object
+      properties:
+        error: { type: string }
+        details: { type: string }
+        code: { type: integer }
 
 paths:
   # ═══════════════════════════════ AUTH ═══════════════════════════════
@@ -452,19 +616,23 @@ paths:
       tags: [Autenticação]
       summary: Renovar token JWT
       requestBody:
+        required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/RefreshRequest' }
       responses:
         '200':
-          description: Token renovado
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
   /auth/logout:
     post:
       tags: [Autenticação]
-      summary: Invalidar refresh token
+      summary: Logout (invalidate refresh tokens)
       security: [{ bearerAuth: [] }]
       responses:
-        '200': { description: Logout realizado }
+        '204': { description: No Content }
   /auth/me:
     get:
       tags: [Autenticação]
@@ -481,21 +649,23 @@ paths:
       tags: [Autenticação]
       summary: Solicitar redefinição de senha
       requestBody:
+        required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/ForgotPasswordRequest' }
       responses:
-        '200': { description: Instruções enviadas se usuário existir }
+        '200': { description: OK }
   /auth/reset-password:
     post:
       tags: [Autenticação]
       summary: Redefinir senha com token
       requestBody:
+        required: true
         content:
           application/json:
             schema: { $ref: '#/components/schemas/ResetPasswordRequest' }
       responses:
-        '200': { description: Senha redefinida }
+        '200': { description: OK }
 
   # ═══════════════════════════════ USERS ═══════════════════════════════
   /users:
@@ -1205,7 +1375,7 @@ paths:
           in: path
           required: true
           schema: { type: string }
-          description: Tipo de entidade (ex: quote, sale)
+          description: "Tipo de entidade (ex: quote, sale)"
         - name: itemId
           in: path
           required: true
