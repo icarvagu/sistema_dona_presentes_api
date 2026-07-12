@@ -61,21 +61,6 @@ func GetProductionDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusOK, data)
 }
-// ListProductionOrders handles GET /production/orders — lists production orders with optional filters.
-func ListProductionOrders(w http.ResponseWriter, r *http.Request) {
-	a := productionAccess(r)
-	f, e := productionFilters(r)
-	if e != nil {
-		workflowError(w, e)
-		return
-	}
-	data, e := productionService.List(f, a)
-	if e != nil {
-		workflowError(w, e)
-		return
-	}
-	workflowJSON(w, http.StatusOK, data)
-}
 // AssignProductionOrder handles PATCH /production/orders/{id}/assignment — assigns a production order to a user.
 func AssignProductionOrder(w http.ResponseWriter, r *http.Request) {
 	id, e := productionID(r)

@@ -18,7 +18,6 @@ import (
 func RegisterPurchasesRoutes(r *mux.Router) {
 	r.HandleFunc("/purchases", controllers.GetPurchases).Methods(http.MethodGet)
 	r.HandleFunc("/purchases/financial", controllers.GetPurchaseFinancial).Methods(http.MethodGet)
-	r.HandleFunc("/purchases/by-sale/{saleId}", controllers.GetPurchaseBySale).Methods(http.MethodGet)
 	r.HandleFunc("/purchases/{id}", controllers.GetPurchase).Methods(http.MethodGet)
 	r.HandleFunc("/purchases/release/{saleId}", controllers.ReleaseSaleToPurchases).Methods(http.MethodPost)
 	r.HandleFunc("/purchases/{id}", controllers.UpdatePurchase).Methods(http.MethodPut)

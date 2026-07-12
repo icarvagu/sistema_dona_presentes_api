@@ -95,18 +95,6 @@ func (r *PurchaseRepository) GetByID(id int) (*models.PurchaseOrder, error) {
 	return p, nil
 }
 
-// GetBySaleID returns the purchase order associated with a given sale from the database.
-func (r *PurchaseRepository) GetBySaleID(saleID int) (*models.PurchaseOrder, error) {
-	p, err := scanPurchase(r.db.QueryRow(`SELECT `+purchaseColumns+` FROM purchase_orders WHERE sale_id=$1`, saleID))
-	if err != nil {
-		return nil, err
-	}
-	if err := r.loadRelations(p, true); err != nil {
-		return nil, err
-	}
-	return p, nil
-}
-
 // ReleaseSale creates or updates a purchase order for a sale and transitions the sale status to released.
 func (r *PurchaseRepository) ReleaseSale(saleID, userID int, isSample, sampleHasEngraving bool) (*models.PurchaseOrder, error) {
 	tx, err := r.db.Begin()

@@ -35,11 +35,6 @@ func (s *PurchaseService) GetByID(id int) (*models.PurchaseOrder, error) {
 	return s.repo.GetByID(id)
 }
 
-// GetBySaleID returns the purchase order associated with a given sale ID.
-func (s *PurchaseService) GetBySaleID(saleID int) (*models.PurchaseOrder, error) {
-	return s.repo.GetBySaleID(saleID)
-}
-
 // ReleaseSale creates a purchase order from a sale, optionally marking it as a sample
 // and indicating whether the sample requires engraving.
 func (s *PurchaseService) ReleaseSale(saleID, userID int, isSample, sampleHasEngraving bool) (*models.PurchaseOrder, error) {

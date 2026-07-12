@@ -16,7 +16,6 @@ import (
 // GET /production/supplies, POST /production/supplies, POST /production/supplies/movements.
 func RegisterProductionRoutes(r *mux.Router) {
 	r.HandleFunc("/production/dashboard", controllers.GetProductionDashboard).Methods(http.MethodGet)
-	r.HandleFunc("/production/orders", controllers.ListProductionOrders).Methods(http.MethodGet)
 	r.HandleFunc("/production/orders/{id}", controllers.GetProductionOrder).Methods(http.MethodGet)
 	r.HandleFunc("/production/orders/{id}/receipts", controllers.AddProductionReceipt).Methods(http.MethodPost)
 	r.HandleFunc("/production/orders/{id}/occurrences", controllers.AddProductionOccurrence).Methods(http.MethodPost)

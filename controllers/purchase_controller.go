@@ -86,25 +86,6 @@ func GetPurchase(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
-// GetPurchaseBySale handles GET /purchases/by-sale/{saleId} — returns the purchase associated with a given sale.
-func GetPurchaseBySale(w http.ResponseWriter, r *http.Request) {
-	if !requirePurchasePermission(w, r, "compras", "arte_final", "financeiro", "diretoria_financeira", "producao", "vendas") {
-		return
-	}
-	saleID, err := strconv.Atoi(mux.Vars(r)["saleId"])
-	if err != nil {
-		writePurchaseError(w, err)
-		return
-	}
-	item, err := purchaseService.GetBySaleID(saleID)
-	if err != nil {
-		writePurchaseError(w, err)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(item)
-}
-
 // ReleaseSaleToPurchases handles POST /purchases/release/{saleId} — releases a sale to the purchases module, creating a purchase order.
 func ReleaseSaleToPurchases(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "vendas") {
