@@ -119,13 +119,6 @@ func (s *AuthService) Login(input *models.LoginInput, ipAddress string) (*models
 		return nil, apperrors.NewValidationError("Conta temporariamente bloqueada por muitas tentativas. Tente novamente mais tarde")
 	}
 
-	if user.MustChangePassword {
-		passwordOK := s.CheckPassword(input.Password, user.PasswordHash)
-		if passwordOK {
-			return nil, apperrors.NewValidationError("Você precisa alterar sua senha antes de continuar")
-		}
-	}
-
 	if !s.CheckPassword(input.Password, user.PasswordHash) {
 		newAttempts := user.FailedLoginAttempts + 1
 		lockUntil := (*time.Time)(nil)
@@ -380,6 +373,33 @@ func (s *AuthService) ResetPassword(token, newPassword string) error {
 	_ = s.refreshRepo.RevokeAllForUser(prt.UserID)
 
 	s.auditService.LogSimple(&prt.UserID, "password_reset_completed", "user", "Password reset completed", "")
+
+	return nil
+}
+
+// ChangePassword updates the password for the authenticated user.
+// Validates password complexity, hashes the new password, clears the must_change_password flag,
+// and revokes all active refresh tokens for security.
+func (s *AuthService) ChangePassword(userID int, newPassword string) error {
+	newPassword = SanitizePassword(newPassword)
+
+	if err := s.ValidatePasswordComplexity(newPassword); err != nil {
+		return err
+	}
+
+	passwordHash, err := s.HashPassword(newPassword)
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+
+	err = s.userRepo.UpdatePassword(userID, passwordHash)
+	if err != nil {
+		return apperrors.NewDatabaseError(err)
+	}
+
+	_ = s.refreshRepo.RevokeAllForUser(userID)
+
+	s.auditService.LogSimple(&userID, "password_changed", "user", "Password changed by user", "")
 
 	return nil
 }

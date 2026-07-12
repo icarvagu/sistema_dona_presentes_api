@@ -19,9 +19,10 @@ func RegisterAuthRoutes(r *mux.Router) {
 }
 
 // RegisterAuthProtectedRoutes registers protected authentication endpoints on the given router.
-// Routes: GET /auth/me, POST /auth/refresh, POST /auth/logout.
+// Routes: GET /auth/me, POST /auth/refresh, POST /auth/logout, PUT /auth/change-password.
 func RegisterAuthProtectedRoutes(r *mux.Router) {
 	r.HandleFunc("/auth/me", controllers.GetCurrentUser).Methods("GET", "OPTIONS")
 	r.HandleFunc("/auth/refresh", controllers.RefreshToken).Methods("POST", "OPTIONS")
 	r.HandleFunc("/auth/logout", controllers.Logout).Methods("POST", "OPTIONS")
+	r.HandleFunc("/auth/change-password", controllers.ChangePassword).Methods("PUT", "OPTIONS")
 }

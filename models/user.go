@@ -83,3 +83,8 @@ type ResetPasswordRequest struct {
 type LogoutRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
+
+// ChangePasswordRequest carries the new password when the authenticated user changes their password.
+type ChangePasswordRequest struct {
+	NewPassword string `json:"new_password"`
+}

@@ -199,3 +199,41 @@ func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Senha alterada com sucesso"})
 }
+
+// ChangePassword handles PUT /auth/change-password — changes the authenticated user's password.
+func ChangePassword(w http.ResponseWriter, r *http.Request) {
+	userID, _, _ := middleware.GetUserFromRequest(r)
+
+	var input models.ChangePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		middleware.ErrorHandler(w, apperrors.ErrInvalidJSON, http.StatusBadRequest)
+		return
+	}
+
+	if input.NewPassword == "" {
+		middleware.ErrorHandler(w, apperrors.NewMissingFieldError("new_password é obrigatório"), http.StatusBadRequest)
+		return
+	}
+
+	err := authService.ChangePassword(userID, input.NewPassword)
+	if err != nil {
+		if appErr, ok := err.(*apperrors.AppError); ok {
+			middleware.ErrorHandler(w, appErr, appErr.Code)
+			return
+		}
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+
+	user, err := authService.GetUserByID(userID)
+	if err != nil {
+		middleware.ErrorHandler(w, apperrors.NewDatabaseError(err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Senha alterada com sucesso",
+		"user":    user,
+	})
+}
