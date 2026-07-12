@@ -9,14 +9,17 @@ import (
 	"github.com/lib/pq"
 )
 
+// SaleRepository handles all database operations for the sales, sale_items, and sale_carriers tables.
 type SaleRepository struct {
 	db *sql.DB
 }
 
+// NewSaleRepository creates a new SaleRepository with the given database connection.
 func NewSaleRepository(db *sql.DB) *SaleRepository {
 	return &SaleRepository{db: db}
 }
 
+// GetAll returns all sales from the database with their related entities populated.
 func (r *SaleRepository) GetAll() ([]models.Sale, error) {
 	rows, err := r.db.Query(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address, delivery_date, departure_date, arrival_date, priority, care_of, invoice_email, financial_email, purchase_order, installment_dates, external_notes, internal_notes, layout_urls, created_at, updated_at FROM sales`)
 	if err != nil {
@@ -58,6 +61,7 @@ func (r *SaleRepository) GetAll() ([]models.Sale, error) {
 	return sales, nil
 }
 
+// GetBySellerID returns all sales associated with the given seller from the database.
 func (r *SaleRepository) GetBySellerID(sellerID int) ([]models.Sale, error) {
 	rows, err := r.db.Query(`SELECT id, seller_id, customer_id, payment_method, installments, payment_term_days, first_installment_start, total_value, status, is_event, delivery_address, delivery_date, departure_date, arrival_date, priority, care_of, invoice_email, financial_email, purchase_order, installment_dates, external_notes, internal_notes, layout_urls, created_at, updated_at FROM sales WHERE seller_id=$1`, sellerID)
 	if err != nil {
@@ -94,6 +98,7 @@ func (r *SaleRepository) GetBySellerID(sellerID int) ([]models.Sale, error) {
 	return sales, nil
 }
 
+// GetByID returns a single sale by its primary key with all related entities populated.
 func (r *SaleRepository) GetByID(id int) (*models.Sale, error) {
 	var v models.Sale
 	var installmentDates sql.NullString
@@ -130,6 +135,7 @@ func (r *SaleRepository) GetByID(id int) (*models.Sale, error) {
 	return &v, nil
 }
 
+// Create inserts a new sale with its items and carrier links and returns the complete sale.
 func (r *SaleRepository) Create(input *models.SaleInput) (*models.Sale, error) {
 
 	if len(input.InstallmentDates) == 0 || !json.Valid(input.InstallmentDates) {
@@ -204,6 +210,7 @@ func (r *SaleRepository) Create(input *models.SaleInput) (*models.Sale, error) {
 	return completeSale, nil
 }
 
+// Update modifies an existing sale with its items and carrier links, replacing all related records.
 func (r *SaleRepository) Update(id int, input *models.SaleInput) (*models.Sale, error) {
 
 	if len(input.InstallmentDates) == 0 || !json.Valid(input.InstallmentDates) {
@@ -259,6 +266,7 @@ func (r *SaleRepository) Update(id int, input *models.SaleInput) (*models.Sale, 
 	return r.GetByID(id)
 }
 
+// Delete removes a sale record by its primary key.
 func (r *SaleRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM sales WHERE id=$1", id)
 	if err != nil {
@@ -274,6 +282,7 @@ func (r *SaleRepository) Delete(id int) error {
 	return nil
 }
 
+// UpdateLayoutURLs updates the layout_urls array for a sale record.
 func (r *SaleRepository) UpdateLayoutURLs(id int, urls []string) error {
 	_, err := r.db.Exec(
 		`UPDATE sales SET layout_urls=$1, updated_at=NOW() WHERE id=$2`,
@@ -284,6 +293,7 @@ func (r *SaleRepository) UpdateLayoutURLs(id int, urls []string) error {
 	return nil
 }
 
+// GetSeller retrieves the seller (user) associated with a sale from the users table.
 func (r *SaleRepository) GetSeller(sellerID int) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
@@ -325,6 +335,7 @@ func (r *SaleRepository) GetSeller(sellerID int) (*models.User, error) {
 	return &u, nil
 }
 
+// GetCustomer retrieves the customer associated with a sale from the customers table.
 func (r *SaleRepository) GetCustomer(customerID int) (*models.Customer, error) {
 	if customerID == 0 {
 		return nil, nil
@@ -341,6 +352,7 @@ func (r *SaleRepository) GetCustomer(customerID int) (*models.Customer, error) {
 	return &c, nil
 }
 
+// GetCustomerAddresses returns all addresses for a given customer from the customer_addresses table.
 func (r *SaleRepository) GetCustomerAddresses(customerID int) ([]models.Address, error) {
 	rows, err := r.db.Query(`SELECT id, customer_id, address_type, address, created_at, updated_at FROM customer_addresses WHERE customer_id=$1 ORDER BY CASE WHEN address_type='entrega' THEN 0 ELSE 1 END`, customerID)
 	if err != nil {
@@ -359,6 +371,7 @@ func (r *SaleRepository) GetCustomerAddresses(customerID int) ([]models.Address,
 	return addrs, nil
 }
 
+// GetItems returns all items for a given sale from the sale_items table.
 func (r *SaleRepository) GetItems(saleID int) ([]models.SaleItem, error) {
 	rows, err := r.db.Query(`SELECT si.id, si.sale_id, si.product_id, si.quantity, si.unit_price, si.total_price,
 		COALESCE(qi.discount,0), COALESCE(to_jsonb(qi),'{}'::jsonb), COALESCE(si.engravings,'[]'::jsonb), si.created_at, si.updated_at
@@ -391,6 +404,7 @@ func (r *SaleRepository) GetItems(saleID int) ([]models.SaleItem, error) {
 	return items, nil
 }
 
+// CreateItem inserts a new sale_item record into the database.
 func (r *SaleRepository) CreateItem(item *models.SaleItem) error {
 	engravingsJSON := []byte("[]")
 	if item.Engravings != nil && len(item.Engravings) > 0 {
@@ -403,6 +417,7 @@ func (r *SaleRepository) CreateItem(item *models.SaleItem) error {
 	return err
 }
 
+// GetProductBasic retrieves basic product information including supplier for the given product ID.
 func (r *SaleRepository) GetProductBasic(productID int) (*models.Product, error) {
 	var p models.Product
 	var supplierID sql.NullInt64
@@ -448,6 +463,7 @@ func (r *SaleRepository) GetProductBasic(productID int) (*models.Product, error)
 	return &p, nil
 }
 
+// GetCarriers returns all carriers linked to a sale from the sale_carriers join table.
 func (r *SaleRepository) GetCarriers(saleID int) ([]models.Carrier, error) {
 	rows, err := r.db.Query(`
 		SELECT c.id, c.name, c.carrier_type, c.email, c.landline_phone, c.mobile_phone, 
@@ -476,6 +492,7 @@ func (r *SaleRepository) GetCarriers(saleID int) ([]models.Carrier, error) {
 	return carriers, nil
 }
 
+// CreateCarrierLink inserts a new sale_carriers link, ignoring duplicates.
 func (r *SaleRepository) CreateCarrierLink(saleID, carrierID int) error {
 	_, err := r.db.Exec(
 		`INSERT INTO sale_carriers (sale_id, carrier_id) VALUES ($1, $2)
@@ -484,6 +501,7 @@ func (r *SaleRepository) CreateCarrierLink(saleID, carrierID int) error {
 	return err
 }
 
+// DeleteCarrierLinks removes all carrier links for a given sale.
 func (r *SaleRepository) DeleteCarrierLinks(saleID int) error {
 	_, err := r.db.Exec("DELETE FROM sale_carriers WHERE sale_id=$1", saleID)
 	return err

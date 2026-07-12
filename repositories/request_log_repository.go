@@ -7,10 +7,12 @@ import (
 	apperrors "donapresentes/errors"
 )
 
+// RequestLogRepository handles all database operations for the request_logs table.
 type RequestLogRepository struct {
 	db *sql.DB
 }
 
+// RequestLogRecord represents a row from the request_logs table.
 type RequestLogRecord struct {
 	RequestID  string
 	Method     string
@@ -24,10 +26,12 @@ type RequestLogRecord struct {
 	CreatedAt  time.Time
 }
 
+// NewRequestLogRepository creates a new RequestLogRepository with the given database connection.
 func NewRequestLogRepository(db *sql.DB) *RequestLogRepository {
 	return &RequestLogRepository{db: db}
 }
 
+// BatchInsert inserts multiple request log records into the database in a single transaction.
 func (r *RequestLogRepository) BatchInsert(records []RequestLogRecord) error {
 	if len(records) == 0 {
 		return nil

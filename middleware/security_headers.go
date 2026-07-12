@@ -2,6 +2,9 @@ package middleware
 
 import "net/http"
 
+// SecurityHeadersMiddleware sets HTTP security headers (X-Frame-Options,
+// X-Content-Type-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection)
+// on every response.
 func SecurityHeadersMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Frame-Options", "DENY")

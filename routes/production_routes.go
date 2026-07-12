@@ -6,6 +6,14 @@ import (
 	"net/http"
 )
 
+// RegisterProductionRoutes registers all production-related HTTP endpoints on the given router.
+// Routes: GET /production/dashboard, GET /production/orders, GET /production/orders/{id},
+// POST /production/orders/{id}/receipts, POST /production/orders/{id}/occurrences,
+// PATCH /production/orders/{id}/occurrences/{occurrenceId}/resolve,
+// PATCH /production/orders/{id}/transition, PATCH /production/orders/{id}/assignment,
+// POST /production/orders/{id}/engraving-events, POST /production/orders/{id}/volumes,
+// POST /production/orders/{id}/fiscal, PUT /production/orders/{id}/shipment,
+// GET /production/supplies, POST /production/supplies, POST /production/supplies/movements.
 func RegisterProductionRoutes(r *mux.Router) {
 	r.HandleFunc("/production/dashboard", controllers.GetProductionDashboard).Methods(http.MethodGet)
 	r.HandleFunc("/production/orders", controllers.ListProductionOrders).Methods(http.MethodGet)

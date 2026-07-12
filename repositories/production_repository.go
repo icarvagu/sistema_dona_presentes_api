@@ -10,8 +10,12 @@ import (
 	"donapresentes/models"
 )
 
+// ProductionRepository handles all database operations for production_orders and related tables
+// (production_order_items, production_receipts, production_occurrences, production_engraving_events,
+// production_volumes, production_fiscal_documents, production_shipments, production_supplies).
 type ProductionRepository struct{ db *sql.DB }
 
+// NewProductionRepository creates a new ProductionRepository with the given database connection.
 func NewProductionRepository(db *sql.DB) *ProductionRepository { return &ProductionRepository{db: db} }
 
 const productionSelect = `SELECT po.id,po.purchase_id,po.sale_id,po.status,po.has_engraving,po.first_piece_required,
@@ -26,6 +30,7 @@ func scanProduction(row scanner) (*models.ProductionOrder, error) {
 	return &o, err
 }
 
+// List returns production orders filtered by the given criteria from the database.
 func (r *ProductionRepository) List(f models.ProductionFilters, a models.ProductionAccess) ([]models.ProductionOrder, error) {
 	q := productionSelect + productionFrom + ` WHERE 1=1`
 	args := []interface{}{}
@@ -67,6 +72,7 @@ func (r *ProductionRepository) List(f models.ProductionFilters, a models.Product
 	return out, rows.Err()
 }
 
+// Get returns a single production order by its primary key with all related sub-records loaded.
 func (r *ProductionRepository) Get(id int64) (*models.ProductionOrder, error) {
 	o, err := scanProduction(r.db.QueryRow(productionSelect+productionFrom+` WHERE po.id=$1`, id))
 	if err != nil {
@@ -95,12 +101,14 @@ func (r *ProductionRepository) Get(id int64) (*models.ProductionOrder, error) {
 	return o, nil
 }
 
+// DriverAssigned checks whether a given user is assigned as a driver for a production order.
 func (r *ProductionRepository) DriverAssigned(orderID int64, userID int) bool {
 	var ok bool
 	_ = r.db.QueryRow(`SELECT EXISTS(SELECT 1 FROM production_shipments WHERE production_order_id=$1 AND driver_id=$2)`, orderID, userID).Scan(&ok)
 	return ok
 }
 
+// Assign updates the owner and priority of a production order and records the change in history.
 func (r *ProductionRepository) Assign(orderID int64, in models.ProductionAssignmentInput, userID int) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -134,6 +142,7 @@ func (r *ProductionRepository) Assign(orderID int64, in models.ProductionAssignm
 	return tx.Commit()
 }
 
+// EnsureForPurchaseTx ensures a production order exists for a given purchase within the provided transaction.
 func (r *ProductionRepository) EnsureForPurchaseTx(tx *sql.Tx, purchaseID, userID int) (int64, error) {
 	var id int64
 	err := tx.QueryRow(`INSERT INTO production_orders(purchase_id,sale_id,has_engraving,first_piece_required)
@@ -154,6 +163,7 @@ func (r *ProductionRepository) EnsureForPurchaseTx(tx *sql.Tx, purchaseID, userI
 	return id, nil
 }
 
+// AddReceipt records material receipt for a production order and updates the status accordingly.
 func (r *ProductionRepository) AddReceipt(orderID int64, in models.ProductionReceiptInput, userID int) (*models.ProductionOrder, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -217,6 +227,7 @@ func (r *ProductionRepository) AddReceipt(orderID int64, in models.ProductionRec
 	return r.Get(orderID)
 }
 
+// AddOccurrence records a quality occurrence for a production order and may block progress if severity is BLOQUEANTE.
 func (r *ProductionRepository) AddOccurrence(orderID int64, in models.ProductionOccurrenceInput, userID int) (*models.ProductionOrder, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -274,6 +285,7 @@ func (r *ProductionRepository) AddOccurrence(orderID int64, in models.Production
 	return r.Get(orderID)
 }
 
+// ResolveOccurrence marks a production occurrence as resolved in the database.
 func (r *ProductionRepository) ResolveOccurrence(orderID, occurrenceID int64, resolution string, userID int) error {
 	res, err := r.db.Exec(`UPDATE production_occurrences SET status='RESOLVIDA',resolution=$1,resolved_by=$2,resolved_at=NOW() WHERE id=$3 AND production_order_id=$4 AND status='ABERTA'`, resolution, userID, occurrenceID, orderID)
 	if err != nil {
@@ -286,6 +298,7 @@ func (r *ProductionRepository) ResolveOccurrence(orderID, occurrenceID int64, re
 	return nil
 }
 
+// Transition moves a production order from one status to another with optimistic locking and validation rules.
 func (r *ProductionRepository) Transition(orderID int64, from, to, note string, version, userID int) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -403,6 +416,7 @@ func (r *ProductionRepository) Transition(orderID int64, from, to, note string, 
 	return tx.Commit()
 }
 
+// AddEvent inserts a new engraving event for a production order with idempotency support.
 func (r *ProductionRepository) AddEvent(orderID int64, in models.ProductionEventInput, userID int) error {
 	res, err := r.db.Exec(`INSERT INTO production_engraving_events(production_order_id,event_type,status,quantity,carrier_id,tracking_code,file_url,notes,idempotency_key,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(production_order_id,idempotency_key) DO NOTHING`, orderID, in.EventType, in.Status, in.Quantity, in.CarrierID, in.TrackingCode, in.FileURL, in.Notes, in.IdempotencyKey, userID)
 	if err != nil {
@@ -414,6 +428,8 @@ func (r *ProductionRepository) AddEvent(orderID int64, in models.ProductionEvent
 	}
 	return nil
 }
+
+// AddVolume inserts a new volume record for a production order.
 func (r *ProductionRepository) AddVolume(orderID int64, in models.ProductionVolumeInput, userID int) error {
 	_, err := r.db.Exec(`INSERT INTO production_volumes(production_order_id,label,weight_kg,length_cm,width_cm,height_cm,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)`, orderID, in.Label, in.WeightKG, in.LengthCM, in.WidthCM, in.HeightCM, userID)
 	if err != nil {
@@ -421,6 +437,8 @@ func (r *ProductionRepository) AddVolume(orderID int64, in models.ProductionVolu
 	}
 	return r.addOperationalHistory(orderID, "VOLUME_ADICIONADO", map[string]interface{}{"label": in.Label, "weight_kg": in.WeightKG}, userID)
 }
+
+// AddFiscal inserts or updates a fiscal document record for a production order.
 func (r *ProductionRepository) AddFiscal(orderID int64, in models.ProductionFiscalInput, userID int) error {
 	_, err := r.db.Exec(`INSERT INTO production_fiscal_documents(production_order_id,document_type,document_number,access_key,file_url,issued_at,created_by) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(production_order_id,document_type,document_number) DO UPDATE SET access_key=EXCLUDED.access_key,file_url=EXCLUDED.file_url,issued_at=EXCLUDED.issued_at`, orderID, in.DocumentType, in.DocumentNumber, in.AccessKey, in.FileURL, in.IssuedAt, userID)
 	if err != nil {
@@ -428,6 +446,8 @@ func (r *ProductionRepository) AddFiscal(orderID int64, in models.ProductionFisc
 	}
 	return r.addOperationalHistory(orderID, "DOCUMENTO_FISCAL", map[string]interface{}{"type": in.DocumentType, "number": in.DocumentNumber}, userID)
 }
+
+// UpsertShipment creates or updates shipment information for a production order.
 func (r *ProductionRepository) UpsertShipment(orderID int64, in models.ProductionShipmentInput, userID int) error {
 	_, err := r.db.Exec(`INSERT INTO production_shipments(production_order_id,method,carrier_id,driver_id,tracking_code,tracking_url,postal_service,proof_url,updated_by,shipped_at,delivered_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,CASE WHEN $5<>'' THEN NOW() END,CASE WHEN $8<>'' THEN NOW() END) ON CONFLICT(production_order_id) DO UPDATE SET method=EXCLUDED.method,carrier_id=EXCLUDED.carrier_id,driver_id=EXCLUDED.driver_id,tracking_code=EXCLUDED.tracking_code,tracking_url=EXCLUDED.tracking_url,postal_service=EXCLUDED.postal_service,proof_url=EXCLUDED.proof_url,updated_by=EXCLUDED.updated_by,updated_at=NOW(),shipped_at=COALESCE(production_shipments.shipped_at,EXCLUDED.shipped_at),delivered_at=COALESCE(production_shipments.delivered_at,EXCLUDED.delivered_at)`, orderID, in.Method, in.CarrierID, in.DriverID, in.TrackingCode, in.TrackingURL, in.PostalService, in.ProofURL, userID)
 	if err != nil {
@@ -441,6 +461,8 @@ func (r *ProductionRepository) addOperationalHistory(orderID int64, action strin
 	_, err := r.db.Exec(`INSERT INTO production_history(production_order_id,action,details,user_id) VALUES($1,$2,$3,$4)`, orderID, action, raw, userID)
 	return err
 }
+
+// ListSupplies returns all production supplies from the database.
 func (r *ProductionRepository) ListSupplies() ([]map[string]interface{}, error) {
 	rows, err := r.db.Query(`SELECT id,name,unit,current_quantity,minimum_quantity,active,updated_at FROM production_supplies ORDER BY name`)
 	if err != nil {
@@ -461,11 +483,15 @@ func (r *ProductionRepository) ListSupplies() ([]map[string]interface{}, error) 
 	}
 	return out, rows.Err()
 }
+
+// CreateSupply inserts a new production supply record into the database.
 func (r *ProductionRepository) CreateSupply(in models.ProductionSupplyInput) (int64, error) {
 	var id int64
 	err := r.db.QueryRow(`INSERT INTO production_supplies(name,unit,current_quantity,minimum_quantity) VALUES($1,$2,$3,$4) RETURNING id`, strings.TrimSpace(in.Name), in.Unit, in.CurrentQuantity, in.MinimumQuantity).Scan(&id)
 	return id, err
 }
+
+// MoveSupply records a supply movement (entry or exit) and updates the current quantity.
 func (r *ProductionRepository) MoveSupply(in models.ProductionSupplyMovementInput, userID int) error {
 	tx, err := r.db.Begin()
 	if err != nil {

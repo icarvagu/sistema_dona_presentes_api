@@ -8,6 +8,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// RegisterSalesRoutes registers all sale-related HTTP endpoints on the given router.
+// Routes: GET /sales (list), POST /sales (create), GET /sales/{id}, PUT /sales/{id},
+// DELETE /sales/{id}, GET /sales/{id}/pdf, PUT /sales/{id}/layout.
 func RegisterSalesRoutes(r *mux.Router) {
 	r.HandleFunc("/sales", controllers.GetSales).Methods(http.MethodGet)
 	r.HandleFunc("/sales/{id}", controllers.GetSale).Methods(http.MethodGet)

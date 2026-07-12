@@ -16,13 +16,16 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// customerService provides CRUD operations for customers.
 var customerService *services.CustomerService
 
+// InitCustomerService initializes the customer service with the required repository.
 func InitCustomerService() {
 	customerRepo := repositories.NewCustomerRepository(config.DB)
 	customerService = services.NewCustomerService(customerRepo, auditService)
 }
 
+// GetCustomers handles GET /customers — returns the list of all customers.
 func GetCustomers(w http.ResponseWriter, r *http.Request) {
 	cs, err := customerService.GetAll()
 	if err != nil {
@@ -33,6 +36,7 @@ func GetCustomers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(cs)
 }
 
+// GetCustomer handles GET /customers/{id} — returns a single customer by ID.
 func GetCustomer(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -53,6 +57,7 @@ func GetCustomer(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(c)
 }
 
+// CreateCustomer handles POST /customers — creates a new customer.
 func CreateCustomer(w http.ResponseWriter, r *http.Request) {
 	var c models.Customer
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
@@ -73,6 +78,7 @@ func CreateCustomer(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(c)
 }
 
+// UpdateCustomer handles PUT /customers/{id} — updates an existing customer.
 func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -103,6 +109,7 @@ func UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(c)
 }
 
+// DeleteCustomer handles DELETE /customers/{id} — deletes a customer by ID.
 func DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])

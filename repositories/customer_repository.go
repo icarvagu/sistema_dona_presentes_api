@@ -6,14 +6,17 @@ import (
 	"donapresentes/models"
 )
 
+// CustomerRepository handles all database operations for the customers table.
 type CustomerRepository struct {
 	db *sql.DB
 }
 
+// NewCustomerRepository creates a new CustomerRepository with the given database connection.
 func NewCustomerRepository(db *sql.DB) *CustomerRepository {
 	return &CustomerRepository{db: db}
 }
 
+// GetAll returns all customers from the database.
 func (r *CustomerRepository) GetAll() ([]models.Customer, error) {
 	rows, err := r.db.Query(`SELECT id, customer_type, status, name, cnpj, cpf, email, business_phone, mobile_phone, website, notes,
 		COALESCE(trade_name,''), COALESCE(company_name,''), COALESCE(state_registration,''), COALESCE(city_registration,''),
@@ -43,6 +46,7 @@ func (r *CustomerRepository) GetAll() ([]models.Customer, error) {
 	return customers, nil
 }
 
+// GetByID returns a single customer by its primary key.
 func (r *CustomerRepository) GetByID(id int) (*models.Customer, error) {
 	var c models.Customer
 	err := r.db.QueryRow(`SELECT id, customer_type, status, name, cnpj, cpf, email, business_phone, mobile_phone, website, notes,
@@ -63,6 +67,7 @@ func (r *CustomerRepository) GetByID(id int) (*models.Customer, error) {
 	return &c, nil
 }
 
+// Create inserts a new customer record and returns the created customer with its ID and timestamps.
 func (r *CustomerRepository) Create(c *models.Customer) error {
 	err := r.db.QueryRow(
 		`INSERT INTO customers (customer_type, status, name, cnpj, cpf, email, business_phone, mobile_phone, website, notes,
@@ -81,6 +86,7 @@ func (r *CustomerRepository) Create(c *models.Customer) error {
 	return err
 }
 
+// Update modifies an existing customer record identified by id with the provided data.
 func (r *CustomerRepository) Update(id int, c *models.Customer) error {
 	_, err := r.db.Exec(
 		`UPDATE customers SET customer_type=$1, status=$2, name=$3, cnpj=$4, cpf=$5, email=$6, business_phone=$7, mobile_phone=$8, website=$9, notes=$10,
@@ -97,6 +103,7 @@ func (r *CustomerRepository) Update(id int, c *models.Customer) error {
 	return err
 }
 
+// Delete removes a customer record by its primary key.
 func (r *CustomerRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM customers WHERE id=$1", id)
 	if err != nil {

@@ -10,6 +10,7 @@ import (
 	"github.com/lib/pq"
 )
 
+// QuoteRepository handles all database operations for the quotes and quote_items tables.
 type QuoteRepository struct {
 	db *sql.DB
 }
@@ -18,10 +19,12 @@ type queryRower interface {
 	QueryRow(query string, args ...interface{}) *sql.Row
 }
 
+// NewQuoteRepository creates a new QuoteRepository with the given database connection.
 func NewQuoteRepository(db *sql.DB) *QuoteRepository {
 	return &QuoteRepository{db: db}
 }
 
+// GetAll returns all quotes from the database with their related entities populated.
 func (r *QuoteRepository) GetAll() ([]models.Quote, error) {
 	rows, err := r.db.Query(`SELECT id, COALESCE(quote_number, ''), seller_id, customer_id, COALESCE(responsible_name, ''), quote_valid_until, COALESCE(production_lead_time, ''), total_value,
 		COALESCE(freight_tax_id_sender,''), COALESCE(freight_tax_id_origin,''), COALESCE(freight_tax_id_dest,''), COALESCE(freight_tax_id_payer,''),
@@ -79,6 +82,7 @@ func (r *QuoteRepository) GetAll() ([]models.Quote, error) {
 	return quotes, nil
 }
 
+// GetBySellerID returns all quotes associated with the given seller from the database.
 func (r *QuoteRepository) GetBySellerID(sellerID int) ([]models.Quote, error) {
 	rows, err := r.db.Query(`SELECT id, COALESCE(quote_number, ''), seller_id, customer_id, COALESCE(responsible_name, ''), quote_valid_until, COALESCE(production_lead_time, ''), total_value,
 		COALESCE(freight_tax_id_sender,''), COALESCE(freight_tax_id_origin,''), COALESCE(freight_tax_id_dest,''), COALESCE(freight_tax_id_payer,''),
@@ -134,6 +138,7 @@ func (r *QuoteRepository) GetBySellerID(sellerID int) ([]models.Quote, error) {
 	return quotes, nil
 }
 
+// GetByID returns a single quote by its primary key with all related entities populated.
 func (r *QuoteRepository) GetByID(id int) (*models.Quote, error) {
 	var quote models.Quote
 	var freightVolumes []byte
@@ -185,6 +190,7 @@ func (r *QuoteRepository) GetByID(id int) (*models.Quote, error) {
 	return &quote, nil
 }
 
+// Create inserts a new quote with its items and returns the complete quote with its generated number.
 func (r *QuoteRepository) Create(input *models.QuoteInput) (*models.Quote, error) {
 	totalValue := 0.0
 	for _, itemInput := range input.Items {
@@ -297,6 +303,7 @@ func (r *QuoteRepository) Create(input *models.QuoteInput) (*models.Quote, error
 	return r.GetByID(quote.ID)
 }
 
+// Update modifies an existing quote and replaces all its items in a single transaction.
 func (r *QuoteRepository) Update(id int, input *models.QuoteInput) (*models.Quote, error) {
 	totalValue := 0.0
 	for _, itemInput := range input.Items {
@@ -419,6 +426,7 @@ func (r *QuoteRepository) Update(id int, input *models.QuoteInput) (*models.Quot
 	return r.GetByID(id)
 }
 
+// UpdateFeedback updates the feedback datetime and observation for a quote.
 func (r *QuoteRepository) UpdateFeedback(id int, feedbackDatetime *time.Time, feedbackObservation string) error {
 	_, err := r.db.Exec(`UPDATE quotes SET feedback_datetime=$1, feedback_observation=$2, updated_at=NOW() WHERE id=$3`, feedbackDatetime, feedbackObservation, id)
 	if err != nil {
@@ -427,6 +435,7 @@ func (r *QuoteRepository) UpdateFeedback(id int, feedbackDatetime *time.Time, fe
 	return nil
 }
 
+// Delete removes a quote record by its primary key.
 func (r *QuoteRepository) Delete(id int) error {
 	res, err := r.db.Exec(`DELETE FROM quotes WHERE id=$1`, id)
 	if err != nil {
@@ -442,6 +451,7 @@ func (r *QuoteRepository) Delete(id int) error {
 	return nil
 }
 
+// GetItems returns all items for a given quote from the quote_items table.
 func (r *QuoteRepository) GetItems(quoteID int) ([]models.QuoteItem, error) {
 	rows, err := r.db.Query(`
 		SELECT id, quote_id, product_id, quantity, unit_price, total_price,
@@ -515,10 +525,12 @@ func (r *QuoteRepository) GetItems(quoteID int) ([]models.QuoteItem, error) {
 	return items, nil
 }
 
+// CreateItem inserts a new quote_item record into the database.
 func (r *QuoteRepository) CreateItem(item *models.QuoteItem) error {
 	return createQuoteItem(r.db, item)
 }
 
+// createQuoteItem inserts a quote item using the given queryRower (either *sql.DB or *sql.Tx).
 func createQuoteItem(q queryRower, item *models.QuoteItem) error {
 	engravingsJSON := []byte("[]")
 	if item.Engravings != nil && len(item.Engravings) > 0 {
@@ -556,6 +568,7 @@ func createQuoteItem(q queryRower, item *models.QuoteItem) error {
 	).Scan(&item.ID, &item.CreatedAt, &item.UpdatedAt)
 }
 
+// GetSeller retrieves the seller (user) associated with a quote from the users table.
 func (r *QuoteRepository) GetSeller(sellerID int) (*models.User, error) {
 	var user models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
@@ -593,6 +606,7 @@ func (r *QuoteRepository) GetSeller(sellerID int) (*models.User, error) {
 	return &user, nil
 }
 
+// GetCustomer retrieves the customer associated with a quote from the customers table.
 func (r *QuoteRepository) GetCustomer(customerID int) (*models.Customer, error) {
 	var customer models.Customer
 	err := r.db.QueryRow(`SELECT id, customer_type, status, name, cnpj, cpf, email, business_phone, mobile_phone, website, notes, created_at, updated_at FROM customers WHERE id=$1`, customerID).
@@ -605,6 +619,7 @@ func (r *QuoteRepository) GetCustomer(customerID int) (*models.Customer, error) 
 	return &customer, nil
 }
 
+// GetCustomerAddresses returns all addresses for a given customer from the customer_addresses table.
 func (r *QuoteRepository) GetCustomerAddresses(customerID int) ([]models.Address, error) {
 	rows, err := r.db.Query(`SELECT id, customer_id, address_type, address, created_at, updated_at FROM customer_addresses WHERE customer_id=$1 ORDER BY CASE WHEN address_type='entrega' THEN 0 ELSE 1 END`, customerID)
 	if err != nil {
@@ -655,6 +670,7 @@ func mergeMissingProductQuoteDetails(product *models.Product, details *models.Pr
 	return product
 }
 
+// GetProductForQuoteItem resolves the best-matching product for a quote item, falling back to internal code or name search.
 func (r *QuoteRepository) GetProductForQuoteItem(item models.QuoteItem) (*models.Product, error) {
 	product, err := r.GetProductBasic(item.ProductID)
 	if err == nil {
@@ -691,14 +707,17 @@ func (r *QuoteRepository) GetProductForQuoteItem(item models.QuoteItem) (*models
 	return product, err
 }
 
+// GetProductBasic retrieves basic product information by its ID from the database.
 func (r *QuoteRepository) GetProductBasic(productID int) (*models.Product, error) {
 	return r.getProductBasicByCondition("p.id=$1", productID)
 }
 
+// GetProductBasicByInternalCode retrieves a product by its internal code from the database.
 func (r *QuoteRepository) GetProductBasicByInternalCode(internalCode string) (*models.Product, error) {
 	return r.getProductBasicByCondition("LOWER(p.internal_code)=LOWER($1)", internalCode)
 }
 
+// GetProductBasicByName retrieves a product by its product name or description from the database.
 func (r *QuoteRepository) GetProductBasicByName(productName string) (*models.Product, error) {
 	return r.getProductBasicByCondition(`
 		LOWER(p.product_name)=LOWER($1)
@@ -757,6 +776,7 @@ func (r *QuoteRepository) getProductBasicByCondition(where string, arg interface
 	return &product, nil
 }
 
+// GetCarrier retrieves a carrier associated with a quote from the transportadoras table.
 func (r *QuoteRepository) GetCarrier(carrierID int) (*models.Carrier, error) {
 	var carrier models.Carrier
 	err := r.db.QueryRow(`SELECT id, name, COALESCE(carrier_type,''), COALESCE(email,''), COALESCE(landline_phone,''), COALESCE(mobile_phone,''), COALESCE(full_address,''), COALESCE(contact_name,''), COALESCE(contact_phone,''), COALESCE(website,''), created_at, updated_at FROM transportadoras WHERE id=$1`, carrierID).

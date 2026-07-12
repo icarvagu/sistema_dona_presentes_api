@@ -11,24 +11,30 @@ import (
 	"github.com/lib/pq"
 )
 
+// SalesWorkflowRepository handles database operations for the sales workflow,
+// including quotes, layouts, financial analysis, receipts, pending events, and engraving approvals.
 type SalesWorkflowRepository struct{ db *sql.DB }
 
+// NewSalesWorkflowRepository creates a new SalesWorkflowRepository with the given database connection.
 func NewSalesWorkflowRepository(db *sql.DB) *SalesWorkflowRepository {
 	return &SalesWorkflowRepository{db: db}
 }
 
+// QuoteOwner returns the seller ID of a quote from the database.
 func (r *SalesWorkflowRepository) QuoteOwner(id int) (int, error) {
 	var owner int
 	err := r.db.QueryRow(`SELECT seller_id FROM quotes WHERE id=$1`, id).Scan(&owner)
 	return owner, err
 }
 
+// SaleOwner returns the seller ID of a sale from the database.
 func (r *SalesWorkflowRepository) SaleOwner(id int) (int, error) {
 	var owner int
 	err := r.db.QueryRow(`SELECT seller_id FROM sales WHERE id=$1`, id).Scan(&owner)
 	return owner, err
 }
 
+// ItemOwner returns the seller ID of the parent quote or sale for a given item.
 func (r *SalesWorkflowRepository) ItemOwner(entity string, id int) (int, error) {
 	var owner int
 	var err error
@@ -40,6 +46,7 @@ func (r *SalesWorkflowRepository) ItemOwner(entity string, id int) (int, error) 
 	return owner, err
 }
 
+// AddFeedback inserts a new quote feedback event and updates the quote's feedback fields.
 func (r *SalesWorkflowRepository) AddFeedback(quoteID, userID int, scheduledAt *time.Time, observation string) (*models.QuoteFeedbackEvent, error) {
 	e := &models.QuoteFeedbackEvent{QuoteID: quoteID, ScheduledAt: scheduledAt, Observation: observation, CreatedBy: userID}
 	tx, err := r.db.Begin()
@@ -65,6 +72,7 @@ func (r *SalesWorkflowRepository) AddFeedback(quoteID, userID int, scheduledAt *
 	return e, nil
 }
 
+// Feedbacks returns all feedback events for a given quote from the database.
 func (r *SalesWorkflowRepository) Feedbacks(quoteID int) ([]models.QuoteFeedbackEvent, error) {
 	rows, err := r.db.Query(`SELECT id,quote_id,scheduled_at,observation,created_by,created_at FROM quote_feedback_events WHERE quote_id=$1 ORDER BY created_at DESC,id DESC`, quoteID)
 	if err != nil {
@@ -82,6 +90,7 @@ func (r *SalesWorkflowRepository) Feedbacks(quoteID int) ([]models.QuoteFeedback
 	return result, rows.Err()
 }
 
+// CreateLayout inserts a new layout version for a quote or sale item and notifies the art final team.
 func (r *SalesWorkflowRepository) CreateLayout(entity string, itemID, userID int, fileURL string) (*models.ItemLayoutVersion, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -124,6 +133,7 @@ func (r *SalesWorkflowRepository) CreateLayout(entity string, itemID, userID int
 	return v, nil
 }
 
+// ApproveLayout approves or rejects a layout version and records the event.
 func (r *SalesWorkflowRepository) ApproveLayout(id int64, userID int, status, note string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -152,6 +162,7 @@ func (r *SalesWorkflowRepository) ApproveLayout(id int64, userID int, status, no
 	return tx.Commit()
 }
 
+// ConvertQuote converts a quote into a sale, copying items and layout versions.
 func (r *SalesWorkflowRepository) ConvertQuote(quoteID, userID int, dates map[string]*time.Time) (int, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -237,6 +248,7 @@ func (r *SalesWorkflowRepository) ConvertQuote(quoteID, userID int, dates map[st
 	return saleID, nil
 }
 
+// UpsertFinancial creates or updates a financial analysis record for a sale.
 func (r *SalesWorkflowRepository) UpsertFinancial(saleID, userID int, input models.FinancialAnalysisInput) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -256,6 +268,7 @@ func (r *SalesWorkflowRepository) UpsertFinancial(saleID, userID int, input mode
 	return tx.Commit()
 }
 
+// AddReceipt adds a payment receipt file for a sale and notifies the finance team.
 func (r *SalesWorkflowRepository) AddReceipt(saleID, userID int, url string) (int64, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -271,6 +284,8 @@ func (r *SalesWorkflowRepository) AddReceipt(saleID, userID int, url string) (in
 	}
 	return id, tx.Commit()
 }
+
+// ValidateReceipt validates or rejects a payment receipt for a sale.
 func (r *SalesWorkflowRepository) ValidateReceipt(id int64, userID int, status, note string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -292,11 +307,14 @@ func (r *SalesWorkflowRepository) ValidateReceipt(id int64, userID int, status, 
 	return tx.Commit()
 }
 
+// AddPending adds a pending event for a sale that may block its progress.
 func (r *SalesWorkflowRepository) AddPending(saleID, userID int, input models.SalePendingInput) (int64, error) {
 	var id int64
 	err := r.db.QueryRow(`INSERT INTO sale_pending_events(sale_id,sector,description,blocking,created_by) VALUES($1,$2,$3,$4,$5) RETURNING id`, saleID, input.Sector, input.Description, input.Blocking, userID).Scan(&id)
 	return id, err
 }
+
+// ResolvePending marks a pending event as resolved in the database.
 func (r *SalesWorkflowRepository) ResolvePending(id int64, userID int, note string) error {
 	res, err := r.db.Exec(`UPDATE sale_pending_events SET resolved_at=now(),resolved_by=$1,resolution_note=$2 WHERE id=$3 AND resolved_at IS NULL`, userID, note, id)
 	if err != nil {
@@ -309,12 +327,14 @@ func (r *SalesWorkflowRepository) ResolvePending(id int64, userID int, note stri
 	return nil
 }
 
+// PendingSaleOwner returns the seller ID for the sale associated with a pending event.
 func (r *SalesWorkflowRepository) PendingSaleOwner(id int64) (int, error) {
 	var owner int
 	err := r.db.QueryRow(`SELECT s.seller_id FROM sale_pending_events p JOIN sales s ON s.id=p.sale_id WHERE p.id=$1`, id).Scan(&owner)
 	return owner, err
 }
 
+// AddEngravingApproval records an engraving approval response for a sale item.
 func (r *SalesWorkflowRepository) AddEngravingApproval(itemID, userID int, input models.EngravingApprovalInput) (int64, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -330,6 +350,8 @@ func (r *SalesWorkflowRepository) AddEngravingApproval(itemID, userID int, input
 	}
 	return id, tx.Commit()
 }
+
+// RecordEngravingChannel records the communication channel used for an engraving approval.
 func (r *SalesWorkflowRepository) RecordEngravingChannel(id int64, userID int, channel string) error {
 	res, err := r.db.Exec(`UPDATE engraving_approvals SET channel=$1,recorded_by=$2,recorded_at=now() WHERE id=$3 AND recorded_at IS NULL`, channel, userID, id)
 	if err != nil {
@@ -342,6 +364,7 @@ func (r *SalesWorkflowRepository) RecordEngravingChannel(id int64, userID int, c
 	return nil
 }
 
+// SetSellerApproval records the seller's final approval on a sale after validating the checklist.
 func (r *SalesWorkflowRepository) SetSellerApproval(saleID, userID int) error {
 	if err := r.validateChecklist(r.db, saleID, false); err != nil {
 		return err
@@ -349,7 +372,7 @@ func (r *SalesWorkflowRepository) SetSellerApproval(saleID, userID int) error {
 	res, err := r.db.Exec(`UPDATE sales SET seller_approved_at=COALESCE(seller_approved_at, now()),seller_approved_by=COALESCE(seller_approved_by, $1),updated_at=now() WHERE id=$2`, userID, saleID)
 	if err != nil {
 		return err
-	}
+		}
 	n, _ := res.RowsAffected()
 	if n == 0 {
 		return sql.ErrNoRows
@@ -400,10 +423,12 @@ func (r *SalesWorkflowRepository) validateChecklist(q workflowQueryer, saleID in
 	return nil
 }
 
+// EnsureReadyForPurchases validates that a sale is ready to be released to the purchases team.
 func (r *SalesWorkflowRepository) EnsureReadyForPurchases(saleID int) error {
 	return r.validateChecklist(r.db, saleID, true)
 }
 
+// MarkReleasedToPurchases updates a sale's status to released for purchases.
 func (r *SalesWorkflowRepository) MarkReleasedToPurchases(saleID int) error {
 	res, err := r.db.Exec(`UPDATE sales SET released_to_purchases_at=COALESCE(released_to_purchases_at, now()),status='Liberado para Compras',updated_at=now() WHERE id=$1`, saleID)
 	if err != nil {
@@ -416,6 +441,7 @@ func (r *SalesWorkflowRepository) MarkReleasedToPurchases(saleID int) error {
 	return nil
 }
 
+// ReleaseToPurchases validates the checklist and transitions a sale to the released for purchases status.
 func (r *SalesWorkflowRepository) ReleaseToPurchases(saleID int) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -436,6 +462,7 @@ func (r *SalesWorkflowRepository) ReleaseToPurchases(saleID int) error {
 	return tx.Commit()
 }
 
+// SetQuoteImportant marks a quote as important or not important.
 func (r *SalesWorkflowRepository) SetQuoteImportant(id int, important bool) error {
 	res, err := r.db.Exec(`UPDATE quotes SET important=$1,updated_at=now() WHERE id=$2`, important, id)
 	if err != nil {
@@ -448,6 +475,7 @@ func (r *SalesWorkflowRepository) SetQuoteImportant(id int, important bool) erro
 	return nil
 }
 
+// SaleWorkflow returns aggregated workflow data for a sale including layouts, financial history, receipts, and more.
 func (r *SalesWorkflowRepository) SaleWorkflow(id int) (map[string]interface{}, error) {
 	result := map[string]interface{}{}
 	queries := map[string]string{
@@ -467,6 +495,7 @@ func (r *SalesWorkflowRepository) SaleWorkflow(id int) (map[string]interface{}, 
 	return result, nil
 }
 
+// Dashboard returns sales dashboard metrics and queue data for a seller or all sellers.
 func (r *SalesWorkflowRepository) Dashboard(sellerID int, all bool) (map[string]interface{}, error) {
 	result := map[string]interface{}{}
 	var quotes, important int
@@ -554,7 +583,7 @@ func (r *SalesWorkflowRepository) Dashboard(sellerID int, all bool) (map[string]
 		var raw []byte
 		if err = r.db.QueryRow(query, all, sellerID).Scan(&raw); err != nil {
 			return nil, err
-		}
+	}
 		result[key] = json.RawMessage(raw)
 	}
 	return result, nil
@@ -567,4 +596,5 @@ func maxFloat(a, b float64) float64 {
 	return b
 }
 
+// MarshalWorkflow marshals a value to JSON raw message.
 func MarshalWorkflow(v interface{}) json.RawMessage { b, _ := json.Marshal(v); return b }

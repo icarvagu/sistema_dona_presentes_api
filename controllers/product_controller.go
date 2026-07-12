@@ -16,14 +16,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// productService provides CRUD and approval operations for products.
 var productService *services.ProductService
 
+// InitProductService initializes the product service with the required repositories.
 func InitProductService() {
 	productRepo := repositories.NewProductRepository(config.DB)
 	supplierRepo := repositories.NewSupplierRepository(config.DB)
 	productService = services.NewProductService(productRepo, supplierRepo, auditService)
 }
 
+// GetProductGroups handles GET /products/groups — returns the list of distinct product groups.
 func GetProductGroups(w http.ResponseWriter, r *http.Request) {
 	groups, err := productService.GetGroups()
 	if err != nil {
@@ -37,6 +40,7 @@ func GetProductGroups(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(groups)
 }
 
+// GetProducts handles GET /products — returns products with optional filtering, grouping, pagination, and "only new" mode.
 func GetProducts(w http.ResponseWriter, r *http.Request) {
 
 	onlyNew := r.URL.Query().Get("only_new")
@@ -131,6 +135,7 @@ func GetProducts(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(ps)
 }
 
+// GetProduct handles GET /products/{id} — returns a single product by ID.
 func GetProduct(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -151,6 +156,7 @@ func GetProduct(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(p)
 }
 
+// CreateProduct handles POST /products — creates a new product (cost price restricted to admin).
 func CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var p models.Product
 	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
@@ -178,6 +184,7 @@ func CreateProduct(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(created)
 }
 
+// UpdateProduct handles PUT /products/{id} — updates an existing product (non-admin users cannot change cost price).
 func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -223,6 +230,7 @@ func UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(updated)
 }
 
+// DeleteProduct handles DELETE /products/{id} — deletes a product by ID.
 func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -241,6 +249,7 @@ func DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdateProductLastCost handles PATCH /products/{id}/last-cost — updates only the last cost price of a product.
 func UpdateProductLastCost(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -264,6 +273,7 @@ func UpdateProductLastCost(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// GetProductsFinancialReport handles GET /products/financial-report — returns a financial summary of all products.
 func GetProductsFinancialReport(w http.ResponseWriter, r *http.Request) {
 	report, err := productService.GetFinancialReport()
 	if err != nil {
@@ -279,6 +289,7 @@ func GetProductsFinancialReport(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(report)
 }
 
+// GetPendingProducts handles GET /products/pending — returns products awaiting approval.
 func GetPendingProducts(w http.ResponseWriter, r *http.Request) {
 	ps, err := productService.GetPendingApproval()
 	if err != nil {
@@ -292,6 +303,7 @@ func GetPendingProducts(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(ps)
 }
 
+// BulkApproveProducts handles POST /products/approve-all — approves all pending products for a given origin.
 func BulkApproveProducts(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Origin string `json:"origin"`
@@ -309,6 +321,7 @@ func BulkApproveProducts(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]int64{"updated": count})
 }
 
+// ApproveProduct handles POST /products/{id}/approve — approves a single product by ID.
 func ApproveProduct(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])

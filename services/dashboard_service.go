@@ -9,6 +9,7 @@ import (
 	"donapresentes/repositories"
 )
 
+// DashboardFeedbackAlert represents a quote with pending feedback follow-up.
 type DashboardFeedbackAlert struct {
 	OrcamentoID         int        `json:"orcamento_id"`
 	Cliente             string     `json:"cliente"`
@@ -18,6 +19,7 @@ type DashboardFeedbackAlert struct {
 	Observacao          string     `json:"observacao"`
 }
 
+// DashboardPedidoSituacao represents a sale with its current status and detected problem.
 type DashboardPedidoSituacao struct {
 	PedidoID     int        `json:"pedido_id"`
 	Status       string     `json:"status"`
@@ -25,12 +27,15 @@ type DashboardPedidoSituacao struct {
 	DeliveryDate *time.Time `json:"delivery_date,omitempty"`
 }
 
+// DashboardAlertaIntervencao represents a sale that requires manual intervention.
 type DashboardAlertaIntervencao struct {
 	PedidoID int    `json:"pedido_id"`
 	Motivo   string `json:"motivo"`
 	Status   string `json:"status"`
 }
 
+// DashboardResponse aggregates all dashboard KPIs including customer/product counts,
+// quote situations with feedback alerts, and sales metrics with commission.
 type DashboardResponse struct {
 	Cadastros struct {
 		Clientes int `json:"clientes"`
@@ -52,11 +57,15 @@ type DashboardResponse struct {
 	} `json:"vendas"`
 }
 
+// DashboardService compiles aggregated data for the seller dashboard including
+// customer/product counts, quote pipeline, sales metrics, and intervention alerts.
 type DashboardService struct {
 	repo        *repositories.DashboardRepository
 	monthlyGoal int
 }
 
+// NewDashboardService creates a DashboardService with the given repository.
+// The monthly sales goal is read from DASHBOARD_MONTHLY_GOAL env var (defaults to 20).
 func NewDashboardService(repo *repositories.DashboardRepository) *DashboardService {
 	goal := 20
 	if raw := os.Getenv("DASHBOARD_MONTHLY_GOAL"); raw != "" {
@@ -67,6 +76,9 @@ func NewDashboardService(repo *repositories.DashboardRepository) *DashboardServi
 	return &DashboardService{repo: repo, monthlyGoal: goal}
 }
 
+// GetDashboardData returns the complete dashboard view for a given seller.
+// It aggregates customer count, product count, quote pipeline (by situation),
+// quote feedback alerts, monthly sales, commission, and sales intervention alerts.
 func (s *DashboardService) GetDashboardData(sellerID int) (DashboardResponse, error) {
 	var resp DashboardResponse
 

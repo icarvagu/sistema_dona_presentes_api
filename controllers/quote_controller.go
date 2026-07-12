@@ -19,9 +19,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// quoteService provides CRUD operations for quotes (orçamentos).
 var quoteService *services.QuoteService
+
+// quotePDFService generates PDF documents for quotes.
 var quotePDFService *services.QuotePDFService
 
+// InitQuoteService initializes the quote and quote PDF services with the required repositories.
 func InitQuoteService() {
 	quoteRepo := repositories.NewQuoteRepository(config.DB)
 	userRepo := repositories.NewUserRepository(config.DB)
@@ -36,6 +40,7 @@ func InitQuoteService() {
 	}
 }
 
+// GetQuotes handles GET /quotes — returns quotes for the current seller (or all if the user has the ver_todos permission).
 func GetQuotes(w http.ResponseWriter, r *http.Request) {
 	userID, _, _ := middleware.GetUserFromRequest(r)
 	var quotes []models.Quote
@@ -53,6 +58,7 @@ func GetQuotes(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(quotes)
 }
 
+// GetQuote handles GET /quotes/{id} — returns a single quote by ID (owner or ver_todos permission required).
 func GetQuote(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -77,6 +83,7 @@ func GetQuote(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(quote)
 }
 
+// CreateQuote handles POST /quotes — creates a new quote.
 func CreateQuote(w http.ResponseWriter, r *http.Request) {
 	var input models.QuoteInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -106,6 +113,7 @@ type QuoteFeedbackInput struct {
 	FeedbackObservation string     `json:"feedback_observation"`
 }
 
+// UpdateQuote handles PUT /quotes/{id} — updates an existing quote (owner or ver_todos permission required).
 func UpdateQuote(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -143,6 +151,7 @@ func UpdateQuote(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(quote)
 }
 
+// UpdateQuoteFeedback handles PATCH /quotes/{id}/feedback — adds customer feedback to a quote.
 func UpdateQuoteFeedback(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -181,6 +190,7 @@ func UpdateQuoteFeedback(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(quote)
 }
 
+// DeleteQuote handles DELETE /quotes/{id} — deletes a quote by ID (owner or ver_todos permission required).
 func DeleteQuote(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {
@@ -206,6 +216,7 @@ func DeleteQuote(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// GetQuotePDF handles GET /quotes/{id}/pdf — generates and returns a PDF document for a quote.
 func GetQuotePDF(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {

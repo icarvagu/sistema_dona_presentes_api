@@ -9,6 +9,8 @@ import (
 	"donapresentes/repositories"
 )
 
+// RequestLogEntry represents a single HTTP request log record with timing,
+// status, and caller metadata.
 type RequestLogEntry struct {
 	RequestID  string
 	Method     string
@@ -21,14 +23,19 @@ type RequestLogEntry struct {
 	Slow       bool
 }
 
+// RequestLoggerService buffers HTTP request logs in memory and periodically
+// flushes them to the database in batches for efficient persistence.
+// Enabled only when the LOG_DB environment variable is set to "true".
 type RequestLoggerService struct {
-	repo     *repositories.RequestLogRepository
-	buffer   []RequestLogEntry
-	mu       sync.Mutex
-	done     chan struct{}
-	enabled  bool
+	repo    *repositories.RequestLogRepository
+	buffer  []RequestLogEntry
+	mu      sync.Mutex
+	done    chan struct{}
+	enabled bool
 }
 
+// NewRequestLoggerService creates a RequestLoggerService backed by the given repository.
+// If LOG_DB env is "true", starts a background goroutine that flushes logs every 5 seconds.
 func NewRequestLoggerService(repo *repositories.RequestLogRepository) *RequestLoggerService {
 	enabled := os.Getenv("LOG_DB") == "true"
 	s := &RequestLoggerService{
@@ -43,6 +50,8 @@ func NewRequestLoggerService(repo *repositories.RequestLogRepository) *RequestLo
 	return s
 }
 
+// Log enqueues a request log entry into the buffer. If the buffer reaches 100 entries,
+// it flushes immediately. Silently discards entries when logging is disabled.
 func (s *RequestLoggerService) Log(entry RequestLogEntry) {
 	if !s.enabled {
 		return
@@ -60,6 +69,7 @@ func (s *RequestLoggerService) Log(entry RequestLogEntry) {
 	s.mu.Unlock()
 }
 
+// flusher runs a ticker every 5 seconds to flush accumulated logs.
 func (s *RequestLoggerService) flusher() {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
@@ -87,6 +97,7 @@ func (s *RequestLoggerService) flusher() {
 	}
 }
 
+// flush converts log entries to repository records and batch-inserts them.
 func (s *RequestLoggerService) flush(entries []RequestLogEntry) {
 	records := make([]repositories.RequestLogRecord, len(entries))
 	for i, e := range entries {
@@ -108,6 +119,7 @@ func (s *RequestLoggerService) flush(entries []RequestLogEntry) {
 	}
 }
 
+// Shutdown flushes any remaining buffered logs and stops the background flusher.
 func (s *RequestLoggerService) Shutdown() {
 	if s.enabled {
 		close(s.done)

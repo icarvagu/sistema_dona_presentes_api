@@ -44,7 +44,7 @@ func TestProductionAccessProfiles(t *testing.T) {
 }
 
 func TestCreateSupplyRequiresAuditedOpeningBalance(t *testing.T) {
-	service := NewProductionService(nil)
+	service := NewProductionService(nil, nil)
 	_, err := service.CreateSupply(models.ProductionSupplyInput{
 		Name:            "Caixa",
 		Unit:            "UN",

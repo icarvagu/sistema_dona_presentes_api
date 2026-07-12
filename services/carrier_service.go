@@ -9,11 +9,14 @@ import (
 	"donapresentes/repositories"
 )
 
+// CarrierService manages transport carriers (shipping companies) with CRUD operations.
+// Validates carrier type ("Pessoa Jurídica" or "Pessoa Física") and email format.
 type CarrierService struct {
 	carrierRepo  repositories.CarrierRepositoryInterface
 	auditService *AuditService
 }
 
+// NewCarrierService creates a CarrierService with the given repository and audit trail.
 func NewCarrierService(carrierRepo repositories.CarrierRepositoryInterface, auditService *AuditService) *CarrierService {
 	return &CarrierService{
 		carrierRepo: carrierRepo,
@@ -21,14 +24,19 @@ func NewCarrierService(carrierRepo repositories.CarrierRepositoryInterface, audi
 	}
 }
 
+// GetAll returns all registered carriers.
 func (s *CarrierService) GetAll() ([]models.Carrier, error) {
 	return s.carrierRepo.GetAll()
 }
 
+// GetByID returns a single carrier by its ID.
 func (s *CarrierService) GetByID(id int) (*models.Carrier, error) {
 	return s.carrierRepo.GetByID(id)
 }
 
+// Create registers a new carrier.
+// Name and carrier_type are required. Carrier type must be "Pessoa Jurídica" or "Pessoa Física".
+// Email, if provided, is validated.
 func (s *CarrierService) Create(c *models.Carrier) error {
 
 	if c.Name == "" {
@@ -55,6 +63,8 @@ func (s *CarrierService) Create(c *models.Carrier) error {
 	return err
 }
 
+// Update modifies an existing carrier by ID.
+// Returns ErrCarrierNotFound if the carrier does not exist.
 func (s *CarrierService) Update(id int, c *models.Carrier) error {
 
 	_, err := s.carrierRepo.GetByID(id)
@@ -89,6 +99,7 @@ func (s *CarrierService) Update(id int, c *models.Carrier) error {
 	return err
 }
 
+// Delete removes a carrier by its ID.
 func (s *CarrierService) Delete(id int) error {
 	err := s.carrierRepo.Delete(id)
 	if err == nil {

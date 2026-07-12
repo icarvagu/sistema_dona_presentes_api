@@ -13,10 +13,14 @@ import (
 	"strings"
 )
 
+// PurchaseMailer defines the interface for sending purchase-related emails
+// with optional file attachments.
 type PurchaseMailer interface {
 	Send(to, subject, body string, attachments []string) error
 }
 
+// SMTPPurchaseMailer sends emails via SMTP for purchase order communications
+// (material requests and engraving requests to suppliers).
 type SMTPPurchaseMailer struct {
 	host string
 	port string
@@ -25,6 +29,8 @@ type SMTPPurchaseMailer struct {
 	from string
 }
 
+// NewSMTPPurchaseMailerFromEnv creates an SMTP mailer using environment variables:
+// SMTP_HOST, SMTP_PORT (defaults to 587), SMTP_USER, SMTP_PASSWORD, SMTP_FROM.
 func NewSMTPPurchaseMailerFromEnv() *SMTPPurchaseMailer {
 	port := os.Getenv("SMTP_PORT")
 	if port == "" {
@@ -39,6 +45,8 @@ func NewSMTPPurchaseMailerFromEnv() *SMTPPurchaseMailer {
 	}
 }
 
+// Send delivers an email with optional base64-encoded data URI attachments.
+// If SMTP is not configured (host or from empty), Send silently returns nil.
 func (m *SMTPPurchaseMailer) Send(to, subject, body string, attachments []string) error {
 	// Ambientes de desenvolvimento podem operar sem SMTP; a mensagem ainda
 	// fica registrada e passa a ser entregue quando as variáveis forem definidas.

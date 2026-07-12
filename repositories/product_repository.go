@@ -11,10 +11,12 @@ import (
 	"github.com/lib/pq"
 )
 
+// ProductRepository handles all database operations for the products and product_items tables.
 type ProductRepository struct {
 	db *sql.DB
 }
 
+// NewProductRepository creates a new ProductRepository with the given database connection.
 func NewProductRepository(db *sql.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
@@ -110,6 +112,7 @@ func scanProductRow(scanner rowScanner, withSupplier bool) (models.Product, *mod
 	return p, nil, nil
 }
 
+// GetAll returns all approved products from the database with their supplier data.
 func (r *ProductRepository) GetAll() ([]models.Product, error) {
 	rows, err := r.db.Query(productSelectWithSupplier + ` WHERE p.pending_approval = FALSE ORDER BY p.id`)
 	if err != nil {
@@ -134,6 +137,7 @@ func (r *ProductRepository) GetAll() ([]models.Product, error) {
 	return res, nil
 }
 
+// GetAllPaginated returns a paginated list of approved products with the total count.
 func (r *ProductRepository) GetAllPaginated(page, limit int) ([]models.Product, int, error) {
 
 	offset := (page - 1) * limit
@@ -171,6 +175,7 @@ func (r *ProductRepository) GetAllPaginated(page, limit int) ([]models.Product, 
 	return res, total, nil
 }
 
+// GetByID returns a single product by its primary key.
 func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
 	p, supplier, err := scanProductRow(r.db.QueryRow(productSelectWithSupplier+` WHERE p.id=$1`, id), true)
 	if err != nil {
@@ -185,6 +190,7 @@ func (r *ProductRepository) GetByID(id int) (*models.Product, error) {
 	return &p, nil
 }
 
+// GetGroups returns all distinct product groups from the database.
 func (r *ProductRepository) GetGroups() ([]string, error) {
 	rows, err := r.db.Query(`SELECT DISTINCT product_group FROM products WHERE pending_approval = FALSE AND product_group IS NOT NULL AND product_group != '' ORDER BY product_group`)
 	if err != nil {
@@ -202,6 +208,7 @@ func (r *ProductRepository) GetGroups() ([]string, error) {
 	return groups, nil
 }
 
+// GetByGroup returns all approved products belonging to the given product group.
 func (r *ProductRepository) GetByGroup(group string) ([]models.Product, error) {
 	rows, err := r.db.Query(productSelectWithSupplier+` WHERE p.pending_approval = FALSE AND LOWER(p.product_group) = LOWER($1)`, group)
 	if err != nil {
@@ -224,6 +231,7 @@ func (r *ProductRepository) GetByGroup(group string) ([]models.Product, error) {
 	return res, nil
 }
 
+// SearchByFilter searches approved products by name, code, group, or color using a LIKE pattern.
 func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, error) {
 	filterPattern := "%" + filter + "%"
 	rows, err := r.db.Query(productSelectWithSupplier+` 
@@ -256,6 +264,7 @@ func (r *ProductRepository) SearchByFilter(filter string) ([]models.Product, err
 	return res, nil
 }
 
+// GetByInternalCode retrieves a product by its internal code from the database.
 func (r *ProductRepository) GetByInternalCode(internalCode string) (*models.Product, error) {
 	p, _, err := scanProductRow(r.db.QueryRow(
 		`SELECT id, product_name, internal_code, supplier_code, supplier_id, product_group, description, photos, ncm, COALESCE(material_origin, ''), stock, supplier_stock, selling_price, kit_type, is_composition, moves_stock, enabled_for_invoice, cost_price, source, imported_at, last_synced_at, COALESCE(color, ''), COALESCE(origin, ''), pending_approval, created_at, updated_at, COALESCE(last_cost, 0), last_cost_date, COALESCE(last_cost_qty1, 0), COALESCE(last_cost_qty2, 0), COALESCE(last_cost_qty3, 0), COALESCE(last_cost_val1, 0), COALESCE(last_cost_val2, 0), COALESCE(last_cost_val3, 0), COALESCE(last_cost_user, '') FROM products WHERE internal_code=$1`,
@@ -267,6 +276,7 @@ func (r *ProductRepository) GetByInternalCode(internalCode string) (*models.Prod
 	return &p, nil
 }
 
+// Create inserts a new product record and returns the created product with its ID and timestamps.
 func (r *ProductRepository) Create(p *models.Product) (*models.Product, error) {
 
 	isComposition := len(p.Items) > 0
@@ -287,6 +297,7 @@ func (r *ProductRepository) Create(p *models.Product) (*models.Product, error) {
 	return p, nil
 }
 
+// Update modifies an existing product record identified by id with the provided data.
 func (r *ProductRepository) Update(id int, p *models.Product) (*models.Product, error) {
 
 	isComposition := len(p.Items) > 0
@@ -307,6 +318,7 @@ func (r *ProductRepository) Update(id int, p *models.Product) (*models.Product, 
 	return p, nil
 }
 
+// Delete removes a product record by its primary key.
 func (r *ProductRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM products WHERE id=$1", id)
 	if err != nil {
@@ -322,6 +334,7 @@ func (r *ProductRepository) Delete(id int) error {
 	return nil
 }
 
+// GetProductItems returns all child product items for a given parent product ID.
 func (r *ProductRepository) GetProductItems(productID int) ([]models.ProductItem, error) {
 	rows, err := r.db.Query(`
 		SELECT pi.id, pi.product_parent_id, pi.product_id, pi.quantity, pi.created_at, pi.updated_at,
@@ -377,6 +390,7 @@ func (r *ProductRepository) GetProductItems(productID int) ([]models.ProductItem
 	return items, nil
 }
 
+// CreateProductItem inserts a new product_item record linked to the given parent product.
 func (r *ProductRepository) CreateProductItem(item *models.ProductItem, productParentID int) error {
 	err := r.db.QueryRow(
 		`INSERT INTO product_items (product_parent_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING id, created_at, updated_at`,
@@ -385,11 +399,13 @@ func (r *ProductRepository) CreateProductItem(item *models.ProductItem, productP
 	return err
 }
 
+// DeleteProductItems removes all product_items for the given parent product ID.
 func (r *ProductRepository) DeleteProductItems(productID int) error {
 	_, err := r.db.Exec("DELETE FROM product_items WHERE product_parent_id=$1", productID)
 	return err
 }
 
+// GetNewlyImported returns products imported in the last 7 days from the database.
 func (r *ProductRepository) GetNewlyImported() ([]models.Product, error) {
 	rows, err := r.db.Query(productSelectWithSupplier + ` 
 		WHERE p.pending_approval = FALSE
@@ -418,6 +434,7 @@ func (r *ProductRepository) GetNewlyImported() ([]models.Product, error) {
 	return res, nil
 }
 
+// GetPendingApproval returns all products that are pending approval from the database.
 func (r *ProductRepository) GetPendingApproval() ([]models.Product, error) {
 	rows, err := r.db.Query(productSelectWithSupplier + ` WHERE p.pending_approval = TRUE ORDER BY p.imported_at DESC`)
 	if err != nil {
@@ -437,6 +454,7 @@ func (r *ProductRepository) GetPendingApproval() ([]models.Product, error) {
 	return res, nil
 }
 
+// BulkApproveAll approves all pending products in a single operation and returns the count of affected rows.
 func (r *ProductRepository) BulkApproveAll(origin string) (int64, error) {
 	res, err := r.db.Exec(
 		`UPDATE products SET origin=$1, pending_approval=FALSE, updated_at=NOW() WHERE pending_approval=TRUE`,
@@ -448,6 +466,7 @@ func (r *ProductRepository) BulkApproveAll(origin string) (int64, error) {
 	return count, nil
 }
 
+// ApproveProduct approves a single product by its ID with the given origin.
 func (r *ProductRepository) ApproveProduct(id int, origin string) error {
 	_, err := r.db.Exec(
 		`UPDATE products SET origin=$1, pending_approval=FALSE, updated_at=NOW() WHERE id=$2`,
@@ -459,6 +478,7 @@ func (r *ProductRepository) ApproveProduct(id int, origin string) error {
 	return nil
 }
 
+// UpdateLastCost updates the last cost information for a product from the provided product data.
 func (r *ProductRepository) UpdateLastCost(id int, p *models.Product) error {
 	var lastCostDate interface{}
 	if p.LastCostDate != nil {
@@ -475,6 +495,7 @@ func (r *ProductRepository) UpdateLastCost(id int, p *models.Product) error {
 	return nil
 }
 
+// UpdateFromSync updates product stock, supplier code, photos, and cost price after an external sync.
 func (r *ProductRepository) UpdateFromSync(id int, stock int, _ int, supplierCode string, photos []string, costPrice float64, lastSyncedAt time.Time) error {
 	_, err := r.db.Exec(
 		`UPDATE products
@@ -498,6 +519,7 @@ func (r *ProductRepository) UpdateFromSync(id int, stock int, _ int, supplierCod
 	return nil
 }
 
+// GetFinancialReport returns a financial report for all products with cost, price, and margin calculations.
 func (r *ProductRepository) GetFinancialReport() ([]models.FinancialReportItem, error) {
 	rows, err := r.db.Query(`
 		SELECT p.id, p.product_name, p.internal_code, p.kit_type,

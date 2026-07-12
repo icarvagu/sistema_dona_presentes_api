@@ -18,12 +18,16 @@ const (
 	XBZTimeout = 120 * time.Second
 )
 
+// XBZService is the ExternalAPIProvider implementation for the XBZ Brindes
+// catalog. It fetches products from the XBZ API and maps them to local domain models.
 type XBZService struct {
 	client *http.Client
 	cnpj   string
 	token  string
 }
 
+// NewXBZService creates an XBZService with the given CNPJ and API token.
+// The HTTP client is configured with a 120-second timeout.
 func NewXBZService(cnpj, token string) *XBZService {
 	client := &http.Client{
 		Timeout: XBZTimeout,
@@ -40,6 +44,7 @@ func NewXBZService(cnpj, token string) *XBZService {
 	}
 }
 
+// XBZProduto represents a product returned by the XBZ API.
 type XBZProduto struct {
 	IdPessoa                             int        `json:"IdPessoa"`
 	IdProduto                            int        `json:"IdProduto"`
@@ -73,6 +78,9 @@ type XBZProduto struct {
 	ReposicaoDataPrevista                *time.Time `json:"ReposicaoDataPrevista,omitempty"`
 }
 
+// GetProducts fetches the product list from the XBZ API.
+// It handles multiple response formats: typed array, generic array, double-encoded JSON,
+// and field-based maps.
 func (s *XBZService) GetProducts() ([]interface{}, error) {
 	endpoint := fmt.Sprintf("%s/api/clientes/GetListaDeProdutos", XBZBaseURL)
 
@@ -224,6 +232,9 @@ func buildPhotosArray(imageLink string) []string {
 	return []string{imageLink}
 }
 
+// MapToLocalProduct converts an XBZ product (typed or generic map) to a local Product model.
+// Products with empty CodigoXbz or Nome are skipped (returns nil).
+// All imported products are marked with source "xbz" and require tax approval.
 func (s *XBZService) MapToLocalProduct(item interface{}) *models.Product {
 
 	if xbzProd, ok := item.(XBZProduto); ok {
@@ -346,6 +357,7 @@ func (s *XBZService) MapToLocalProduct(item interface{}) *models.Product {
 	return nil
 }
 
+// MapToSupplier returns a fixed "XBZ Brindes" supplier model.
 func (s *XBZService) MapToSupplier(item interface{}) *models.Supplier {
 
 	nome := "XBZ Brindes"
@@ -356,6 +368,7 @@ func (s *XBZService) MapToSupplier(item interface{}) *models.Supplier {
 	}
 }
 
+// GetXBZSupplierName returns the fixed supplier name "XBZ Brindes".
 func (s *XBZService) GetXBZSupplierName() string {
 	return "XBZ Brindes"
 }

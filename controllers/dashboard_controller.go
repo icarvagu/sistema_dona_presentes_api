@@ -12,14 +12,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// dashboardService provides dashboard data aggregation for sellers.
 var dashboardService *services.DashboardService
 
+// InitDashboardService initializes the dashboard service from a pre-created service instance.
 func InitDashboardService(service *services.DashboardService) {
 	dashboardService = service
 }
 
 type DashboardResponse = services.DashboardResponse
 
+// GetSellerDashboard handles GET /dashboard/seller/{id} — returns aggregated dashboard data for a specific seller.
 func GetSellerDashboard(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])

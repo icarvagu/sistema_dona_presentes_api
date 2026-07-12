@@ -1,3 +1,10 @@
+// Application entry point for the Dona Presentes API server.
+//
+// The server initializes the database connection, runs pending migrations,
+// wires up all service and repository dependencies, registers middleware
+// and HTTP routes, starts background cron jobs, and begins listening for
+// requests on the configured port (default :8080). TLS is enabled when
+// TLS_CERT_FILE and TLS_KEY_FILE environment variables are both set.
 package main
 
 import (
@@ -22,6 +29,8 @@ import (
 
 const port = ":8080"
 
+// bootstrap initializes the database connection and runs pending migrations.
+// It reads DATABASE_URL and JWT_SECRET from the environment; both are required.
 func bootstrap() error {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {

@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+// SaleItem represents a single line item within a sale, including the product,
+// quantity, pricing, and any engraving/personalization details.
 type SaleItem struct {
 	ID             int             `json:"id"`
 	SaleID         int             `json:"sale_id"`
@@ -20,6 +22,8 @@ type SaleItem struct {
 	UpdatedAt      time.Time       `json:"updated_at"`
 }
 
+// Sale represents a confirmed sale order with customer, items, payment,
+// delivery, and carrier information.
 type Sale struct {
 	ID                    int             `json:"id"`
 	SellerID              int             `json:"seller_id"`
@@ -32,7 +36,7 @@ type Sale struct {
 	FirstInstallmentStart *time.Time      `json:"first_installment_start,omitempty"`
 	InstallmentDates      json.RawMessage `json:"installment_dates,omitempty"`
 	Status                string          `json:"status"`
-	IsEvent               bool            `json:"is_event"`
+	IsEvent               bool            `json:"is_event"` // true when the sale is tied to a specific event/occasion
 	DeliveryAddress       string          `json:"delivery_address"`
 	DeliveryDate          *time.Time      `json:"delivery_date,omitempty"`
 	DepartureDate         *time.Time      `json:"departure_date,omitempty"`
@@ -52,6 +56,7 @@ type Sale struct {
 	UpdatedAt             time.Time       `json:"updated_at"`
 }
 
+// SaleInput is the DTO for creating or updating a sale.
 type SaleInput struct {
 	SellerID              int             `json:"seller_id"`
 	CustomerID            int             `json:"customer_id"`
@@ -78,6 +83,7 @@ type SaleInput struct {
 	CarrierIDs            []int           `json:"carrier_ids,omitempty"`
 }
 
+// SaleItemInput is the DTO for a single item line within a sale creation request.
 type SaleItemInput struct {
 	ProductID  int             `json:"product_id"`
 	Quantity   int             `json:"quantity"`

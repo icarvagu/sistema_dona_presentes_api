@@ -15,8 +15,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// userService provides CRUD and profile operations for users.
 var userService *services.UserService
 
+// InitUserService initializes the user service with the required repositories and services.
 func InitUserService() {
 	userRepo := repositories.NewUserRepository(config.DB)
 	refreshRepo := repositories.NewRefreshTokenRepository(config.DB)
@@ -25,6 +27,7 @@ func InitUserService() {
 	userService = services.NewUserService(userRepo, authService, cryptoService, auditService)
 }
 
+// GetAllUsers handles GET /users — returns the list of all users.
 func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := userService.GetAll()
 	if err != nil {
@@ -35,6 +38,7 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(users)
 }
 
+// GetUser handles GET /users/{id} — returns a single user by ID (self or admin only).
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -67,6 +71,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// CreateUser handles POST /users — creates a new user (admin only).
 func CreateUser(w http.ResponseWriter, r *http.Request) {
 	var input models.UserInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -89,6 +94,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// UpdateUser handles PUT /users/{id} — updates an existing user (self or admin only).
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -131,6 +137,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// DeleteUser handles DELETE /users/{id} — deletes a user by ID (admin only).
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -152,6 +159,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdateProfile handles PUT /users/profile — updates the profile of the currently authenticated user.
 func UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID, _, _ := middleware.GetUserFromRequest(r)
 

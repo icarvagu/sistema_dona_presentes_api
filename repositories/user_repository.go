@@ -10,6 +10,7 @@ import (
 	"github.com/lib/pq"
 )
 
+// PasswordResetToken represents a row from the password_reset_tokens table.
 type PasswordResetToken struct {
 	ID        int
 	UserID    int
@@ -19,14 +20,17 @@ type PasswordResetToken struct {
 	CreatedAt time.Time
 }
 
+// UserRepository handles all database operations for the users and password_reset_tokens tables.
 type UserRepository struct {
 	db *sql.DB
 }
 
+// NewUserRepository creates a new UserRepository with the given database connection.
 func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db: db}
 }
 
+// GetByUsername retrieves a user by their username from the database.
 func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
@@ -75,6 +79,7 @@ func (r *UserRepository) GetByUsername(username string) (*models.User, error) {
 	return &u, nil
 }
 
+// GetByID retrieves a user by their primary key from the database.
 func (r *UserRepository) GetByID(id int) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
@@ -123,6 +128,7 @@ func (r *UserRepository) GetByID(id int) (*models.User, error) {
 	return &u, nil
 }
 
+// Create inserts a new user record and returns the created user with its ID and timestamps.
 func (r *UserRepository) Create(u *models.User) (*models.User, error) {
 	if u.Permissions == nil {
 		u.Permissions = []string{}
@@ -141,6 +147,7 @@ func (r *UserRepository) Create(u *models.User) (*models.User, error) {
 	return u, nil
 }
 
+// GetAll returns all users from the database ordered by ID.
 func (r *UserRepository) GetAll() ([]models.User, error) {
 	rows, err := r.db.Query(
 		`SELECT id, username, role, permissions, full_name, cpf, rg, birth_date, gender, status,
@@ -193,6 +200,7 @@ func (r *UserRepository) GetAll() ([]models.User, error) {
 	return users, nil
 }
 
+// Update modifies an existing user record identified by id with the provided data.
 func (r *UserRepository) Update(id int, u *models.User) (*models.User, error) {
 	if u.Permissions == nil {
 		u.Permissions = []string{}
@@ -214,6 +222,7 @@ func (r *UserRepository) Update(id int, u *models.User) (*models.User, error) {
 	return u, nil
 }
 
+// UpdatePassword updates the password hash for a user and clears the must_change_password flag.
 func (r *UserRepository) UpdatePassword(id int, passwordHash string) error {
 	_, err := r.db.Exec(`UPDATE users SET password_hash=$1, must_change_password=FALSE, updated_at=NOW() WHERE id=$2`, passwordHash, id)
 	if err != nil {
@@ -222,6 +231,7 @@ func (r *UserRepository) UpdatePassword(id int, passwordHash string) error {
 	return nil
 }
 
+// Delete removes a user record by its primary key.
 func (r *UserRepository) Delete(id int) error {
 	res, err := r.db.Exec("DELETE FROM users WHERE id=$1", id)
 	if err != nil {
@@ -237,6 +247,7 @@ func (r *UserRepository) Delete(id int) error {
 	return nil
 }
 
+// GetByCPF retrieves a user by their CPF number from the database.
 func (r *UserRepository) GetByCPF(cpf string) (*models.User, error) {
 	var u models.User
 	var rg, gender, contactEmail, fullAddress, contactPhone, notes sql.NullString
@@ -285,6 +296,7 @@ func (r *UserRepository) GetByCPF(cpf string) (*models.User, error) {
 	return &u, nil
 }
 
+// SearchByFilter searches users by full_name, username, or CPF using a LIKE pattern.
 func (r *UserRepository) SearchByFilter(filter string) ([]models.User, error) {
 	filterPattern := "%" + filter + "%"
 	rows, err := r.db.Query(
@@ -343,6 +355,7 @@ func (r *UserRepository) SearchByFilter(filter string) ([]models.User, error) {
 	return users, nil
 }
 
+// UpdateFailedAttempts updates the failed login attempts counter and lockout time for a user.
 func (r *UserRepository) UpdateFailedAttempts(id int, attempts int, lockedUntil *time.Time) error {
 	_, err := r.db.Exec(
 		`UPDATE users SET failed_login_attempts=$1, locked_until=$2, updated_at=NOW() WHERE id=$3`,
@@ -354,6 +367,7 @@ func (r *UserRepository) UpdateFailedAttempts(id int, attempts int, lockedUntil 
 	return nil
 }
 
+// ResetFailedAttempts resets the failed login attempts counter and clears the lockout for a user.
 func (r *UserRepository) ResetFailedAttempts(id int) error {
 	_, err := r.db.Exec(
 		`UPDATE users SET failed_login_attempts=0, locked_until=NULL, updated_at=NOW() WHERE id=$1`,
@@ -365,6 +379,7 @@ func (r *UserRepository) ResetFailedAttempts(id int) error {
 	return nil
 }
 
+// UpdateCPFHash stores the CPF hash for a user record.
 func (r *UserRepository) UpdateCPFHash(id int, cpfHash string) error {
 	_, err := r.db.Exec(`UPDATE users SET cpf_hash=$1 WHERE id=$2`, cpfHash, id)
 	if err != nil {
@@ -373,6 +388,7 @@ func (r *UserRepository) UpdateCPFHash(id int, cpfHash string) error {
 	return nil
 }
 
+// GetByCPFHash retrieves a user by their CPF hash from the database.
 func (r *UserRepository) GetByCPFHash(cpfHash string) (*models.User, error) {
 	var u models.User
 	err := r.db.QueryRow(
@@ -388,6 +404,7 @@ func (r *UserRepository) GetByCPFHash(cpfHash string) (*models.User, error) {
 	return &u, nil
 }
 
+// CreatePasswordResetToken inserts a new password reset token record into the database.
 func (r *UserRepository) CreatePasswordResetToken(userID int, tokenHash string, expiresAt time.Time) (*PasswordResetToken, error) {
 	var prt PasswordResetToken
 	err := r.db.QueryRow(
@@ -403,6 +420,7 @@ func (r *UserRepository) CreatePasswordResetToken(userID int, tokenHash string, 
 	return &prt, nil
 }
 
+// FindPasswordResetToken retrieves a password reset token by its hash from the database.
 func (r *UserRepository) FindPasswordResetToken(tokenHash string) (*PasswordResetToken, error) {
 	var prt PasswordResetToken
 	err := r.db.QueryRow(
@@ -418,6 +436,7 @@ func (r *UserRepository) FindPasswordResetToken(tokenHash string) (*PasswordRese
 	return &prt, nil
 }
 
+// MarkPasswordResetTokenUsed marks a password reset token as used in the database.
 func (r *UserRepository) MarkPasswordResetTokenUsed(id int) error {
 	_, err := r.db.Exec(`UPDATE password_reset_tokens SET used=TRUE WHERE id=$1`, id)
 	if err != nil {

@@ -10,28 +10,38 @@ import (
 	"donapresentes/repositories"
 )
 
+// PurchaseService manages the complete purchase order workflow from release through
+// supplier emails, Corel file management, payment approval, issue tracking,
+// first piece approval, and production release.
 type PurchaseService struct {
 	repo         *repositories.PurchaseRepository
 	mailer       PurchaseMailer
 	auditService *AuditService
 }
 
+// NewPurchaseService creates a PurchaseService with the required repository and audit trail.
+// It initializes the SMTP mailer from environment variables.
 func NewPurchaseService(repo *repositories.PurchaseRepository, auditService *AuditService) *PurchaseService {
 	return &PurchaseService{repo: repo, mailer: NewSMTPPurchaseMailerFromEnv(), auditService: auditService}
 }
 
+// List returns purchase orders, optionally filtered by sample flag.
 func (s *PurchaseService) List(isSample *bool) ([]models.PurchaseOrder, error) {
 	return s.repo.List(isSample)
 }
 
+// GetByID returns a single purchase order by its ID.
 func (s *PurchaseService) GetByID(id int) (*models.PurchaseOrder, error) {
 	return s.repo.GetByID(id)
 }
 
+// GetBySaleID returns the purchase order associated with a given sale ID.
 func (s *PurchaseService) GetBySaleID(saleID int) (*models.PurchaseOrder, error) {
 	return s.repo.GetBySaleID(saleID)
 }
 
+// ReleaseSale creates a purchase order from a sale, optionally marking it as a sample
+// and indicating whether the sample requires engraving.
 func (s *PurchaseService) ReleaseSale(saleID, userID int, isSample, sampleHasEngraving bool) (*models.PurchaseOrder, error) {
 	if saleID <= 0 {
 		return nil, errors.New("pedido inválido")
@@ -44,6 +54,7 @@ func (s *PurchaseService) ReleaseSale(saleID, userID int, isSample, sampleHasEng
 	return p, err
 }
 
+// Update modifies cost values on a purchase order. All costs must be non-negative.
 func (s *PurchaseService) Update(id, userID int, input *models.PurchaseUpdateInput) (*models.PurchaseOrder, error) {
 	if input.MaterialTotalCost < 0 || input.EngravingCost < 0 || input.FreightCost < 0 || input.OtherCost < 0 {
 		return nil, errors.New("os valores de custo não podem ser negativos")
@@ -57,6 +68,10 @@ func (s *PurchaseService) Update(id, userID int, input *models.PurchaseUpdateInp
 	return s.repo.GetByID(id)
 }
 
+// ExecuteAction performs a workflow action on a purchase order. Supported actions:
+// start_review, request_corel, attach_corel, send_material_email, send_engraving_email,
+// accept_material, accept_engraving, finalize_purchase, release_production,
+// first_piece_received, approve_first_piece.
 func (s *PurchaseService) ExecuteAction(id, userID int, input *models.PurchaseActionInput) (*models.PurchaseOrder, error) {
 	p, err := s.repo.GetByID(id)
 	if err != nil {
@@ -193,6 +208,7 @@ func (s *PurchaseService) ExecuteAction(id, userID int, input *models.PurchaseAc
 	return s.repo.GetByID(id)
 }
 
+// AddAttachment adds a file attachment to a purchase order.
 func (s *PurchaseService) AddAttachment(id, userID int, a *models.PurchaseAttachment) (*models.PurchaseOrder, error) {
 	if a.Category == "" || a.URL == "" {
 		return nil, errors.New("categoria e arquivo são obrigatórios")
@@ -209,6 +225,8 @@ func (s *PurchaseService) AddAttachment(id, userID int, a *models.PurchaseAttach
 	return s.repo.GetByID(id)
 }
 
+// AddPayment records a payment on a purchase order. PIX and cheque payments require
+// justification; cheques also require a receipt image URL.
 func (s *PurchaseService) AddPayment(id, userID int, input *models.PurchasePaymentInput) (*models.PurchaseOrder, error) {
 	if input.Amount <= 0 || input.CostType == "" || input.Method == "" {
 		return nil, errors.New("tipo de custo, valor e forma de pagamento são obrigatórios")
@@ -230,6 +248,7 @@ func (s *PurchaseService) AddPayment(id, userID int, input *models.PurchasePayme
 	return s.repo.GetByID(id)
 }
 
+// ApprovePayment marks a payment as approved and notifies Compras and Financeiro.
 func (s *PurchaseService) ApprovePayment(paymentID, userID int, receiptURL string) (*models.PurchaseOrder, error) {
 	purchaseID, err := s.repo.ApprovePayment(paymentID, userID, receiptURL)
 	if err != nil {
@@ -242,6 +261,8 @@ func (s *PurchaseService) ApprovePayment(paymentID, userID int, receiptURL strin
 	return s.repo.GetByID(purchaseID)
 }
 
+// AddIssue registers a supplier-related issue (material or engraving) on a purchase order
+// with description, occurrence date, resolution deadline, and priority.
 func (s *PurchaseService) AddIssue(id, userID int, input *models.PurchaseIssueInput) (*models.PurchaseOrder, error) {
 	if input.IssueType != "material" && input.IssueType != "gravacao" {
 		return nil, errors.New("tipo de pendência inválido")
@@ -267,6 +288,7 @@ func (s *PurchaseService) AddIssue(id, userID int, input *models.PurchaseIssueIn
 	return s.repo.GetByID(id)
 }
 
+// UpdateIssue updates or resolves a purchase issue. Resolution requires a solution description.
 func (s *PurchaseService) UpdateIssue(issueID, userID int, input *models.PurchaseIssueUpdateInput) (*models.PurchaseOrder, error) {
 	if input.Status == "Resolvida" && strings.TrimSpace(input.Solution) == "" {
 		return nil, errors.New("informe a solução do fornecedor")
@@ -279,14 +301,17 @@ func (s *PurchaseService) UpdateIssue(issueID, userID int, input *models.Purchas
 	return s.repo.GetByID(purchaseID)
 }
 
+// FinancialSummary returns aggregated financial data for all purchase orders.
 func (s *PurchaseService) FinancialSummary() ([]models.PurchaseFinancialSummary, error) {
 	return s.repo.FinancialSummary()
 }
 
+// ListNotifications returns notifications for a user filtered by their permissions.
 func (s *PurchaseService) ListNotifications(userID int, permissions []string) ([]models.Notification, error) {
 	return s.repo.ListNotifications(userID, permissions)
 }
 
+// MarkNotificationRead marks a notification as read for a user.
 func (s *PurchaseService) MarkNotificationRead(id, userID int) error {
 	return s.repo.MarkNotificationRead(id, userID)
 }

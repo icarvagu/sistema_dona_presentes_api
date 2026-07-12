@@ -6,6 +6,7 @@ import (
 	"donapresentes/models"
 )
 
+// UserRepositoryInterface defines the contract for database operations on the users table.
 type UserRepositoryInterface interface {
 	GetByUsername(username string) (*models.User, error)
 	GetByID(id int) (*models.User, error)
@@ -25,6 +26,7 @@ type UserRepositoryInterface interface {
 	MarkPasswordResetTokenUsed(id int) error
 }
 
+// RefreshTokenRepositoryInterface defines the contract for database operations on the refresh_tokens table.
 type RefreshTokenRepositoryInterface interface {
 	Create(userID int, tokenHash string, expiresAt time.Time) error
 	FindByHash(hash string) (*RefreshToken, error)
@@ -32,6 +34,7 @@ type RefreshTokenRepositoryInterface interface {
 	RevokeAllForUser(userID int) error
 }
 
+// CustomerRepositoryInterface defines the contract for database operations on the customers table.
 type CustomerRepositoryInterface interface {
 	GetAll() ([]models.Customer, error)
 	GetByID(id int) (*models.Customer, error)
@@ -40,6 +43,7 @@ type CustomerRepositoryInterface interface {
 	Delete(id int) error
 }
 
+// SupplierRepositoryInterface defines the contract for database operations on the suppliers table.
 type SupplierRepositoryInterface interface {
 	GetAll() ([]models.Supplier, error)
 	GetByID(id int) (*models.Supplier, error)
@@ -48,6 +52,7 @@ type SupplierRepositoryInterface interface {
 	Delete(id int) error
 }
 
+// CarrierRepositoryInterface defines the contract for database operations on the carriers table.
 type CarrierRepositoryInterface interface {
 	GetAll() ([]models.Carrier, error)
 	GetByID(id int) (*models.Carrier, error)
@@ -56,6 +61,7 @@ type CarrierRepositoryInterface interface {
 	Delete(id int) error
 }
 
+// ProductRepositoryInterface defines the contract for database operations on the products table.
 type ProductRepositoryInterface interface {
 	GetAll() ([]models.Product, error)
 	GetByID(id int) (*models.Product, error)
@@ -76,6 +82,7 @@ type ProductRepositoryInterface interface {
 	GetNewlyImported() ([]int, error)
 }
 
+// AuditServiceInterface defines the contract for audit logging operations on the audit_logs table.
 type AuditServiceInterface interface {
 	LogSimple(userID *int, action, entity, detail, ip string)
 }

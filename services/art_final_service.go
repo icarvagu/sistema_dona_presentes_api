@@ -10,6 +10,8 @@ import (
 	"donapresentes/repositories"
 )
 
+// ArtFinalRepositoryPort defines the persistence contract for art final operations
+// including tasks, stories, layout requests, layout versions, and layout jobs.
 type ArtFinalRepositoryPort interface {
 	Dashboard(models.ArtFinalAccess, models.ArtFinalFilters) (map[string]interface{}, error)
 	CreateTask(models.ArtFinalTaskInput, int) (int64, error)
@@ -29,6 +31,27 @@ type ArtFinalRepositoryPort interface {
 	UpdateStoryLifecycle(int64, models.StoryLifecycleInput, int) error
 }
 
+// ArtFinalService handles all art final workflow operations including
+// task management, layout requests, layout versions, corel/engraving jobs,
+// product receipts, and Instagram Story lifecycle tracking.
+type ArtFinalService struct {
+	repo         ArtFinalRepositoryPort
+	auditService *AuditService
+}
+
+// NewArtFinalService creates an ArtFinalService backed by the concrete repository.
+func NewArtFinalService(repo *repositories.ArtFinalRepository, auditService *AuditService) *ArtFinalService {
+	return &ArtFinalService{repo: repo, auditService: auditService}
+}
+
+// NewArtFinalServiceWithRepository creates an ArtFinalService with an arbitrary
+// ArtFinalRepositoryPort implementation (useful for testing with mocks).
+func NewArtFinalServiceWithRepository(repo ArtFinalRepositoryPort, auditService *AuditService) *ArtFinalService {
+	return &ArtFinalService{repo: repo, auditService: auditService}
+}
+
+// AddLayoutMessage adds a message or file attachment to a layout request.
+// Requires at least a message body or a file URL.
 func (s *ArtFinalService) AddLayoutMessage(id int64, input models.LayoutMessageInput, userID int, access models.ArtFinalAccess) error {
 	input.Message = strings.TrimSpace(input.Message)
 	input.FileURL = strings.TrimSpace(input.FileURL)
@@ -38,15 +61,21 @@ func (s *ArtFinalService) AddLayoutMessage(id int64, input models.LayoutMessageI
 	return s.repo.AddLayoutMessage(id, input, userID, access)
 }
 
+// ListLayoutRequests returns all layout requests visible to the given access scope.
 func (s *ArtFinalService) ListLayoutRequests(access models.ArtFinalAccess) (json.RawMessage, error) {
 	return s.repo.ListLayoutRequests(access)
 }
+
+// GetLayoutRequest returns a single layout request by ID, scoped to the given access.
 func (s *ArtFinalService) GetLayoutRequest(id int64, access models.ArtFinalAccess) (json.RawMessage, error) {
 	if id < 1 {
 		return nil, fmt.Errorf("id invalido")
 	}
 	return s.repo.GetLayoutRequest(id, access)
 }
+
+// CreateLayoutRequest creates a new layout request linked to a sale or quote.
+// Validates source type, items, file mode consistency, and priority.
 func (s *ArtFinalService) CreateLayoutRequest(input models.LayoutRequestInput, userID int, access models.ArtFinalAccess) (int64, error) {
 	input.SourceType = strings.ToLower(strings.TrimSpace(input.SourceType))
 	input.Title = strings.TrimSpace(input.Title)
@@ -112,6 +141,8 @@ func (s *ArtFinalService) CreateLayoutRequest(input models.LayoutRequestInput, u
 	return id, err
 }
 
+// TransitionLayoutRequest advances a layout request to the next workflow status.
+// Allowed statuses: requested, in_progress, awaiting_approval, changes_requested, approved, cancelled.
 func (s *ArtFinalService) TransitionLayoutRequest(id int64, next, note string, userID int) error {
 	next = strings.ToLower(strings.TrimSpace(next))
 	if id < 1 {
@@ -127,6 +158,9 @@ func (s *ArtFinalService) TransitionLayoutRequest(id int64, next, note string, u
 	}
 	return err
 }
+
+// AddLayoutVersion uploads a new layout version file for a layout request item.
+// Uses a default label of "Layout" if none is provided.
 func (s *ArtFinalService) AddLayoutVersion(itemID int64, input models.LayoutVersionInput, userID int) (int64, error) {
 	input.FileURL = strings.TrimSpace(input.FileURL)
 	input.Label = strings.TrimSpace(input.Label)
@@ -138,6 +172,9 @@ func (s *ArtFinalService) AddLayoutVersion(itemID int64, input models.LayoutVers
 	}
 	return s.repo.AddLayoutVersion(itemID, input, userID)
 }
+
+// DecideLayoutVersion approves or requests changes on a layout version.
+// Status must be "approved" or "changes_requested". A note is required when requesting changes.
 func (s *ArtFinalService) DecideLayoutVersion(versionID int64, input models.LayoutDecisionInput, userID int, access models.ArtFinalAccess) error {
 	input.Status = strings.ToLower(strings.TrimSpace(input.Status))
 	input.Note = strings.TrimSpace(input.Note)
@@ -153,6 +190,9 @@ func (s *ArtFinalService) DecideLayoutVersion(versionID int64, input models.Layo
 	}
 	return err
 }
+
+// UpsertLayoutJob creates or updates a Corel or engraving job for a layout item.
+// Kind must be "corel" or "engraving". File URL is required when marking a job as received/ready/approved.
 func (s *ArtFinalService) UpsertLayoutJob(kind string, itemID int64, input models.LayoutJobInput, userID int, access models.ArtFinalAccess) error {
 	kind = strings.ToLower(strings.TrimSpace(kind))
 	input.Status = strings.ToLower(strings.TrimSpace(input.Status))
@@ -172,12 +212,18 @@ func (s *ArtFinalService) UpsertLayoutJob(kind string, itemID int64, input model
 	}
 	return err
 }
+
+// ConfirmProductReceived marks a product as received or not received for a sale item.
 func (s *ArtFinalService) ConfirmProductReceived(itemID int64, received bool, userID int, access models.ArtFinalAccess) error {
 	if itemID < 1 {
 		return fmt.Errorf("item invalido")
 	}
 	return s.repo.ConfirmProductReceived(itemID, received, userID, access)
 }
+
+// UpdateStoryLifecycle updates the Instagram Story lifecycle status.
+// Allowed statuses: draft, returned, corrected, published, expired.
+// An observation is required when returning a Story.
 func (s *ArtFinalService) UpdateStoryLifecycle(id int64, input models.StoryLifecycleInput, userID int) error {
 	input.Status = strings.ToLower(strings.TrimSpace(input.Status))
 	input.Observation = strings.TrimSpace(input.Observation)
@@ -191,18 +237,7 @@ func (s *ArtFinalService) UpdateStoryLifecycle(id int64, input models.StoryLifec
 	return s.repo.UpdateStoryLifecycle(id, input, userID)
 }
 
-type ArtFinalService struct {
-	repo         ArtFinalRepositoryPort
-	auditService *AuditService
-}
-
-func NewArtFinalService(repo *repositories.ArtFinalRepository, auditService *AuditService) *ArtFinalService {
-	return &ArtFinalService{repo: repo, auditService: auditService}
-}
-func NewArtFinalServiceWithRepository(repo ArtFinalRepositoryPort, auditService *AuditService) *ArtFinalService {
-	return &ArtFinalService{repo: repo, auditService: auditService}
-}
-
+// Dashboard returns aggregated art final data filtered by category, status, and search term.
 func (s *ArtFinalService) Dashboard(access models.ArtFinalAccess, filters models.ArtFinalFilters) (map[string]interface{}, error) {
 	allowedCategories := map[string]bool{"": true, "layout": true, "alteracao": true, "corel": true, "gravacao": true, "video": true, "post": true, "banner": true, "mala": true, "gravados": true, "sem_gravacao": true}
 	allowedStatuses := map[string]bool{"": true, "open": true, "done": true, "cancelled": true, "pending": true, "changes_requested": true}
@@ -218,6 +253,9 @@ func (s *ArtFinalService) Dashboard(access models.ArtFinalAccess, filters models
 	return s.repo.Dashboard(access, filters)
 }
 
+// validateArtFinalTask validates the business rules for creating or updating an art final task:
+// panel must be "pending" or "media", category must match the panel, title is required,
+// media requires due date/channel/format, priority must be 0-3, status must be open/done/cancelled.
 func validateArtFinalTask(input *models.ArtFinalTaskInput) error {
 	input.Panel = strings.ToLower(strings.TrimSpace(input.Panel))
 	input.Category = strings.ToLower(strings.TrimSpace(input.Category))
@@ -259,12 +297,15 @@ func validateArtFinalTask(input *models.ArtFinalTaskInput) error {
 	return nil
 }
 
+// CreateTask creates a new art final task after validating input rules.
 func (s *ArtFinalService) CreateTask(input models.ArtFinalTaskInput, userID int) (int64, error) {
 	if err := validateArtFinalTask(&input); err != nil {
 		return 0, err
 	}
 	return s.repo.CreateTask(input, userID)
 }
+
+// UpdateTask updates an existing art final task after validating input rules.
 func (s *ArtFinalService) UpdateTask(id int64, input models.ArtFinalTaskInput, userID int, access models.ArtFinalAccess) error {
 	if id < 1 {
 		return fmt.Errorf("id invalido")
@@ -274,6 +315,9 @@ func (s *ArtFinalService) UpdateTask(id int64, input models.ArtFinalTaskInput, u
 	}
 	return s.repo.UpdateTask(id, input, userID, access)
 }
+
+// CreateStory creates an Instagram Story entry linked to a sale.
+// Title defaults to the sale ID if not provided.
 func (s *ArtFinalService) CreateStory(input models.ArtFinalStoryInput, userID int) (int64, error) {
 	input.Title = strings.TrimSpace(input.Title)
 	if input.SaleID < 1 {
@@ -287,12 +331,16 @@ func (s *ArtFinalService) CreateStory(input models.ArtFinalStoryInput, userID in
 	}
 	return s.repo.CreateStory(input, userID)
 }
+
+// CheckStory marks a Story as checked or unchecked.
 func (s *ArtFinalService) CheckStory(id int64, checked bool, userID int) error {
 	if id < 1 {
 		return fmt.Errorf("id invalido")
 	}
 	return s.repo.CheckStory(id, checked, userID)
 }
+
+// DeleteStory removes an Instagram Story entry.
 func (s *ArtFinalService) DeleteStory(id int64, userID int) error {
 	if id < 1 {
 		return fmt.Errorf("id invalido")

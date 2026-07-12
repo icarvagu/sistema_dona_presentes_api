@@ -2,6 +2,7 @@ package models
 
 import "time"
 
+// Supplier represents a material or engraving supplier used in procurement.
 type Supplier struct {
 	ID                int       `json:"id"`
 	Name              string    `json:"name"`

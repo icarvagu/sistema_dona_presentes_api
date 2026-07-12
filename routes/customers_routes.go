@@ -8,6 +8,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// RegisterCustomersRoutes registers all customer-related HTTP endpoints on the given router.
+// Routes: GET /customers (list), POST /customers (create), GET /customers/{id},
+// PUT /customers/{id}, DELETE /customers/{id}.
 func RegisterCustomersRoutes(r *mux.Router) {
 	r.HandleFunc("/customers", controllers.GetCustomers).Methods(http.MethodGet)
 	r.HandleFunc("/customers/{id}", controllers.GetCustomer).Methods(http.MethodGet)

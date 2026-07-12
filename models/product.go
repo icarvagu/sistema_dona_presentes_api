@@ -2,6 +2,8 @@ package models
 
 import "time"
 
+// Product represents an item sold by the business. It can be a simple product
+// or a composition (kit) made up of child items.
 type Product struct {
 	ID                int           `json:"id"`
 	ProductName       string        `json:"product_name"`

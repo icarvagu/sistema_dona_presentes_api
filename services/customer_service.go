@@ -9,11 +9,15 @@ import (
 	"donapresentes/repositories"
 )
 
+// CustomerService manages customer records and enforces business rules including
+// customer type validation ("PF" or "PJ"), status validation ("Ativo" or "Inativo"),
+// and document validation (CPF for individuals, CNPJ for companies).
 type CustomerService struct {
 	customerRepo repositories.CustomerRepositoryInterface
 	auditService *AuditService
 }
 
+// NewCustomerService creates a CustomerService with the given repository and audit trail.
 func NewCustomerService(customerRepo repositories.CustomerRepositoryInterface, auditService *AuditService) *CustomerService {
 	return &CustomerService{
 		customerRepo: customerRepo,
@@ -21,14 +25,20 @@ func NewCustomerService(customerRepo repositories.CustomerRepositoryInterface, a
 	}
 }
 
+// GetAll returns all registered customers.
 func (s *CustomerService) GetAll() ([]models.Customer, error) {
 	return s.customerRepo.GetAll()
 }
 
+// GetByID returns a single customer by its ID.
 func (s *CustomerService) GetByID(id int) (*models.Customer, error) {
 	return s.customerRepo.GetByID(id)
 }
 
+// Create registers a new customer.
+// Name, customer_type, and status are required. Customer type must be "PF" or "PJ".
+// Status must be "Ativo" or "Inativo". CPF is validated for PF, CNPJ for PJ.
+// Email is validated if provided.
 func (s *CustomerService) Create(c *models.Customer) error {
 
 	if c.Name == "" {
@@ -76,6 +86,8 @@ func (s *CustomerService) Create(c *models.Customer) error {
 	return err
 }
 
+// Update modifies an existing customer by ID.
+// Returns ErrCustomerNotFound if the customer does not exist.
 func (s *CustomerService) Update(id int, c *models.Customer) error {
 
 	_, err := s.customerRepo.GetByID(id)
@@ -131,6 +143,7 @@ func (s *CustomerService) Update(id int, c *models.Customer) error {
 	return err
 }
 
+// Delete removes a customer by its ID.
 func (s *CustomerService) Delete(id int) error {
 	err := s.customerRepo.Delete(id)
 	if err == nil {

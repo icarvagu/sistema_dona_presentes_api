@@ -12,12 +12,16 @@ import (
 	"donapresentes/services"
 )
 
+// xbzService provides integration with the XBZ external supplier API for product synchronization.
+// syncInProgress is a flag indicating whether a sync operation is currently running.
+// syncMutex guards concurrent access to the sync state.
 var (
 	xbzService     *services.XBZService
 	syncInProgress bool
 	syncMutex      sync.Mutex
 )
 
+// InitProductXBZController initializes the XBZ product sync controller from environment variables.
 func InitProductXBZController() {
 	cnpj := os.Getenv("XBZ_CNPJ")
 	token := os.Getenv("XBZ_TOKEN")
@@ -29,6 +33,7 @@ func InitProductXBZController() {
 	xbzService = services.NewXBZService(cnpj, token)
 }
 
+// SyncProductsFromXBZHandler handles POST /products-xbz/sync — starts an asynchronous sync of products from the XBZ supplier API.
 func SyncProductsFromXBZHandler(w http.ResponseWriter, r *http.Request) {
 	if xbzService == nil {
 		w.Header().Set("Content-Type", "application/json")

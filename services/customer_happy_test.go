@@ -48,7 +48,7 @@ func (m *mockCustomerRepo) Delete(id int) error {
 }
 
 func TestCustomerValidatesRequiredFields(t *testing.T) {
-	s := NewCustomerService(&mockCustomerRepo{})
+	s := NewCustomerService(&mockCustomerRepo{}, nil)
 
 	tests := []struct {
 		name     string
@@ -75,7 +75,7 @@ func TestCustomerValidatesRequiredFields(t *testing.T) {
 
 func TestCustomerCreateValidPF(t *testing.T) {
 	mock := &mockCustomerRepo{}
-	s := NewCustomerService(mock)
+	s := NewCustomerService(mock, nil)
 
 	cpf := "12345678901"
 	customer := &models.Customer{
@@ -97,7 +97,7 @@ func TestCustomerCreateValidPF(t *testing.T) {
 
 func TestCustomerCreateValidPJ(t *testing.T) {
 	mock := &mockCustomerRepo{}
-	s := NewCustomerService(mock)
+	s := NewCustomerService(mock, nil)
 	cnpj := "11222333000181"
 
 	err := s.Create(&models.Customer{
@@ -119,7 +119,7 @@ func TestCustomerGetAll(t *testing.T) {
 			{ID: 2, Name: "Cliente B", CustomerType: "PJ", Status: "Ativo"},
 		},
 	}
-	s := NewCustomerService(mock)
+	s := NewCustomerService(mock, nil)
 	customers, err := s.GetAll()
 	if err != nil {
 		t.Fatalf("erro ao listar: %v", err)
@@ -135,7 +135,7 @@ func TestCustomerGetByID(t *testing.T) {
 			{ID: 5, Name: "Cliente A", CustomerType: "PF", Status: "Ativo"},
 		},
 	}
-	s := NewCustomerService(mock)
+	s := NewCustomerService(mock, nil)
 	c, err := s.GetByID(5)
 	if err != nil {
 		t.Fatalf("erro ao buscar: %v", err)
@@ -147,7 +147,7 @@ func TestCustomerGetByID(t *testing.T) {
 
 func TestCustomerGetByIDNotFound(t *testing.T) {
 	mock := &mockCustomerRepo{}
-	s := NewCustomerService(mock)
+	s := NewCustomerService(mock, nil)
 	_, err := s.GetByID(999)
 	if err == nil {
 		t.Fatal("esperava erro para ID inexistente")
@@ -160,7 +160,7 @@ func TestCustomerUpdate(t *testing.T) {
 			{ID: 1, Name: "Original", CustomerType: "PF", Status: "Ativo", Email: "a@b.com"},
 		},
 	}
-	s := NewCustomerService(mock)
+	s := NewCustomerService(mock, nil)
 	err := s.Update(1, &models.Customer{
 		Name:         "Atualizado",
 		CustomerType: "PJ",
@@ -178,7 +178,7 @@ func TestCustomerDelete(t *testing.T) {
 			{ID: 1, Name: "Cliente", CustomerType: "PF", Status: "Ativo"},
 		},
 	}
-	s := NewCustomerService(mock)
+	s := NewCustomerService(mock, nil)
 	err := s.Delete(1)
 	if err != nil {
 		t.Fatalf("erro ao deletar: %v", err)
@@ -191,7 +191,7 @@ func TestCustomerDelete(t *testing.T) {
 
 func TestCustomerCreateWithCPFAndCNPJValidations(t *testing.T) {
 	mock := &mockCustomerRepo{}
-	s := NewCustomerService(mock)
+	s := NewCustomerService(mock, nil)
 
 	t.Run("PF com CPF valido", func(t *testing.T) {
 		cpf := "52998224725"
@@ -216,7 +216,7 @@ func TestCustomerCreateWithCPFAndCNPJValidations(t *testing.T) {
 
 func TestCustomerEmailValidation(t *testing.T) {
 	mock := &mockCustomerRepo{}
-	s := NewCustomerService(mock)
+	s := NewCustomerService(mock, nil)
 
 	err := s.Create(&models.Customer{
 		Name: "Teste", CustomerType: "PF", Status: "Ativo", Email: "email-invalido",

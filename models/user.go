@@ -2,6 +2,7 @@ package models
 
 import "time"
 
+// User represents a system user with authentication and personal data.
 type User struct {
 
 	ID           int       `json:"id"`
@@ -29,6 +30,7 @@ type User struct {
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
+// UserInput is the DTO for creating or updating a user.
 type UserInput struct {
 	Username            string     `json:"username"`
 	Password            string     `json:"password"`
@@ -48,30 +50,36 @@ type UserInput struct {
 	MustChangePassword  bool       `json:"must_change_password,omitempty"`
 }
 
+// LoginInput contains the credentials for user authentication.
 type LoginInput struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
 
+// LoginResponse returns the JWT access/refresh tokens and the authenticated user profile.
 type LoginResponse struct {
 	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
 	User         User   `json:"user"`
 }
 
+// RefreshRequest is used to obtain a new access token from a refresh token.
 type RefreshRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }
 
+// ForgotPasswordRequest triggers a password reset email for the given username.
 type ForgotPasswordRequest struct {
 	Username string `json:"username"`
 }
 
+// ResetPasswordRequest carries the password reset token and the new password.
 type ResetPasswordRequest struct {
 	Token       string `json:"token"`
 	NewPassword string `json:"new_password"`
 }
 
+// LogoutRequest invalidates a refresh token, effectively logging the user out.
 type LogoutRequest struct {
 	RefreshToken string `json:"refresh_token"`
 }

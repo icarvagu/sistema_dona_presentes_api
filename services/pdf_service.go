@@ -28,6 +28,8 @@ const (
 	companyWebsite = "www.donnapresentes.com.br"
 )
 
+// PDFService generates PDF documents for sales orders using an HTML template
+// rendered via a headless Chromium browser.
 type PDFService struct {
 	template *template.Template
 }
@@ -44,7 +46,7 @@ type pedidoTemplateData struct {
 	LogoDataURI         template.URL
 	SellerName          string
 	DataPedido          string
-	FinancialEmail     string
+	FinancialEmail      string
 	IsPF                bool
 	ClienteNome         string
 	ClienteEndereco     string
@@ -66,8 +68,8 @@ type pedidoTemplateData struct {
 	Observacoes         string
 	PrazoPagamento      string
 	Parcelas            []parcItem
-	ExternalNotes string
-	InternalNotes string
+	ExternalNotes       string
+	InternalNotes       string
 	LayoutURLs          []template.URL
 	Items               []pedidoItemData
 }
@@ -88,6 +90,7 @@ type pedidoItemData struct {
 	Obs                 string
 }
 
+// NewPDFService creates a PDFService by loading the sales order HTML template.
 func NewPDFService() (*PDFService, error) {
 	tmpl, err := template.ParseFiles("templates/pedido.html")
 	if err != nil {
@@ -96,6 +99,8 @@ func NewPDFService() (*PDFService, error) {
 	return &PDFService{template: tmpl}, nil
 }
 
+// GenerateOrderPDF renders the sales order HTML template and converts it to PDF
+// using a headless Chromium instance. Returns the PDF as raw bytes.
 func (s *PDFService) GenerateOrderPDF(sale *models.Sale) ([]byte, error) {
 	data := s.buildTemplateData(sale)
 	var buf bytes.Buffer
@@ -158,7 +163,7 @@ func (s *PDFService) buildTemplateData(sale *models.Sale) pedidoTemplateData {
 		LogoDataURI:     loadLogoDataURI(),
 		SellerName:      "-",
 		DataPedido:      sale.CreatedAt.Format("02/01/2006"),
-		FinancialEmail: "-",
+		FinancialEmail:  "-",
 		Vencimento:      "/  /",
 		ValorTotal:      formatMoney(sale.TotalValue),
 		ValorProdutos:   formatMoney(sale.TotalValue),

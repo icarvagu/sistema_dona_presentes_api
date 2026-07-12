@@ -2,6 +2,7 @@ package models
 
 import "time"
 
+// Carrier represents a shipping/transport company used for deliveries.
 type Carrier struct {
     ID              int        `json:"id"`
     Name            string     `json:"name"`

@@ -11,6 +11,8 @@ import (
 	"donapresentes/repositories"
 )
 
+// UserService manages user accounts including CRUD, password hashing,
+// CPF encryption/hashing, duplicate detection, and input validation.
 type UserService struct {
 	userRepo      *repositories.UserRepository
 	authService   *AuthService
@@ -18,6 +20,8 @@ type UserService struct {
 	auditService  *AuditService
 }
 
+// NewUserService creates a UserService with the required repositories,
+// auth service, crypto service, and audit trail.
 func NewUserService(userRepo *repositories.UserRepository, authService *AuthService, cryptoService *CryptoService, auditService *AuditService) *UserService {
 	return &UserService{
 		userRepo:      userRepo,
@@ -27,6 +31,7 @@ func NewUserService(userRepo *repositories.UserRepository, authService *AuthServ
 	}
 }
 
+// GetAll returns all users with password hashes stripped and CPF decrypted.
 func (s *UserService) GetAll() ([]models.User, error) {
 	users, err := s.userRepo.GetAll()
 	if err != nil {
@@ -44,6 +49,7 @@ func (s *UserService) GetAll() ([]models.User, error) {
 	return users, nil
 }
 
+// GetByID returns a single user by ID with password hash stripped and CPF decrypted.
 func (s *UserService) GetByID(id int) (*models.User, error) {
 	user, err := s.userRepo.GetByID(id)
 	if err != nil {
@@ -65,6 +71,8 @@ func (s *UserService) GetByID(id int) (*models.User, error) {
 	return user, nil
 }
 
+// Create registers a new user with sanitized input, duplicate checks
+// (username and CPF), password hashing, and CPF encryption.
 func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
 	input.Username = SanitizeUsername(input.Username)
 	input.FullName = SanitizeString(input.FullName)
@@ -107,21 +115,21 @@ func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
 	}
 
 	user := &models.User{
-		Username:            input.Username,
-		PasswordHash:        passwordHash,
-		Role:                input.Role,
-		Permissions:         input.Permissions,
-		FullName:            input.FullName,
-		CPF:                 encryptedCPF,
-		RG:                  input.RG,
-		BirthDate:           input.BirthDate,
-		Gender:              input.Gender,
-		Status:              input.Status,
-		ContactEmail:        input.ContactEmail,
-		FullAddress:         input.FullAddress,
-		ContactPhone:        input.ContactPhone,
-		Notes:               input.Notes,
-		MustChangePassword:  input.MustChangePassword,
+		Username:           input.Username,
+		PasswordHash:       passwordHash,
+		Role:               input.Role,
+		Permissions:        input.Permissions,
+		FullName:           input.FullName,
+		CPF:                encryptedCPF,
+		RG:                 input.RG,
+		BirthDate:          input.BirthDate,
+		Gender:             input.Gender,
+		Status:             input.Status,
+		ContactEmail:       input.ContactEmail,
+		FullAddress:        input.FullAddress,
+		ContactPhone:       input.ContactPhone,
+		Notes:              input.Notes,
+		MustChangePassword: input.MustChangePassword,
 	}
 
 	if user.Status == "" {
@@ -147,6 +155,9 @@ func (s *UserService) Create(input *models.UserInput) (*models.User, error) {
 	return created, nil
 }
 
+// Update modifies an existing user by ID. Validates input, checks for
+// duplicate username/CPF, re-encrypts CPF if changed, and optionally
+// updates the password.
 func (s *UserService) Update(id int, input *models.UserInput) (*models.User, error) {
 	input.Username = SanitizeUsername(input.Username)
 	input.FullName = SanitizeString(input.FullName)
@@ -240,6 +251,7 @@ func (s *UserService) Update(id int, input *models.UserInput) (*models.User, err
 	return updated, nil
 }
 
+// Delete removes a user by ID after verifying it exists.
 func (s *UserService) Delete(id int) error {
 
 	_, err := s.userRepo.GetByID(id)
@@ -257,6 +269,7 @@ func (s *UserService) Delete(id int) error {
 	return err
 }
 
+// SearchByFilter searches users by a text filter, returning matches with password hashes stripped.
 func (s *UserService) SearchByFilter(filter string) ([]models.User, error) {
 	users, err := s.userRepo.SearchByFilter(filter)
 	if err != nil {
@@ -268,6 +281,10 @@ func (s *UserService) SearchByFilter(filter string) ([]models.User, error) {
 	return users, nil
 }
 
+// validateUserInput enforces user field rules:
+// username must be at least 3 characters; password complexity (when required);
+// role must be admin/gerente/standard; status must be Ativo/Inativo;
+// gender must be Masculino/Feminino/Outro; CPF must have at least 11 digits.
 func (s *UserService) validateUserInput(input *models.UserInput, requirePassword bool) error {
 
 	if strings.TrimSpace(input.Username) == "" {

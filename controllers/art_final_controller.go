@@ -15,8 +15,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// artFinalService provides operations for art final tasks, stories, and layout management.
 var artFinalService *services.ArtFinalService
 
+// InitArtFinalService initializes the art final service with the required repository.
 func InitArtFinalService() {
 	artFinalService = services.NewArtFinalService(repositories.NewArtFinalRepository(config.DB), auditService)
 }
@@ -64,6 +66,7 @@ func parseArtFinalDate(raw string) (*time.Time, error) {
 	return &t, nil
 }
 
+// GetArtFinalDashboard handles GET /art-final/dashboard — returns dashboard data filtered by category, status, and date range.
 func GetArtFinalDashboard(w http.ResponseWriter, r *http.Request) {
 	access := artFinalAccess(r)
 	if !canAccessArtFinal(access) {
@@ -88,6 +91,7 @@ func GetArtFinalDashboard(w http.ResponseWriter, r *http.Request) {
 	workflowJSON(w, http.StatusOK, data)
 }
 
+// CreateArtFinalTask handles POST /art-final/tasks — creates a new art final task.
 func CreateArtFinalTask(w http.ResponseWriter, r *http.Request) {
 	var input models.ArtFinalTaskInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -107,6 +111,7 @@ func CreateArtFinalTask(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, map[string]int64{"id": id})
 }
+// UpdateArtFinalTask handles PUT /art-final/tasks/{id} — updates an existing art final task.
 func UpdateArtFinalTask(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(mux.Vars(r)["id"], 10, 64)
 	if err != nil {
@@ -130,6 +135,7 @@ func UpdateArtFinalTask(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// CreateArtFinalStory handles POST /art-final/stories — creates a new art final story.
 func CreateArtFinalStory(w http.ResponseWriter, r *http.Request) {
 	if !artFinalAccess(r).Stories {
 		workflowForbidden(w)
@@ -148,6 +154,7 @@ func CreateArtFinalStory(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, map[string]int64{"id": id})
 }
+// CheckArtFinalStory handles PATCH /art-final/stories/{id}/check — marks a story as checked or unchecked.
 func CheckArtFinalStory(w http.ResponseWriter, r *http.Request) {
 	if !artFinalAccess(r).Stories {
 		workflowForbidden(w)
@@ -172,6 +179,7 @@ func CheckArtFinalStory(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// DeleteArtFinalStory handles DELETE /art-final/stories/{id} — deletes an art final story.
 func DeleteArtFinalStory(w http.ResponseWriter, r *http.Request) {
 	if !artFinalAccess(r).Stories {
 		workflowForbidden(w)
@@ -190,6 +198,7 @@ func DeleteArtFinalStory(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// ListLayoutRequests handles GET /art-final/layout/requests — lists all layout requests for the current user.
 func ListLayoutRequests(w http.ResponseWriter, r *http.Request) {
 	access := artFinalAccess(r)
 	if !access.Layout && !access.Corel && !access.Engraving {
@@ -203,6 +212,7 @@ func ListLayoutRequests(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusOK, data)
 }
+// GetLayoutRequest handles GET /art-final/layout/requests/{id} — returns a single layout request by ID.
 func GetLayoutRequest(w http.ResponseWriter, r *http.Request) {
 	access := artFinalAccess(r)
 	if !access.Layout && !access.Corel && !access.Engraving {
@@ -221,6 +231,7 @@ func GetLayoutRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusOK, data)
 }
+// CreateLayoutRequest handles POST /art-final/layout/requests — creates a new layout request.
 func CreateLayoutRequest(w http.ResponseWriter, r *http.Request) {
 	access := artFinalAccess(r)
 	if !access.Layout {
@@ -240,6 +251,7 @@ func CreateLayoutRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, map[string]int64{"id": id})
 }
+// TransitionLayoutRequest handles PATCH /art-final/layout/requests/{id}/transition — transitions a layout request to a new status.
 func TransitionLayoutRequest(w http.ResponseWriter, r *http.Request) {
 	access := artFinalAccess(r)
 	if !access.Manage {
@@ -263,6 +275,7 @@ func TransitionLayoutRequest(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// AddLayoutMessage handles POST /art-final/layout/requests/{id}/messages — adds a message to a layout request.
 func AddLayoutMessage(w http.ResponseWriter, r *http.Request) {
 	access := artFinalAccess(r)
 	if !access.Layout && !access.Corel && !access.Engraving {
@@ -286,6 +299,7 @@ func AddLayoutMessage(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// AddLayoutVersion handles POST /art-final/layout/items/{itemId}/versions — adds a new version to a layout item.
 func AddLayoutVersion(w http.ResponseWriter, r *http.Request) {
 	if !artFinalAccess(r).Manage {
 		workflowForbidden(w)
@@ -309,6 +323,7 @@ func AddLayoutVersion(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, map[string]int64{"id": versionID})
 }
+// DecideLayoutVersion handles PATCH /art-final/layout/versions/{versionId}/decision — approves or rejects a layout version.
 func DecideLayoutVersion(w http.ResponseWriter, r *http.Request) {
 	access := artFinalAccess(r)
 	if !access.Layout {
@@ -332,6 +347,7 @@ func DecideLayoutVersion(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// UpsertLayoutJob handles PUT /art-final/layout/items/{itemId}/jobs/{kind} — creates or updates a layout job (corel or engraving).
 func UpsertLayoutJob(w http.ResponseWriter, r *http.Request) {
 	access := artFinalAccess(r)
 	kind := mux.Vars(r)["kind"]
@@ -356,6 +372,7 @@ func UpsertLayoutJob(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// ConfirmLayoutProduct handles PATCH /art-final/layout/items/{itemId}/product-received — confirms whether a product was received.
 func ConfirmLayoutProduct(w http.ResponseWriter, r *http.Request) {
 	access := artFinalAccess(r)
 	if !access.Admin && !access.ProductionProfile && !access.Purchases {
@@ -381,6 +398,7 @@ func ConfirmLayoutProduct(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// UpdateStoryLifecycle handles PATCH /art-final/stories/{id}/lifecycle — updates the lifecycle stage of a story.
 func UpdateStoryLifecycle(w http.ResponseWriter, r *http.Request) {
 	if !artFinalAccess(r).Stories {
 		workflowForbidden(w)

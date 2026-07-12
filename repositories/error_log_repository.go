@@ -7,10 +7,12 @@ import (
 	apperrors "donapresentes/errors"
 )
 
+// ErrorLogRepository handles all database operations for the error_logs table.
 type ErrorLogRepository struct {
 	db *sql.DB
 }
 
+// ErrorLogRecord represents a row from the error_logs table.
 type ErrorLogRecord struct {
 	RequestID   string
 	UserID      *int
@@ -22,10 +24,12 @@ type ErrorLogRecord struct {
 	CreatedAt   time.Time
 }
 
+// NewErrorLogRepository creates a new ErrorLogRepository with the given database connection.
 func NewErrorLogRepository(db *sql.DB) *ErrorLogRepository {
 	return &ErrorLogRepository{db: db}
 }
 
+// Insert inserts a new error log record into the database.
 func (r *ErrorLogRepository) Insert(record *ErrorLogRecord) error {
 	_, err := r.db.Exec(
 		`INSERT INTO error_logs (request_id, user_id, error_code, error_message, stack_trace, path, method, created_at)

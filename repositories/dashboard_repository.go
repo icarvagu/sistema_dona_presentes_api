@@ -6,14 +6,17 @@ import (
 	"time"
 )
 
+// DashboardRepository handles aggregate database queries for the dashboard views.
 type DashboardRepository struct {
 	db *sql.DB
 }
 
+// NewDashboardRepository creates a new DashboardRepository with the given database connection.
 func NewDashboardRepository(db *sql.DB) *DashboardRepository {
 	return &DashboardRepository{db: db}
 }
 
+// CountCustomers returns the total number of customers in the database.
 func (r *DashboardRepository) CountCustomers() (int, error) {
 	var total int
 	if err := r.db.QueryRow(`SELECT COUNT(*) FROM customers`).Scan(&total); err != nil {
@@ -22,6 +25,7 @@ func (r *DashboardRepository) CountCustomers() (int, error) {
 	return total, nil
 }
 
+// CountProducts returns the total number of products in the database.
 func (r *DashboardRepository) CountProducts() (int, error) {
 	var total int
 	if err := r.db.QueryRow(`SELECT COUNT(*) FROM products`).Scan(&total); err != nil {
@@ -30,6 +34,7 @@ func (r *DashboardRepository) CountProducts() (int, error) {
 	return total, nil
 }
 
+// CountQuotesBySeller returns the total number of quotes for a given seller from the database.
 func (r *DashboardRepository) CountQuotesBySeller(sellerID int) (int, error) {
 	var total int
 	if err := r.db.QueryRow(`SELECT COUNT(*) FROM quotes WHERE seller_id=$1`, sellerID).Scan(&total); err != nil {
@@ -38,6 +43,7 @@ func (r *DashboardRepository) CountQuotesBySeller(sellerID int) (int, error) {
 	return total, nil
 }
 
+// GetQuoteSituationSummary returns totals for quotes grouped by their validity status for a seller.
 func (r *DashboardRepository) GetQuoteSituationSummary(sellerID int) (int, int, int, int, error) {
 	var total, overdue, soon, withoutDate int
 	err := r.db.QueryRow(
@@ -54,6 +60,7 @@ func (r *DashboardRepository) GetQuoteSituationSummary(sellerID int) (int, int, 
 	return total, overdue, soon, withoutDate, nil
 }
 
+// QuoteFeedbackAlert represents a feedback alert row from the dashboard queries.
 type QuoteFeedbackAlert struct {
 	OrcamentoID         int
 	Cliente             string
@@ -63,6 +70,7 @@ type QuoteFeedbackAlert struct {
 	Observacao          string
 }
 
+// ListQuoteFeedbackAlerts returns quotes that need feedback attention (overdue or expiring within 7 days).
 func (r *DashboardRepository) ListQuoteFeedbackAlerts(sellerID int) ([]QuoteFeedbackAlert, error) {
 	rows, err := r.db.Query(`SELECT q.id, COALESCE(c.name, ''), q.quote_valid_until, q.feedback_datetime, COALESCE(q.feedback_observation, ''), COALESCE(q.observations, '')
 		FROM quotes q
@@ -91,6 +99,7 @@ func (r *DashboardRepository) ListQuoteFeedbackAlerts(sellerID int) ([]QuoteFeed
 	return alerts, nil
 }
 
+// SaleSituationRow represents a row from the sales situation dashboard query.
 type SaleSituationRow struct {
 	SaleID        int
 	Status        string
@@ -99,6 +108,7 @@ type SaleSituationRow struct {
 	ArrivalDate   sql.NullTime
 }
 
+// ListSalesSituacao returns sales with a specific status for a seller from the database.
 func (r *DashboardRepository) ListSalesSituacao(sellerID int) ([]SaleSituationRow, error) {
 	rows, err := r.db.Query(`SELECT id, status, delivery_date, departure_date, arrival_date
 		FROM sales
@@ -120,6 +130,7 @@ func (r *DashboardRepository) ListSalesSituacao(sellerID int) ([]SaleSituationRo
 	return sales, nil
 }
 
+// CountSalesThisMonth returns the total sales, completed sales, and estimated commission for the current month.
 func (r *DashboardRepository) CountSalesThisMonth(sellerID int) (int, int, float64, error) {
 	var totalMonth, completedMonth int
 	var commission float64

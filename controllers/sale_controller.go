@@ -18,9 +18,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// saleService provides CRUD operations for sales (vendas).
 var saleService *services.SaleService
+
+// pdfService generates PDF documents for sales (pedidos).
 var pdfService *services.PDFService
 
+// InitSaleService initializes the sale and PDF services with the required repositories.
 func InitSaleService() {
 	saleRepo := repositories.NewSaleRepository(config.DB)
 	userRepo := repositories.NewUserRepository(config.DB)
@@ -36,6 +40,7 @@ func InitSaleService() {
 	}
 }
 
+// GetSales handles GET /sales — returns sales for the current seller (or all if the user has the ver_todos permission).
 func GetSales(w http.ResponseWriter, r *http.Request) {
 	userID, _, _ := middleware.GetUserFromRequest(r)
 	var vs []models.Sale
@@ -53,6 +58,7 @@ func GetSales(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(vs)
 }
 
+// GetSale handles GET /sales/{id} — returns a single sale by ID (owner or ver_todos permission required).
 func GetSale(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -78,6 +84,7 @@ func GetSale(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(v)
 }
 
+// CreateSale handles POST /sales — creates a new sale.
 func CreateSale(w http.ResponseWriter, r *http.Request) {
 	var input models.SaleInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -103,6 +110,7 @@ func CreateSale(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(v)
 }
 
+// UpdateSale handles PUT /sales/{id} — updates an existing sale (owner or ver_todos permission required).
 func UpdateSale(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -142,6 +150,7 @@ func UpdateSale(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(v)
 }
 
+// GetSalePDF handles GET /sales/{id}/pdf — generates and returns a PDF document for a sale (pedido).
 func GetSalePDF(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -184,6 +193,7 @@ func GetSalePDF(w http.ResponseWriter, r *http.Request) {
 	w.Write(pdfBytes)
 }
 
+// DeleteSale handles DELETE /sales/{id} — deletes a sale by ID (owner or ver_todos permission required).
 func DeleteSale(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -208,6 +218,7 @@ func DeleteSale(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdateSaleLayout handles PUT /sales/{id}/layout — updates the layout URLs for a sale.
 func UpdateSaleLayout(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])

@@ -17,6 +17,8 @@ import (
 	"github.com/chromedp/chromedp"
 )
 
+// QuotePDFService generates PDF documents for quotations using an HTML template
+// rendered via a headless Chromium browser.
 type QuotePDFService struct {
 	template *template.Template
 }
@@ -52,6 +54,7 @@ type quoteTemplateItem struct {
 	TotalPrice      string
 }
 
+// NewQuotePDFService creates a QuotePDFService by loading the quotation HTML template.
 func NewQuotePDFService() (*QuotePDFService, error) {
 	tmpl, err := template.ParseFiles("templates/orcamento.html")
 	if err != nil {
@@ -60,6 +63,8 @@ func NewQuotePDFService() (*QuotePDFService, error) {
 	return &QuotePDFService{template: tmpl}, nil
 }
 
+// GenerateQuotePDF renders the quotation HTML template and converts it to PDF
+// using a headless Chromium instance. Returns the PDF as raw bytes.
 func (s *QuotePDFService) GenerateQuotePDF(quote *models.Quote) ([]byte, error) {
 	data := s.buildTemplateData(quote)
 	var buf bytes.Buffer

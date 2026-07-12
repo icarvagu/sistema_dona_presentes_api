@@ -9,11 +9,15 @@ import (
 	"donapresentes/repositories"
 )
 
+// ProductionService manages the full production order lifecycle including
+// receipt, inspection, engraving, shipment, delivery, supply management,
+// and occurrence tracking with role-based access control.
 type ProductionService struct {
 	repo         *repositories.ProductionRepository
 	auditService *AuditService
 }
 
+// NewProductionService creates a ProductionService with the required repository and audit trail.
 func NewProductionService(repo *repositories.ProductionRepository, auditService *AuditService) *ProductionService {
 	return &ProductionService{repo: repo, auditService: auditService}
 }
@@ -36,6 +40,9 @@ var productionTransitions = map[string]map[string]bool{
 	models.ProductionDelivered:          {models.ProductionCompleted: true},
 }
 
+// ValidProductionTransition validates whether a status transition is allowed
+// based on the production state machine. It enforces engraving flow, first piece
+// approval requirements, and prevents skipping mandatory steps.
 func ValidProductionTransition(from, to string, hasEngraving, firstPiece bool) error {
 	if !productionTransitions[from][to] {
 		return errors.New("transição de produção inválida")
@@ -54,12 +61,17 @@ func ValidProductionTransition(from, to string, hasEngraving, firstPiece bool) e
 	}
 	return nil
 }
+
+// List returns production orders filtered by the given criteria, respecting access scope.
 func (s *ProductionService) List(f models.ProductionFilters, a models.ProductionAccess) ([]models.ProductionOrder, error) {
 	if !a.CanView() {
 		return nil, errors.New("acesso negado")
 	}
 	return s.repo.List(f, a)
 }
+
+// Get returns a single production order with access control: admins see everything,
+// sales see only their own orders, drivers see only assigned orders.
 func (s *ProductionService) Get(id int64, a models.ProductionAccess) (*models.ProductionOrder, error) {
 	if !a.CanView() {
 		return nil, errors.New("acesso negado")
@@ -76,6 +88,8 @@ func (s *ProductionService) Get(id int64, a models.ProductionAccess) (*models.Pr
 	}
 	return o, nil
 }
+
+// Dashboard returns aggregated production data with status counts and order list.
 func (s *ProductionService) Dashboard(f models.ProductionFilters, a models.ProductionAccess) (map[string]interface{}, error) {
 	orders, e := s.List(f, a)
 	if e != nil {
@@ -87,6 +101,9 @@ func (s *ProductionService) Dashboard(f models.ProductionFilters, a models.Produ
 	}
 	return map[string]interface{}{"counts": counts, "orders": orders, "total": len(orders)}, nil
 }
+
+// Assign sets priority and assignment on a production order (requires Admin or Production role).
+// Priority must be between 0 and 3.
 func (s *ProductionService) Assign(id int64, in models.ProductionAssignmentInput, a models.ProductionAccess) error {
 	if !(a.Admin || a.Production) {
 		return errors.New("atribuição exige Produção")
@@ -100,6 +117,8 @@ func (s *ProductionService) Assign(id int64, in models.ProductionAssignmentInput
 	}
 	return err
 }
+
+// Receipt records material receipt for a production order with idempotency protection.
 func (s *ProductionService) Receipt(id int64, in models.ProductionReceiptInput, a models.ProductionAccess) (*models.ProductionOrder, error) {
 	if !a.CanOperate() && !a.Purchases {
 		return nil, errors.New("acesso negado")
@@ -118,6 +137,8 @@ func (s *ProductionService) Receipt(id int64, in models.ProductionReceiptInput, 
 	}
 	return p, err
 }
+
+// Occurrence registers a problem on a production order. Severity must be "PARCIAL" or "BLOQUEANTE".
 func (s *ProductionService) Occurrence(id int64, in models.ProductionOccurrenceInput, a models.ProductionAccess) (*models.ProductionOrder, error) {
 	if !a.CanOperate() && !a.Purchases {
 		return nil, errors.New("acesso negado")
@@ -131,6 +152,8 @@ func (s *ProductionService) Occurrence(id int64, in models.ProductionOccurrenceI
 	}
 	return s.repo.AddOccurrence(id, in, a.UserID)
 }
+
+// ResolveOccurrence marks a production occurrence as resolved with a mandatory resolution note.
 func (s *ProductionService) ResolveOccurrence(id, occ int64, in models.ProductionOccurrenceResolutionInput, a models.ProductionAccess) error {
 	if !a.CanOperate() && !a.Purchases {
 		return errors.New("acesso negado")
@@ -140,6 +163,10 @@ func (s *ProductionService) ResolveOccurrence(id, occ int64, in models.Productio
 	}
 	return s.repo.ResolveOccurrence(id, occ, in.Resolution, a.UserID)
 }
+
+// Transition advances a production order to the next status with validation
+// of the state machine and role-based access. Different transitions require
+// different roles (Production, Sales, Inspection, Logistics, Driver).
 func (s *ProductionService) Transition(id int64, in models.ProductionTransitionInput, a models.ProductionAccess) error {
 	o, e := s.Get(id, a)
 	if e != nil {
@@ -176,6 +203,9 @@ func (s *ProductionService) Transition(id int64, in models.ProductionTransitionI
 	}
 	return err
 }
+
+// Event records a time-based event on a production order with idempotency protection.
+// Drivers can only record events on orders assigned to them.
 func (s *ProductionService) Event(id int64, in models.ProductionEventInput, a models.ProductionAccess) error {
 	if !(a.Admin || a.Production || a.Logistics || a.Driver) {
 		return errors.New("acesso negado")
@@ -188,6 +218,8 @@ func (s *ProductionService) Event(id int64, in models.ProductionEventInput, a mo
 	}
 	return s.repo.AddEvent(id, in, a.UserID)
 }
+
+// Volume adds a volume/package label to a production order (requires Admin, Production, or Logistics).
 func (s *ProductionService) Volume(id int64, in models.ProductionVolumeInput, a models.ProductionAccess) error {
 	if !(a.Admin || a.Production || a.Logistics) {
 		return errors.New("acesso negado")
@@ -197,6 +229,8 @@ func (s *ProductionService) Volume(id int64, in models.ProductionVolumeInput, a 
 	}
 	return s.repo.AddVolume(id, in, a.UserID)
 }
+
+// Fiscal records a fiscal document (NF, etc.) on a production order (requires Admin, Finance, Board, or Logistics).
 func (s *ProductionService) Fiscal(id int64, in models.ProductionFiscalInput, a models.ProductionAccess) error {
 	if !(a.Admin || a.Finance || a.Board || a.Logistics) {
 		return errors.New("acesso negado")
@@ -206,6 +240,9 @@ func (s *ProductionService) Fiscal(id int64, in models.ProductionFiscalInput, a 
 	}
 	return s.repo.AddFiscal(id, in, a.UserID)
 }
+
+// Shipment records shipment details on a production order (requires Admin, Logistics, or Driver).
+// Drivers can only record shipment for orders assigned to them.
 func (s *ProductionService) Shipment(id int64, in models.ProductionShipmentInput, a models.ProductionAccess) error {
 	if !(a.Admin || a.Logistics || a.Driver) {
 		return errors.New("acesso negado")
@@ -218,12 +255,17 @@ func (s *ProductionService) Shipment(id int64, in models.ProductionShipmentInput
 	}
 	return s.repo.UpsertShipment(id, in, a.UserID)
 }
+
+// Supplies lists all production supplies (requires Admin, Production, or Purchases).
 func (s *ProductionService) Supplies(a models.ProductionAccess) ([]map[string]interface{}, error) {
 	if !(a.Admin || a.Production || a.Purchases) {
 		return nil, errors.New("acesso negado")
 	}
 	return s.repo.ListSupplies()
 }
+
+// CreateSupply registers a new production supply with zero initial balance.
+// Initial inventory must be zero; use MoveSupply to record the first entry.
 func (s *ProductionService) CreateSupply(in models.ProductionSupplyInput, a models.ProductionAccess) (int64, error) {
 	if !(a.Admin || a.Production || a.Purchases) {
 		return 0, errors.New("acesso negado")
@@ -236,6 +278,9 @@ func (s *ProductionService) CreateSupply(in models.ProductionSupplyInput, a mode
 	}
 	return s.repo.CreateSupply(in)
 }
+
+// MoveSupply records a stock movement (entry or exit) for a production supply.
+// Entry movements require supplier, invoice number, and invoice file URL.
 func (s *ProductionService) MoveSupply(in models.ProductionSupplyMovementInput, a models.ProductionAccess) error {
 	if !(a.Admin || a.Production || a.Purchases) {
 		return errors.New("acesso negado")

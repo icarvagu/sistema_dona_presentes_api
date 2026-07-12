@@ -13,8 +13,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// productionService provides operations for production order management, receipts, occurrences, and supplies.
 var productionService *services.ProductionService
 
+// InitProductionService initializes the production service with the required repository.
 func InitProductionService() {
 	productionService = services.NewProductionService(repositories.NewProductionRepository(config.DB), auditService)
 }
@@ -44,6 +46,7 @@ func productionFilters(r *http.Request) (models.ProductionFilters, error) {
 	}
 	return f, nil
 }
+// GetProductionDashboard handles GET /production/dashboard — returns dashboard data filtered by status, search, owner, and priority.
 func GetProductionDashboard(w http.ResponseWriter, r *http.Request) {
 	a := productionAccess(r)
 	f, e := productionFilters(r)
@@ -58,6 +61,7 @@ func GetProductionDashboard(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusOK, data)
 }
+// ListProductionOrders handles GET /production/orders — lists production orders with optional filters.
 func ListProductionOrders(w http.ResponseWriter, r *http.Request) {
 	a := productionAccess(r)
 	f, e := productionFilters(r)
@@ -72,6 +76,7 @@ func ListProductionOrders(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusOK, data)
 }
+// AssignProductionOrder handles PATCH /production/orders/{id}/assignment — assigns a production order to a user.
 func AssignProductionOrder(w http.ResponseWriter, r *http.Request) {
 	id, e := productionID(r)
 	if e != nil {
@@ -89,6 +94,7 @@ func AssignProductionOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// GetProductionOrder handles GET /production/orders/{id} — returns a single production order by ID.
 func GetProductionOrder(w http.ResponseWriter, r *http.Request) {
 	id, e := productionID(r)
 	if e != nil {
@@ -102,6 +108,7 @@ func GetProductionOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusOK, data)
 }
+// AddProductionReceipt handles POST /production/orders/{id}/receipts — adds a receipt entry to a production order.
 func AddProductionReceipt(w http.ResponseWriter, r *http.Request) {
 	id, e := productionID(r)
 	if e != nil {
@@ -123,6 +130,7 @@ func AddProductionReceipt(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, data)
 }
+// AddProductionOccurrence handles POST /production/orders/{id}/occurrences — adds an occurrence to a production order.
 func AddProductionOccurrence(w http.ResponseWriter, r *http.Request) {
 	id, e := productionID(r)
 	if e != nil {
@@ -141,6 +149,7 @@ func AddProductionOccurrence(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, data)
 }
+// ResolveProductionOccurrence handles PATCH /production/orders/{id}/occurrences/{occurrenceId}/resolve — resolves an occurrence on a production order.
 func ResolveProductionOccurrence(w http.ResponseWriter, r *http.Request) {
 	id, e := productionID(r)
 	if e != nil {
@@ -163,6 +172,7 @@ func ResolveProductionOccurrence(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// TransitionProductionOrder handles PATCH /production/orders/{id}/transition — transitions the status of a production order.
 func TransitionProductionOrder(w http.ResponseWriter, r *http.Request) {
 	id, e := productionID(r)
 	if e != nil {
@@ -180,6 +190,7 @@ func TransitionProductionOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// AddProductionEvent handles POST /production/orders/{id}/engraving-events — adds an engraving event to a production order.
 func AddProductionEvent(w http.ResponseWriter, r *http.Request) {
 	id, e := productionID(r)
 	if e != nil {
@@ -200,6 +211,7 @@ func AddProductionEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 }
+// AddProductionVolume handles POST /production/orders/{id}/volumes — adds volume tracking data to a production order.
 func AddProductionVolume(w http.ResponseWriter, r *http.Request) {
 	id, e := productionID(r)
 	if e != nil {
@@ -217,6 +229,7 @@ func AddProductionVolume(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 }
+// AddProductionFiscal handles POST /production/orders/{id}/fiscal — adds fiscal/invoice data to a production order.
 func AddProductionFiscal(w http.ResponseWriter, r *http.Request) {
 	id, e := productionID(r)
 	if e != nil {
@@ -234,6 +247,7 @@ func AddProductionFiscal(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusCreated)
 }
+// UpsertProductionShipment handles PUT /production/orders/{id}/shipment — creates or updates shipment info for a production order.
 func UpsertProductionShipment(w http.ResponseWriter, r *http.Request) {
 	id, e := productionID(r)
 	if e != nil {
@@ -251,6 +265,7 @@ func UpsertProductionShipment(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// ListProductionSupplies handles GET /production/supplies — lists all production supplies.
 func ListProductionSupplies(w http.ResponseWriter, r *http.Request) {
 	data, e := productionService.Supplies(productionAccess(r))
 	if e != nil {
@@ -259,6 +274,7 @@ func ListProductionSupplies(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusOK, data)
 }
+// CreateProductionSupply handles POST /production/supplies — creates a new production supply entry.
 func CreateProductionSupply(w http.ResponseWriter, r *http.Request) {
 	var in models.ProductionSupplyInput
 	if e := decodeProduction(r, &in); e != nil {
@@ -272,6 +288,7 @@ func CreateProductionSupply(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, map[string]int64{"id": id})
 }
+// MoveProductionSupply handles POST /production/supplies/movements — records a movement (in/out) of a production supply.
 func MoveProductionSupply(w http.ResponseWriter, r *http.Request) {
 	var in models.ProductionSupplyMovementInput
 	if e := decodeProduction(r, &in); e != nil {

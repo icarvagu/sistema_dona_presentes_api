@@ -10,8 +10,12 @@ import (
 	"github.com/lib/pq"
 )
 
+// ArtFinalRepository handles all database operations for art final workflows,
+// including layout requests, layout versions, Corel jobs, engraving jobs,
+// tasks, stories, and related audit/notification tables.
 type ArtFinalRepository struct{ db *sql.DB }
 
+// NewArtFinalRepository creates a new ArtFinalRepository with the given database connection.
 func NewArtFinalRepository(db *sql.DB) *ArtFinalRepository { return &ArtFinalRepository{db: db} }
 
 func ensureActiveArtFinalUser(tx *sql.Tx, id *int, permissions ...string) error {
@@ -28,6 +32,8 @@ func ensureActiveArtFinalUser(tx *sql.Tx, id *int, permissions ...string) error 
 	return nil
 }
 
+// Dashboard returns the art final dashboard data including pending items, media tasks,
+// production profiles, and stories based on access and filters.
 func (r *ArtFinalRepository) Dashboard(access models.ArtFinalAccess, filters models.ArtFinalFilters) (map[string]interface{}, error) {
 	result := map[string]interface{}{"manage": access.Manage, "marketing": access.Marketing || access.Admin, "layout": access.Layout, "purchases": access.Purchases, "production_profile": access.ProductionProfile, "corel": access.Corel, "engraving": access.Engraving, "can_confirm_product": access.Admin || access.ProductionProfile || access.Purchases}
 	queries := []struct {
@@ -146,6 +152,7 @@ func (r *ArtFinalRepository) Dashboard(access models.ArtFinalAccess, filters mod
 	return result, nil
 }
 
+// ListLayoutRequests returns all layout requests accessible to the given user from the database.
 func (r *ArtFinalRepository) ListLayoutRequests(access models.ArtFinalAccess) (json.RawMessage, error) {
 	var raw []byte
 	err := r.db.QueryRow(`SELECT COALESCE(jsonb_agg(row_to_json(x) ORDER BY x.priority DESC,x.due_at NULLS LAST,x.created_at DESC),'[]'::jsonb) FROM (
@@ -163,6 +170,7 @@ func (r *ArtFinalRepository) ListLayoutRequests(access models.ArtFinalAccess) (j
 	return json.RawMessage(raw), err
 }
 
+// GetLayoutRequest returns a single layout request with its groups, items, versions, jobs, and timeline.
 func (r *ArtFinalRepository) GetLayoutRequest(id int64, access models.ArtFinalAccess) (json.RawMessage, error) {
 	var raw []byte
 	err := r.db.QueryRow(`SELECT jsonb_build_object(
@@ -174,6 +182,7 @@ func (r *ArtFinalRepository) GetLayoutRequest(id int64, access models.ArtFinalAc
 	return json.RawMessage(raw), err
 }
 
+// AddLayoutMessage inserts a message into the audit log for a layout request.
 func (r *ArtFinalRepository) AddLayoutMessage(id int64, input models.LayoutMessageInput, userID int, access models.ArtFinalAccess) error {
 	result, err := r.db.Exec(`INSERT INTO art_final_audit_log(entity_type,entity_id,action,details,user_id)
 		SELECT 'layout_request',$1,'message',jsonb_build_object('message',$2,'file_url',$3),$4
@@ -191,6 +200,7 @@ func (r *ArtFinalRepository) AddLayoutMessage(id int64, input models.LayoutMessa
 	return nil
 }
 
+// CreateLayoutRequest inserts a new layout request with its items, groups, audit log, and notification.
 func (r *ArtFinalRepository) CreateLayoutRequest(input models.LayoutRequestInput, userID int, access models.ArtFinalAccess) (int64, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -264,6 +274,7 @@ func (r *ArtFinalRepository) CreateLayoutRequest(input models.LayoutRequestInput
 	return id, tx.Commit()
 }
 
+// TransitionLayoutRequest transitions a layout request through its allowed status workflow.
 func (r *ArtFinalRepository) TransitionLayoutRequest(id int64, status, note string, userID int) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -304,6 +315,7 @@ func (r *ArtFinalRepository) TransitionLayoutRequest(id int64, status, note stri
 	return tx.Commit()
 }
 
+// AddLayoutVersion uploads a new layout version for a request item, advancing its approval status.
 func (r *ArtFinalRepository) AddLayoutVersion(requestItemID int64, input models.LayoutVersionInput, userID int) (int64, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -346,6 +358,7 @@ func (r *ArtFinalRepository) AddLayoutVersion(requestItemID int64, input models.
 	return id, tx.Commit()
 }
 
+// DecideLayoutVersion approves or requests changes on the latest layout version of a request item.
 func (r *ArtFinalRepository) DecideLayoutVersion(versionID int64, status, note string, userID int, access models.ArtFinalAccess) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -412,6 +425,7 @@ func (r *ArtFinalRepository) DecideLayoutVersion(versionID int64, status, note s
 	return tx.Commit()
 }
 
+// UpsertLayoutJob creates or updates a Corel or engraving job for a layout request item.
 func (r *ArtFinalRepository) UpsertLayoutJob(kind string, requestItemID int64, input models.LayoutJobInput, userID int, access models.ArtFinalAccess) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -501,6 +515,7 @@ func (r *ArtFinalRepository) UpsertLayoutJob(kind string, requestItemID int64, i
 	return tx.Commit()
 }
 
+// ConfirmProductReceived marks a sale item as physically received (or not) for production purposes.
 func (r *ArtFinalRepository) ConfirmProductReceived(requestItemID int64, received bool, userID int, access models.ArtFinalAccess) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -535,6 +550,7 @@ func (r *ArtFinalRepository) ConfirmProductReceived(requestItemID int64, receive
 	return tx.Commit()
 }
 
+// UpdateStoryLifecycle transitions a story through its lifecycle (draft, published, returned, corrected, expired).
 func (r *ArtFinalRepository) UpdateStoryLifecycle(id int64, input models.StoryLifecycleInput, userID int) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -566,6 +582,7 @@ func (r *ArtFinalRepository) UpdateStoryLifecycle(id int64, input models.StoryLi
 	return tx.Commit()
 }
 
+// CreateTask inserts a new art final task into the database.
 func (r *ArtFinalRepository) CreateTask(input models.ArtFinalTaskInput, userID int) (int64, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -598,6 +615,7 @@ func (r *ArtFinalRepository) CreateTask(input models.ArtFinalTaskInput, userID i
 	return id, tx.Commit()
 }
 
+// UpdateTask modifies an existing art final task, recording the before/after snapshot in the audit log.
 func (r *ArtFinalRepository) UpdateTask(id int64, input models.ArtFinalTaskInput, userID int, access models.ArtFinalAccess) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -650,6 +668,7 @@ func (r *ArtFinalRepository) UpdateTask(id int64, input models.ArtFinalTaskInput
 	return tx.Commit()
 }
 
+// CreateStory inserts a new art final story for a sale, returning an existing one if it already exists.
 func (r *ArtFinalRepository) CreateStory(input models.ArtFinalStoryInput, userID int) (int64, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -689,6 +708,7 @@ func (r *ArtFinalRepository) CreateStory(input models.ArtFinalStoryInput, userID
 	return id, tx.Commit()
 }
 
+// CheckStory marks a story as published/checked or returned/unchecked in the database.
 func (r *ArtFinalRepository) CheckStory(id int64, checked bool, userID int) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -727,6 +747,7 @@ func (r *ArtFinalRepository) CheckStory(id int64, checked bool, userID int) erro
 	return tx.Commit()
 }
 
+// DeleteStory removes an art final story from the database and records the deletion in the audit log.
 func (r *ArtFinalRepository) DeleteStory(id int64, userID int) error {
 	tx, err := r.db.Begin()
 	if err != nil {

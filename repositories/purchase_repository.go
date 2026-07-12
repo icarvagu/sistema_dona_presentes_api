@@ -8,11 +8,14 @@ import (
 	"donapresentes/models"
 )
 
+// PurchaseRepository handles all database operations for purchase_orders and related tables
+// (purchase_history, purchase_attachments, purchase_emails, purchase_payments, purchase_issues, notifications).
 type PurchaseRepository struct {
 	db       *sql.DB
 	saleRepo *SaleRepository
 }
 
+// NewPurchaseRepository creates a new PurchaseRepository with the given database connection.
 func NewPurchaseRepository(db *sql.DB) *PurchaseRepository {
 	return &PurchaseRepository{db: db, saleRepo: NewSaleRepository(db)}
 }
@@ -52,6 +55,7 @@ func scanPurchase(row scanner) (*models.PurchaseOrder, error) {
 	return &p, err
 }
 
+// List returns purchase orders from the database, optionally filtered by is_sample.
 func (r *PurchaseRepository) List(isSample *bool) ([]models.PurchaseOrder, error) {
 	query := `SELECT ` + purchaseColumns + ` FROM purchase_orders`
 	args := []interface{}{}
@@ -79,6 +83,7 @@ func (r *PurchaseRepository) List(isSample *bool) ([]models.PurchaseOrder, error
 	return result, rows.Err()
 }
 
+// GetByID returns a single purchase order by its primary key with full relations loaded.
 func (r *PurchaseRepository) GetByID(id int) (*models.PurchaseOrder, error) {
 	p, err := scanPurchase(r.db.QueryRow(`SELECT `+purchaseColumns+` FROM purchase_orders WHERE id=$1`, id))
 	if err != nil {
@@ -90,6 +95,7 @@ func (r *PurchaseRepository) GetByID(id int) (*models.PurchaseOrder, error) {
 	return p, nil
 }
 
+// GetBySaleID returns the purchase order associated with a given sale from the database.
 func (r *PurchaseRepository) GetBySaleID(saleID int) (*models.PurchaseOrder, error) {
 	p, err := scanPurchase(r.db.QueryRow(`SELECT `+purchaseColumns+` FROM purchase_orders WHERE sale_id=$1`, saleID))
 	if err != nil {
@@ -101,6 +107,7 @@ func (r *PurchaseRepository) GetBySaleID(saleID int) (*models.PurchaseOrder, err
 	return p, nil
 }
 
+// ReleaseSale creates or updates a purchase order for a sale and transitions the sale status to released.
 func (r *PurchaseRepository) ReleaseSale(saleID, userID int, isSample, sampleHasEngraving bool) (*models.PurchaseOrder, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -180,6 +187,7 @@ func (r *PurchaseRepository) ReleaseSale(saleID, userID int, isSample, sampleHas
 	return r.GetByID(purchaseID)
 }
 
+// Update modifies an existing purchase order record with the given input data.
 func (r *PurchaseRepository) Update(id int, input *models.PurchaseUpdateInput, userID int) error {
 	_, err := r.db.Exec(`UPDATE purchase_orders SET
 		buyer_id=$1, material_supplier_id=$2, engraving_supplier_id=$3,
@@ -204,6 +212,7 @@ func (r *PurchaseRepository) Update(id int, input *models.PurchaseUpdateInput, u
 	return err
 }
 
+// SetStatus updates the status of a purchase order and records the transition in the history.
 func (r *PurchaseRepository) SetStatus(id int, status string, userID int, action, details string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -246,16 +255,19 @@ func (r *PurchaseRepository) SetStatus(id int, status string, userID int, action
 	return tx.Commit()
 }
 
+// MarkCorelRequested records that a Corel file has been requested for a purchase order.
 func (r *PurchaseRepository) MarkCorelRequested(id, userID int) error {
 	_, err := r.db.Exec(`UPDATE purchase_orders SET corel_requested_at=NOW(),corel_requested_by=$1,updated_at=NOW() WHERE id=$2`, userID, id)
 	return err
 }
 
+// MarkCorelAttached records that a Corel file has been attached to a purchase order.
 func (r *PurchaseRepository) MarkCorelAttached(id, userID int) error {
 	_, err := r.db.Exec(`UPDATE purchase_orders SET corel_attached_at=NOW(),corel_attached_by=$1,updated_at=NOW() WHERE id=$2`, userID, id)
 	return err
 }
 
+// SetAcceptance marks material or engraving acceptance for a purchase order.
 func (r *PurchaseRepository) SetAcceptance(id int, engraving bool) error {
 	if engraving {
 		_, err := r.db.Exec(`UPDATE purchase_orders SET engraving_accepted=TRUE,engraving_accepted_at=NOW(),updated_at=NOW() WHERE id=$1`, id)
@@ -265,16 +277,19 @@ func (r *PurchaseRepository) SetAcceptance(id int, engraving bool) error {
 	return err
 }
 
+// SetFirstPiece updates the first piece status and URL for a purchase order.
 func (r *PurchaseRepository) SetFirstPiece(id int, status, url string) error {
 	_, err := r.db.Exec(`UPDATE purchase_orders SET first_piece_status=$1,first_piece_url=CASE WHEN $2='' THEN first_piece_url ELSE $2 END,updated_at=NOW() WHERE id=$3`, status, url, id)
 	return err
 }
 
+// AddAttachment inserts a new attachment record for a purchase order.
 func (r *PurchaseRepository) AddAttachment(purchaseID int, category, fileName, url string, userID int) error {
 	_, err := r.db.Exec(`INSERT INTO purchase_attachments (purchase_id,category,file_name,url,uploaded_by) VALUES ($1,$2,$3,$4,$5)`, purchaseID, category, fileName, url, userID)
 	return err
 }
 
+// AddEmail inserts a new email record linked to a purchase order.
 func (r *PurchaseRepository) AddEmail(email *models.PurchaseEmail) error {
 	attachments := email.Attachments
 	if len(attachments) == 0 {
@@ -285,6 +300,7 @@ func (r *PurchaseRepository) AddEmail(email *models.PurchaseEmail) error {
 		email.Observation, attachments, email.SentBy).Scan(&email.ID, &email.SentAt)
 }
 
+// AddPayment inserts a new payment record for a purchase order.
 func (r *PurchaseRepository) AddPayment(purchaseID, userID int, input *models.PurchasePaymentInput) error {
 	status := "Pagamento Registrado"
 	if input.Method == "PIX" {
@@ -299,12 +315,14 @@ func (r *PurchaseRepository) AddPayment(purchaseID, userID int, input *models.Pu
 	return err
 }
 
+// ApprovePayment approves a payment record and returns the associated purchase order ID.
 func (r *PurchaseRepository) ApprovePayment(paymentID, userID int, receiptURL string) (int, error) {
 	var purchaseID int
 	err := r.db.QueryRow(`UPDATE purchase_payments SET status='Pagamento Registrado',receipt_url=CASE WHEN $1='' THEN receipt_url ELSE $1 END,approved_by=$2,approved_at=NOW(),updated_at=NOW() WHERE id=$3 RETURNING purchase_id`, receiptURL, userID, paymentID).Scan(&purchaseID)
 	return purchaseID, err
 }
 
+// AddIssue inserts a new issue record for a purchase order.
 func (r *PurchaseRepository) AddIssue(purchaseID, userID int, input *models.PurchaseIssueInput) error {
 	attachments, _ := json.Marshal(input.Attachments)
 	_, err := r.db.Exec(`INSERT INTO purchase_issues (purchase_id,issue_type,description,attachments,supplier_id,solution,occurrence_date,resolution_deadline,priority,opened_by) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
@@ -313,6 +331,7 @@ func (r *PurchaseRepository) AddIssue(purchaseID, userID int, input *models.Purc
 	return err
 }
 
+// UpdateIssue modifies an existing issue record and returns the associated purchase order ID.
 func (r *PurchaseRepository) UpdateIssue(issueID, userID int, input *models.PurchaseIssueUpdateInput) (int, error) {
 	var purchaseID int
 	if input.Status == "Resolvida" {
@@ -323,16 +342,19 @@ func (r *PurchaseRepository) UpdateIssue(issueID, userID int, input *models.Purc
 	return purchaseID, err
 }
 
+// AddHistory inserts a new history record for a purchase order.
 func (r *PurchaseRepository) AddHistory(purchaseID int, action, fromStatus, toStatus, details string, userID int) error {
 	_, err := r.db.Exec(`INSERT INTO purchase_history (purchase_id,action,from_status,to_status,details,user_id) VALUES ($1,$2,$3,$4,$5,$6)`, purchaseID, action, fromStatus, toStatus, details, userID)
 	return err
 }
 
+// Notify inserts a new notification record linked to a purchase order.
 func (r *PurchaseRepository) Notify(purchaseID int, permission, notificationType, message string, userID *int) error {
 	_, err := r.db.Exec(`INSERT INTO notifications (purchase_id,recipient_user_id,recipient_permission,notification_type,message) VALUES ($1,$2,$3,$4,$5)`, purchaseID, userID, permission, notificationType, message)
 	return err
 }
 
+// ListNotifications returns unread notifications for a user or their permitted roles.
 func (r *PurchaseRepository) ListNotifications(userID int, permissions []string) ([]models.Notification, error) {
 	permJSON, _ := json.Marshal(permissions)
 	rows, err := r.db.Query(`SELECT id,purchase_id,recipient_user_id,recipient_permission,notification_type,message,read_at,created_at FROM notifications WHERE read_at IS NULL AND (recipient_user_id=$1 OR recipient_permission IN (SELECT jsonb_array_elements_text($2::jsonb))) ORDER BY created_at DESC`, userID, string(permJSON))
@@ -351,11 +373,13 @@ func (r *PurchaseRepository) ListNotifications(userID int, permissions []string)
 	return result, rows.Err()
 }
 
+// MarkNotificationRead marks a notification as read in the database.
 func (r *PurchaseRepository) MarkNotificationRead(id, userID int) error {
 	_, err := r.db.Exec(`UPDATE notifications SET read_at=NOW() WHERE id=$1 AND (recipient_user_id IS NULL OR recipient_user_id=$2)`, id, userID)
 	return err
 }
 
+// FinancialSummary returns a financial summary combining purchase costs, payments, and sales data.
 func (r *PurchaseRepository) FinancialSummary() ([]models.PurchaseFinancialSummary, error) {
 	rows, err := r.db.Query(`
 		WITH base_costs AS (

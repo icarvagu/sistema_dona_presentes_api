@@ -6,6 +6,7 @@ import (
 )
 
 const (
+	// Purchase status constants representing the procurement lifecycle.
 	PurchasePending            = "Pendente de Compra"
 	PurchaseReview             = "Em Conferência de Compras"
 	PurchaseWaitingCorel       = "Aguardando Arquivo Corel"
@@ -22,6 +23,8 @@ const (
 	PurchaseEngravingIssue     = "Pendência de Gravação"
 )
 
+// PurchaseOrder represents a procurement order that manages the purchasing
+// of materials and engraving services for a sale.
 type PurchaseOrder struct {
 	ID                     int                  `json:"id"`
 	SaleID                 int                  `json:"sale_id"`
@@ -73,6 +76,7 @@ type PurchaseOrder struct {
 	History                []PurchaseHistory    `json:"history"`
 }
 
+// PurchaseUpdateInput is the DTO for updating procurement fields on a purchase order.
 type PurchaseUpdateInput struct {
 	BuyerID                *int       `json:"buyer_id,omitempty"`
 	MaterialSupplierID     *int       `json:"material_supplier_id,omitempty"`
@@ -97,6 +101,7 @@ type PurchaseUpdateInput struct {
 	PurchaseNotes          string     `json:"purchase_notes"`
 }
 
+// PurchaseActionInput carries an action (e.g. send email, attach file) for a purchase order.
 type PurchaseActionInput struct {
 	Action      string   `json:"action"`
 	Observation string   `json:"observation"`
@@ -106,6 +111,7 @@ type PurchaseActionInput struct {
 	Attachments []string `json:"attachments"`
 }
 
+// PurchaseAttachment represents a file attached to a purchase order.
 type PurchaseAttachment struct {
 	ID         int       `json:"id"`
 	PurchaseID int       `json:"purchase_id"`
@@ -116,6 +122,7 @@ type PurchaseAttachment struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
+// PurchaseEmail records an email sent as part of the procurement process.
 type PurchaseEmail struct {
 	ID          int             `json:"id"`
 	PurchaseID  int             `json:"purchase_id"`
@@ -129,6 +136,7 @@ type PurchaseEmail struct {
 	SentAt      time.Time       `json:"sent_at"`
 }
 
+// PurchasePayment represents a payment request linked to a purchase order.
 type PurchasePayment struct {
 	ID            int        `json:"id"`
 	PurchaseID    int        `json:"purchase_id"`
@@ -146,6 +154,7 @@ type PurchasePayment struct {
 	UpdatedAt     time.Time  `json:"updated_at"`
 }
 
+// PurchasePaymentInput is the DTO for requesting a payment on a purchase order.
 type PurchasePaymentInput struct {
 	CostType      string  `json:"cost_type"`
 	SupplierID    *int    `json:"supplier_id,omitempty"`
@@ -155,6 +164,7 @@ type PurchasePaymentInput struct {
 	ReceiptURL    string  `json:"receipt_url"`
 }
 
+// PurchaseIssue represents a problem (material or engraving) reported on a purchase order.
 type PurchaseIssue struct {
 	ID                 int             `json:"id"`
 	PurchaseID         int             `json:"purchase_id"`
@@ -174,6 +184,7 @@ type PurchaseIssue struct {
 	ResolvedAt         *time.Time      `json:"resolved_at,omitempty"`
 }
 
+// PurchaseIssueInput is the DTO for reporting a new issue on a purchase order.
 type PurchaseIssueInput struct {
 	IssueType          string    `json:"issue_type"`
 	Description        string    `json:"description"`
@@ -185,12 +196,14 @@ type PurchaseIssueInput struct {
 	Priority           int       `json:"priority"`
 }
 
+// PurchaseIssueUpdateInput is the DTO for updating the resolution or status of an issue.
 type PurchaseIssueUpdateInput struct {
 	Solution           string     `json:"solution"`
 	ResolutionDeadline *time.Time `json:"resolution_deadline,omitempty"`
 	Status             string     `json:"status"`
 }
 
+// PurchaseHistory records a status change or action taken on a purchase order.
 type PurchaseHistory struct {
 	ID         int       `json:"id"`
 	PurchaseID int       `json:"purchase_id"`
@@ -203,6 +216,7 @@ type PurchaseHistory struct {
 	CreatedAt  time.Time `json:"created_at"`
 }
 
+// Notification represents a system notification sent to users about purchase events.
 type Notification struct {
 	ID                  int        `json:"id"`
 	PurchaseID          *int       `json:"purchase_id,omitempty"`
@@ -214,6 +228,7 @@ type Notification struct {
 	CreatedAt           time.Time  `json:"created_at"`
 }
 
+// PurchaseFinancialSummary aggregates financial data for a purchase order for reporting.
 type PurchaseFinancialSummary struct {
 	PurchaseID    int     `json:"purchase_id"`
 	GeneralNumber string  `json:"general_number"`

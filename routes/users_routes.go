@@ -6,6 +6,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// RegisterUsersRoutes registers all user-related HTTP endpoints on the given router.
+// Routes: GET /users (list), PUT /users/profile, GET /users/{id}, PUT /users/{id}.
 func RegisterUsersRoutes(router *mux.Router) {
 	controllers.InitUserService()
 

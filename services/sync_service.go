@@ -9,6 +9,8 @@ import (
 	"donapresentes/repositories"
 )
 
+// SyncService synchronizes the local product catalog with an external API provider.
+// It creates or updates products and ensures the corresponding supplier exists.
 type SyncService struct {
 	provider           ExternalAPIProvider
 	productRepository  *repositories.ProductRepository
@@ -16,6 +18,8 @@ type SyncService struct {
 	auditService       *AuditService
 }
 
+// NewSyncService creates a SyncService with the given external API provider,
+// product and supplier repositories, and audit trail.
 func NewSyncService(
 	provider ExternalAPIProvider,
 	productRepo *repositories.ProductRepository,
@@ -30,6 +34,9 @@ func NewSyncService(
 	}
 }
 
+// Synchronize fetches products from the external provider, ensures the supplier
+// exists, and creates or updates local products matched by internal code.
+// Returns a SyncResult with counts of created, updated, and errored items.
 func (s *SyncService) Synchronize() (*SyncResult, error) {
 	result := &SyncResult{}
 
@@ -93,6 +100,7 @@ func (s *SyncService) Synchronize() (*SyncResult, error) {
 	return result, nil
 }
 
+// ensureSupplier finds or creates the supplier mapped from the external provider.
 func (s *SyncService) ensureSupplier(supplier *models.Supplier) (int, error) {
 	existingSuppliers, err := s.supplierRepository.GetAll()
 	if err != nil {

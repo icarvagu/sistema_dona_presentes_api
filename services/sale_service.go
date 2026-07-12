@@ -9,15 +9,19 @@ import (
 	"donapresentes/repositories"
 )
 
+// SaleService manages sales order operations including CRUD, validation,
+// and layout URL updates. It enforces that all referenced sellers, customers,
+// products, and carriers exist before creating or updating a sale.
 type SaleService struct {
-	saleRepo      *repositories.SaleRepository
-	userRepo      *repositories.UserRepository
-	productRepo   *repositories.ProductRepository
-	customerRepo  *repositories.CustomerRepository
-	carrierRepo   *repositories.CarrierRepository
-	auditService  *AuditService
+	saleRepo     *repositories.SaleRepository
+	userRepo     *repositories.UserRepository
+	productRepo  *repositories.ProductRepository
+	customerRepo *repositories.CustomerRepository
+	carrierRepo  *repositories.CarrierRepository
+	auditService *AuditService
 }
 
+// NewSaleService creates a SaleService with the required repositories and audit trail.
 func NewSaleService(saleRepo *repositories.SaleRepository, userRepo *repositories.UserRepository, productRepo *repositories.ProductRepository, customerRepo *repositories.CustomerRepository, carrierRepo *repositories.CarrierRepository, auditService *AuditService) *SaleService {
 	return &SaleService{
 		saleRepo:     saleRepo,
@@ -29,18 +33,25 @@ func NewSaleService(saleRepo *repositories.SaleRepository, userRepo *repositorie
 	}
 }
 
+// GetAll returns all sales orders.
 func (s *SaleService) GetAll() ([]models.Sale, error) {
 	return s.saleRepo.GetAll()
 }
 
+// GetBySellerID returns all sales orders for a given seller.
 func (s *SaleService) GetBySellerID(sellerID int) ([]models.Sale, error) {
 	return s.saleRepo.GetBySellerID(sellerID)
 }
 
+// GetByID returns a single sale by its ID.
 func (s *SaleService) GetByID(id int) (*models.Sale, error) {
 	return s.saleRepo.GetByID(id)
 }
 
+// ValidateSale enforces that a sale has a seller, customer, payment method,
+// at least one installment, and at least one item. All referenced entities
+// (seller, customer, products, carriers) must exist. Each item must have
+// a valid product, positive quantity, and positive unit price.
 func (s *SaleService) ValidateSale(input *models.SaleInput) error {
 
 	if input.SellerID == 0 {
@@ -113,6 +124,7 @@ func (s *SaleService) ValidateSale(input *models.SaleInput) error {
 	return nil
 }
 
+// Create registers a new sale after validation.
 func (s *SaleService) Create(input *models.SaleInput) (*models.Sale, error) {
 
 	if err := s.ValidateSale(input); err != nil {
@@ -126,6 +138,8 @@ func (s *SaleService) Create(input *models.SaleInput) (*models.Sale, error) {
 	return sale, err
 }
 
+// Update modifies an existing sale by ID after validation.
+// Returns ErrSaleNotFound if the sale does not exist.
 func (s *SaleService) Update(id int, input *models.SaleInput) (*models.Sale, error) {
 
 	_, err := s.saleRepo.GetByID(id)
@@ -147,6 +161,7 @@ func (s *SaleService) Update(id int, input *models.SaleInput) (*models.Sale, err
 	return sale, err
 }
 
+// Delete removes a sale by its ID.
 func (s *SaleService) Delete(id int) error {
 	err := s.saleRepo.Delete(id)
 	if err == nil {
@@ -155,6 +170,7 @@ func (s *SaleService) Delete(id int) error {
 	return err
 }
 
+// UpdateLayoutURLs updates the layout image URLs associated with a sale.
 func (s *SaleService) UpdateLayoutURLs(id int, urls []string) error {
 	return s.saleRepo.UpdateLayoutURLs(id, urls)
 }

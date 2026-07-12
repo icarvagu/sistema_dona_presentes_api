@@ -16,13 +16,16 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// supplierService provides CRUD operations for suppliers (fornecedores).
 var supplierService *services.SupplierService
 
+// InitSupplierService initializes the supplier service with the required repository.
 func InitSupplierService() {
 	supplierRepo := repositories.NewSupplierRepository(config.DB)
 	supplierService = services.NewSupplierService(supplierRepo, auditService)
 }
 
+// GetSuppliers handles GET /suppliers — returns the list of all suppliers.
 func GetSuppliers(w http.ResponseWriter, r *http.Request) {
 	suppliers, err := supplierService.GetAll()
 	if err != nil {
@@ -34,6 +37,7 @@ func GetSuppliers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(suppliers)
 }
 
+// GetSupplier handles GET /suppliers/{id} — returns a single supplier by ID.
 func GetSupplier(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -56,6 +60,7 @@ func GetSupplier(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s)
 }
 
+// CreateSupplier handles POST /suppliers — creates a new supplier.
 func CreateSupplier(w http.ResponseWriter, r *http.Request) {
 	var s models.Supplier
 	err := json.NewDecoder(r.Body).Decode(&s)
@@ -75,6 +80,7 @@ func CreateSupplier(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s)
 }
 
+// UpdateSupplier handles PUT /suppliers/{id} — updates an existing supplier.
 func UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])
@@ -101,6 +107,7 @@ func UpdateSupplier(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(s)
 }
 
+// DeleteSupplier handles DELETE /suppliers/{id} — deletes a supplier by ID.
 func DeleteSupplier(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id, err := strconv.Atoi(params["id"])

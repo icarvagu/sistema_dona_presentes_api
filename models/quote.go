@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+// QuoteItem represents a single line item in a quotation, including cost
+// breakdown, price formation data, and profit/margin calculations.
 type QuoteItem struct {
 	ID                  int      `json:"id"`
 	QuoteID             int      `json:"quote_id"`
@@ -53,6 +55,7 @@ type QuoteItem struct {
 	UpdatedAt               time.Time       `json:"updated_at"`
 }
 
+// Quote represents a commercial quotation sent to a customer before a sale is confirmed.
 type Quote struct {
 	ID                 int         `json:"id"`
 	QuoteNumber        string      `json:"quote_number,omitempty"`
@@ -102,6 +105,7 @@ type Quote struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// QuoteInput is the DTO for creating or updating a quotation.
 type QuoteInput struct {
 	QuoteNumber        string           `json:"quote_number,omitempty"`
 	SellerID           int              `json:"seller_id"`
@@ -143,6 +147,7 @@ type QuoteInput struct {
 	FreightPesoReal        float64         `json:"freight_peso_real"`
 }
 
+// QuoteItemInput is the DTO for a single item line within a quotation request.
 type QuoteItemInput struct {
 	ProductID           int     `json:"product_id"`
 	Quantity            int     `json:"quantity"`

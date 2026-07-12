@@ -6,6 +6,16 @@ import (
 	"net/http"
 )
 
+// RegisterArtFinalRoutes registers all art final (design/layout approval workflow) HTTP endpoints on the given router.
+// Routes: GET /art-final/dashboard, POST /art-final/tasks, PUT /art-final/tasks/{id},
+// POST /art-final/stories, PATCH /art-final/stories/{id}/check, DELETE /art-final/stories/{id},
+// GET /art-final/layout/requests, POST /art-final/layout/requests,
+// GET /art-final/layout/requests/{id}, PATCH /art-final/layout/requests/{id}/transition,
+// POST /art-final/layout/requests/{id}/messages, POST /art-final/layout/items/{itemId}/versions,
+// PATCH /art-final/layout/versions/{versionId}/decision,
+// PUT /art-final/layout/items/{itemId}/jobs/{kind},
+// PATCH /art-final/layout/items/{itemId}/product-received,
+// PATCH /art-final/stories/{id}/lifecycle.
 func RegisterArtFinalRoutes(r *mux.Router) {
 	r.HandleFunc("/art-final/dashboard", controllers.GetArtFinalDashboard).Methods(http.MethodGet)
 	r.HandleFunc("/art-final/tasks", controllers.CreateArtFinalTask).Methods(http.MethodPost)

@@ -13,11 +13,16 @@ import (
 	"os"
 )
 
+// CryptoService provides AES-GCM encryption/decryption for sensitive data
+// and HMAC-SHA256 hashing for unique lookups. The encryption key is derived
+// from the ENCRYPTION_KEY environment variable using SHA-256.
 type CryptoService struct {
 	key  []byte
 	salt []byte
 }
 
+// NewCryptoService creates a CryptoService if the ENCRYPTION_KEY environment
+// variable is set. Returns nil if the key is empty (crypto is disabled).
 func NewCryptoService() *CryptoService {
 	keyHex := os.Getenv("ENCRYPTION_KEY")
 	if keyHex == "" {
@@ -28,6 +33,8 @@ func NewCryptoService() *CryptoService {
 	return &CryptoService{key: key[:], salt: salt[:]}
 }
 
+// Encrypt encrypts plaintext using AES-GCM with a random nonce.
+// Returns the base64-encoded ciphertext. If the service is nil, returns plaintext unchanged.
 func (s *CryptoService) Encrypt(plaintext string) (string, error) {
 	if s == nil {
 		return plaintext, nil
@@ -55,6 +62,8 @@ func (s *CryptoService) Encrypt(plaintext string) (string, error) {
 	return base64.StdEncoding.EncodeToString(ciphertext), nil
 }
 
+// Decrypt decrypts a base64-encoded ciphertext using AES-GCM.
+// If the service is nil, returns the input unchanged.
 func (s *CryptoService) Decrypt(cipherB64 string) (string, error) {
 	if s == nil {
 		return cipherB64, nil
@@ -92,6 +101,8 @@ func (s *CryptoService) Decrypt(cipherB64 string) (string, error) {
 	return string(plaintext), nil
 }
 
+// Hash computes an HMAC-SHA256 hash of the value using the service's salt.
+// Used for deterministic one-way hashing (e.g., CPF deduplication lookups).
 func (s *CryptoService) Hash(value string) string {
 	mac := hmac.New(sha256.New, s.salt)
 	mac.Write([]byte(value))

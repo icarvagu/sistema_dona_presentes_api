@@ -19,6 +19,8 @@ var (
 		reOnlyDigits = regexp.MustCompile(`^\d+$`)
 	)
 
+// SanitizeInput trims whitespace and strips binary/control characters from a
+// user-supplied string.
 func SanitizeInput(input string) string {
 		trimmed := strings.TrimSpace(input)
 		return reBinary.ReplaceAllString(trimmed, "")
@@ -36,6 +38,9 @@ type timeoutResponseWriter struct {
 		timedOut bool
 }
 
+// InputValidationMiddleware sanitizes URL path and query, rejects suspicious
+// payloads (XSS, SQLi, path traversal), enforces length limits on headers and
+// query parameters, and caps the request body at 10 MB.
 func InputValidationMiddleware(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					r.URL.Path = SanitizeInput(r.URL.Path)
@@ -83,6 +88,8 @@ func InputValidationMiddleware(next http.Handler) http.Handler {
 				})
 }
 
+// TimeoutMiddleware aborts the request with a 504 Gateway Timeout if the
+// downstream handler does not complete within the given duration.
 func TimeoutMiddleware(timeout time.Duration) func(http.Handler) http.Handler {
 		return func(next http.Handler) http.Handler {
 					return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

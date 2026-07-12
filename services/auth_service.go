@@ -26,6 +26,9 @@ var passwordLower = regexp.MustCompile(`[a-z]`)
 var passwordDigit = regexp.MustCompile(`[0-9]`)
 var passwordSpecial = regexp.MustCompile(`[^a-zA-Z0-9]`)
 
+// AuthService handles authentication and authorization operations including
+// login with account lockout protection, JWT token generation and validation,
+// password reset flows, and refresh token rotation.
 type AuthService struct {
 	userRepo      *repositories.UserRepository
 	refreshRepo   *repositories.RefreshTokenRepository
@@ -35,6 +38,8 @@ type AuthService struct {
 	refreshExpiry time.Duration
 }
 
+// NewAuthService creates an AuthService with the required repositories and audit trail.
+// It reads the JWT secret from the JWT_SECRET environment variable and panics if it is empty.
 func NewAuthService(userRepo *repositories.UserRepository, refreshRepo *repositories.RefreshTokenRepository, auditService *AuditService) *AuthService {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {
@@ -50,6 +55,7 @@ func NewAuthService(userRepo *repositories.UserRepository, refreshRepo *reposito
 	}
 }
 
+// HashPassword generates a bcrypt hash of the password with the default cost.
 func (s *AuthService) HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -58,15 +64,20 @@ func (s *AuthService) HashPassword(password string) (string, error) {
 	return string(bytes), nil
 }
 
+// CheckPassword compares a plaintext password against a bcrypt hash.
 func (s *AuthService) CheckPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
+// GetJWTSecret returns the JWT signing key as raw bytes.
 func (s *AuthService) GetJWTSecret() []byte {
 	return s.jwtSecret
 }
 
+// ValidatePasswordComplexity enforces that the password meets the minimum requirements:
+// at least 8 characters, one uppercase letter, one lowercase letter, one digit,
+// and one special character.
 func (s *AuthService) ValidatePasswordComplexity(password string) error {
 	if !passwordComplexity.MatchString(password) {
 		return apperrors.NewValidationError("Senha deve ter pelo menos 8 caracteres")
@@ -86,6 +97,9 @@ func (s *AuthService) ValidatePasswordComplexity(password string) error {
 	return nil
 }
 
+// Login authenticates a user by username and password and returns JWT tokens.
+// It tracks failed attempts and locks the account for 15 minutes after 5 consecutive failures.
+// If the user must change their password, login is blocked until the password is updated.
 func (s *AuthService) Login(input *models.LoginInput, ipAddress string) (*models.LoginResponse, error) {
 	input.Username = SanitizeUsername(input.Username)
 	if input.Username == "" {
@@ -147,6 +161,8 @@ func (s *AuthService) Login(input *models.LoginInput, ipAddress string) (*models
 	}, nil
 }
 
+// GenerateAccessToken creates a signed JWT access token with user claims.
+// The token includes user ID, username, role, permissions, and expires in 15 minutes.
 func (s *AuthService) GenerateAccessToken(user *models.User) (string, error) {
 	expirationTime := time.Now().Add(s.accessExpiry)
 
@@ -174,6 +190,8 @@ func (s *AuthService) GenerateAccessToken(user *models.User) (string, error) {
 	return tokenString, nil
 }
 
+// GenerateRefreshToken creates a cryptographically random 256-bit refresh token
+// and stores its SHA-256 hash in the database. The token expires in 7 days.
 func (s *AuthService) GenerateRefreshToken(userID int) (string, error) {
 	randomBytes := make([]byte, 32)
 	if _, err := rand.Read(randomBytes); err != nil {
@@ -193,6 +211,9 @@ func (s *AuthService) GenerateRefreshToken(userID int) (string, error) {
 	return token, nil
 }
 
+// RefreshAccessToken issues a new access token using a valid refresh token.
+// The old refresh token is revoked (rotation) and a new one is issued.
+// If the user account is locked, the refresh is denied.
 func (s *AuthService) RefreshAccessToken(refreshToken, ipAddress string) (*models.LoginResponse, error) {
 	tokenHash := fmt.Sprintf("%x", sha256.Sum256([]byte(refreshToken)))
 
@@ -237,6 +258,7 @@ func (s *AuthService) RefreshAccessToken(refreshToken, ipAddress string) (*model
 	}, nil
 }
 
+// Logout revokes all refresh tokens for a user, effectively ending all active sessions.
 func (s *AuthService) Logout(userID int, ipAddress string) error {
 	err := s.refreshRepo.RevokeAllForUser(userID)
 	if err != nil {
@@ -246,10 +268,14 @@ func (s *AuthService) Logout(userID int, ipAddress string) error {
 	return nil
 }
 
+// GenerateToken creates a JWT access token for the given user.
+// Deprecated alias for GenerateAccessToken.
 func (s *AuthService) GenerateToken(user *models.User) (string, error) {
 	return s.GenerateAccessToken(user)
 }
 
+// ValidateToken parses and validates a JWT token string, returning the claims
+// if the token is valid and signed with the correct HS256 key.
 func (s *AuthService) ValidateToken(tokenString string) (jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -269,6 +295,7 @@ func (s *AuthService) ValidateToken(tokenString string) (jwt.MapClaims, error) {
 	return nil, errors.New("token inválido")
 }
 
+// GetUserByID retrieves a user by ID with the password hash stripped.
 func (s *AuthService) GetUserByID(id int) (*models.User, error) {
 	user, err := s.userRepo.GetByID(id)
 	if err != nil {
@@ -279,6 +306,8 @@ func (s *AuthService) GetUserByID(id int) (*models.User, error) {
 	return user, nil
 }
 
+// InitiatePasswordReset generates a password reset token for the given username.
+// Returns the token only if the user exists (to prevent username enumeration, nil error is returned either way).
 func (s *AuthService) InitiatePasswordReset(username string) (string, error) {
 	username = SanitizeUsername(username)
 	user, err := s.userRepo.GetByUsername(username)
@@ -296,6 +325,8 @@ func (s *AuthService) InitiatePasswordReset(username string) (string, error) {
 	return token, nil
 }
 
+// GeneratePasswordResetToken creates a cryptographically random reset token
+// and stores its SHA-256 hash in the database with a 1-hour expiry.
 func (s *AuthService) GeneratePasswordResetToken(userID int) (string, error) {
 	randomBytes := make([]byte, 32)
 	if _, err := rand.Read(randomBytes); err != nil {
@@ -314,6 +345,9 @@ func (s *AuthService) GeneratePasswordResetToken(userID int) (string, error) {
 	return token, nil
 }
 
+// ResetPassword completes a password reset using a valid reset token.
+// Validates password complexity, hashes the new password, marks the token as used,
+// and revokes all active refresh tokens.
 func (s *AuthService) ResetPassword(token, newPassword string) error {
 	newPassword = SanitizePassword(newPassword)
 	tokenHash := fmt.Sprintf("%x", sha256.Sum256([]byte(token)))

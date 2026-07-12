@@ -8,6 +8,13 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// RegisterPurchasesRoutes registers all purchase and notification HTTP endpoints on the given router.
+// Routes: GET /purchases, GET /purchases/financial, GET /purchases/by-sale/{saleId},
+// GET /purchases/{id}, POST /purchases/release/{saleId}, PUT /purchases/{id},
+// POST /purchases/{id}/actions, POST /purchases/{id}/attachments,
+// POST /purchases/{id}/payments, PUT /purchases/payments/{paymentId}/approve,
+// POST /purchases/{id}/issues, PUT /purchases/issues/{issueId},
+// GET /notifications, PUT /notifications/{id}/read.
 func RegisterPurchasesRoutes(r *mux.Router) {
 	r.HandleFunc("/purchases", controllers.GetPurchases).Methods(http.MethodGet)
 	r.HandleFunc("/purchases/financial", controllers.GetPurchaseFinancial).Methods(http.MethodGet)

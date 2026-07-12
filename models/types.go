@@ -1,5 +1,6 @@
 package models
 
+// PaginatedProductResponse wraps a paginated list of products with page metadata.
 type PaginatedProductResponse struct {
 	Data       []Product `json:"data"`
 	Total      int       `json:"total"`

@@ -54,7 +54,7 @@ func (r *artFinalRepoStub) UpdateStoryLifecycle(int64, models.StoryLifecycleInpu
 
 func TestArtFinalTaskValidation(t *testing.T) {
 	r := &artFinalRepoStub{}
-	s := NewArtFinalServiceWithRepository(r)
+	s := NewArtFinalServiceWithRepository(r, nil)
 	if _, err := s.CreateTask(models.ArtFinalTaskInput{Panel: "media", Category: "layout", Title: "x"}, 1); err == nil {
 		t.Fatal("expected category/panel validation")
 	}
@@ -68,7 +68,7 @@ func TestArtFinalTaskValidation(t *testing.T) {
 }
 
 func TestLayoutRequestValidationAndStateInputs(t *testing.T) {
-	s := NewArtFinalServiceWithRepository(&artFinalRepoStub{})
+	s := NewArtFinalServiceWithRepository(&artFinalRepoStub{}, nil)
 	_, err := s.CreateLayoutRequest(models.LayoutRequestInput{SourceType: "sale", SourceID: 1, Title: "Layout", FileMode: "separate", Items: []models.LayoutRequestItemInput{{EntityType: "sale_item", ItemID: 2}}}, 1, models.ArtFinalAccess{Sales: true})
 	if err == nil {
 		t.Fatal("expected missing separate file")
@@ -82,7 +82,7 @@ func TestLayoutRequestValidationAndStateInputs(t *testing.T) {
 }
 
 func TestLayoutJobsRequireFinalFile(t *testing.T) {
-	s := NewArtFinalServiceWithRepository(&artFinalRepoStub{})
+	s := NewArtFinalServiceWithRepository(&artFinalRepoStub{}, nil)
 	if err := s.UpsertLayoutJob("corel", 1, models.LayoutJobInput{Status: "received"}, 1, models.ArtFinalAccess{}); err == nil {
 		t.Fatal("expected corel file")
 	}
@@ -92,7 +92,7 @@ func TestLayoutJobsRequireFinalFile(t *testing.T) {
 }
 
 func TestArtFinalDashboardRejectsInvalidFilter(t *testing.T) {
-	s := NewArtFinalServiceWithRepository(&artFinalRepoStub{})
+	s := NewArtFinalServiceWithRepository(&artFinalRepoStub{}, nil)
 	if _, err := s.Dashboard(models.ArtFinalAccess{}, models.ArtFinalFilters{Category: "invalid"}); err == nil {
 		t.Fatal("expected invalid category")
 	}

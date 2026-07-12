@@ -9,12 +9,15 @@ import (
 	"donapresentes/repositories"
 )
 
+// ProductService manages product catalog operations including CRUD, approval workflow,
+// kit composition validation, financial reports, and sync from external suppliers.
 type ProductService struct {
 	productRepo  *repositories.ProductRepository
 	supplierRepo *repositories.SupplierRepository
 	auditService *AuditService
 }
 
+// NewProductService creates a ProductService with the required repositories and audit trail.
 func NewProductService(productRepo *repositories.ProductRepository, supplierRepo *repositories.SupplierRepository, auditService *AuditService) *ProductService {
 	return &ProductService{
 		productRepo:  productRepo,
@@ -23,30 +26,37 @@ func NewProductService(productRepo *repositories.ProductRepository, supplierRepo
 	}
 }
 
+// GetAll returns all products in the catalog.
 func (s *ProductService) GetAll() ([]models.Product, error) {
 	return s.productRepo.GetAll()
 }
 
+// GetAllPaginated returns a page of products with the total count.
 func (s *ProductService) GetAllPaginated(page, limit int) ([]models.Product, int, error) {
 	return s.productRepo.GetAllPaginated(page, limit)
 }
 
+// GetByID returns a single product by its ID.
 func (s *ProductService) GetByID(id int) (*models.Product, error) {
 	return s.productRepo.GetByID(id)
 }
 
+// SearchByFilter searches products by a text filter.
 func (s *ProductService) SearchByFilter(filter string) ([]models.Product, error) {
 	return s.productRepo.SearchByFilter(filter)
 }
 
+// GetGroups returns all distinct product groups.
 func (s *ProductService) GetGroups() ([]string, error) {
 	return s.productRepo.GetGroups()
 }
 
+// GetPendingApproval returns all products awaiting tax analysis approval.
 func (s *ProductService) GetPendingApproval() ([]models.Product, error) {
 	return s.productRepo.GetPendingApproval()
 }
 
+// ApproveProduct approves a single product for use, identified by its origin source.
 func (s *ProductService) ApproveProduct(id int, origin string) error {
 	err := s.productRepo.ApproveProduct(id, origin)
 	if err == nil {
@@ -55,6 +65,7 @@ func (s *ProductService) ApproveProduct(id int, origin string) error {
 	return err
 }
 
+// BulkApproveAll approves all pending products from a given origin source.
 func (s *ProductService) BulkApproveAll(origin string) (int64, error) {
 	count, err := s.productRepo.BulkApproveAll(origin)
 	if err == nil {
@@ -63,14 +74,17 @@ func (s *ProductService) BulkApproveAll(origin string) (int64, error) {
 	return count, err
 }
 
+// UpdateLastCost updates only the last cost fields on a product.
 func (s *ProductService) UpdateLastCost(id int, p *models.Product) error {
 	return s.productRepo.UpdateLastCost(id, p)
 }
 
+// GetByGroup returns all products belonging to a specific group.
 func (s *ProductService) GetByGroup(group string) ([]models.Product, error) {
 	return s.productRepo.GetByGroup(group)
 }
 
+// validateRequiredFields ensures product_name and internal_code are present.
 func (s *ProductService) validateRequiredFields(p *models.Product) error {
 	if p.ProductName == "" {
 		return apperrors.NewMissingFieldError("product_name")
@@ -81,6 +95,7 @@ func (s *ProductService) validateRequiredFields(p *models.Product) error {
 	return nil
 }
 
+// validateSupplier ensures the referenced supplier exists.
 func (s *ProductService) validateSupplier(p *models.Product) error {
 	_, err := s.supplierRepo.GetByID(p.SupplierID)
 	if err != nil {
@@ -92,6 +107,10 @@ func (s *ProductService) validateSupplier(p *models.Product) error {
 	return nil
 }
 
+// validateItems enforces kit composition rules:
+// kit_type must be "none", "internal_composition", or "supplier_ready";
+// internal_composition kits require at least one item; supplier_ready kits
+// cannot have composition items; "none" products must not have items.
 func (s *ProductService) validateItems(p *models.Product) error {
 	if p.KitType == "" {
 		p.KitType = "none"
@@ -133,6 +152,8 @@ func (s *ProductService) validateItems(p *models.Product) error {
 	return nil
 }
 
+// Create registers a new product and its kit items.
+// All new products are marked as pending tax approval.
 func (s *ProductService) Create(p *models.Product) (*models.Product, error) {
 	// Todo produto precisa passar pela análise tributária antes de ficar disponível.
 	p.PendingApproval = true
@@ -175,6 +196,8 @@ func (s *ProductService) Create(p *models.Product) (*models.Product, error) {
 	return finalProduct, err
 }
 
+// Update modifies an existing product and replaces its kit items.
+// The existing pending approval status is preserved.
 func (s *ProductService) Update(id int, p *models.Product) (*models.Product, error) {
 
 	existing, err := s.productRepo.GetByID(id)
@@ -227,6 +250,7 @@ func (s *ProductService) Update(id int, p *models.Product) (*models.Product, err
 	return result, err
 }
 
+// Delete removes a product by its ID.
 func (s *ProductService) Delete(id int) error {
 	err := s.productRepo.Delete(id)
 	if err == nil {
@@ -235,10 +259,12 @@ func (s *ProductService) Delete(id int) error {
 	return err
 }
 
+// GetNewlyImported returns products that were recently imported from external sources.
 func (s *ProductService) GetNewlyImported() ([]models.Product, error) {
 	return s.productRepo.GetNewlyImported()
 }
 
+// GetFinancialReport returns the financial report for all products.
 func (s *ProductService) GetFinancialReport() ([]models.FinancialReportItem, error) {
 	return s.productRepo.GetFinancialReport()
 }

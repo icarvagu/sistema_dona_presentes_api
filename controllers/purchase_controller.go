@@ -16,8 +16,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// purchaseService provides operations for purchase order management, payments, attachments, issues, and notifications.
 var purchaseService *services.PurchaseService
 
+// InitPurchaseService initializes the purchase service with the required repository.
 func InitPurchaseService() {
 	purchaseService = services.NewPurchaseService(repositories.NewPurchaseRepository(config.DB), auditService)
 }
@@ -42,6 +44,7 @@ func requirePurchasePermission(w http.ResponseWriter, r *http.Request, permissio
 
 func purchaseID(r *http.Request) (int, error) { return strconv.Atoi(mux.Vars(r)["id"]) }
 
+// GetPurchases handles GET /purchases — lists purchases with an optional sample filter.
 func GetPurchases(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "compras", "arte_final", "financeiro", "diretoria_financeira", "producao", "vendas") {
 		return
@@ -64,6 +67,7 @@ func GetPurchases(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(items)
 }
 
+// GetPurchase handles GET /purchases/{id} — returns a single purchase by ID.
 func GetPurchase(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "compras", "arte_final", "financeiro", "diretoria_financeira", "producao", "vendas") {
 		return
@@ -82,6 +86,7 @@ func GetPurchase(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
+// GetPurchaseBySale handles GET /purchases/by-sale/{saleId} — returns the purchase associated with a given sale.
 func GetPurchaseBySale(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "compras", "arte_final", "financeiro", "diretoria_financeira", "producao", "vendas") {
 		return
@@ -100,6 +105,7 @@ func GetPurchaseBySale(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
+// ReleaseSaleToPurchases handles POST /purchases/release/{saleId} — releases a sale to the purchases module, creating a purchase order.
 func ReleaseSaleToPurchases(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "vendas") {
 		return
@@ -131,6 +137,7 @@ func ReleaseSaleToPurchases(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
+// UpdatePurchase handles PUT /purchases/{id} — updates an existing purchase order.
 func UpdatePurchase(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "compras", "producao") {
 		return
@@ -155,6 +162,7 @@ func UpdatePurchase(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
+// ExecutePurchaseAction handles POST /purchases/{id}/actions — executes a workflow action on a purchase (e.g., attach_corel, approve_first_piece).
 func ExecutePurchaseAction(w http.ResponseWriter, r *http.Request) {
 	id, err := purchaseID(r)
 	if err != nil {
@@ -188,6 +196,7 @@ func ExecutePurchaseAction(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
+// AddPurchaseAttachment handles POST /purchases/{id}/attachments — adds an attachment to a purchase order.
 func AddPurchaseAttachment(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "compras", "arte_final", "financeiro", "producao") {
 		return
@@ -213,6 +222,7 @@ func AddPurchaseAttachment(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
+// AddPurchasePayment handles POST /purchases/{id}/payments — adds a payment record to a purchase order.
 func AddPurchasePayment(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "financeiro") {
 		return
@@ -238,6 +248,7 @@ func AddPurchasePayment(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
+// ApprovePurchasePayment handles PUT /purchases/payments/{paymentId}/approve — approves a purchase payment (diretoria_financeira only).
 func ApprovePurchasePayment(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "diretoria_financeira") {
 		return
@@ -261,6 +272,7 @@ func ApprovePurchasePayment(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
+// AddPurchaseIssue handles POST /purchases/{id}/issues — adds an issue entry to a purchase order.
 func AddPurchaseIssue(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "producao", "compras") {
 		return
@@ -286,6 +298,7 @@ func AddPurchaseIssue(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
+// UpdatePurchaseIssue handles PUT /purchases/issues/{issueId} — updates an existing purchase issue.
 func UpdatePurchaseIssue(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "compras") {
 		return
@@ -310,6 +323,7 @@ func UpdatePurchaseIssue(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(item)
 }
 
+// GetPurchaseFinancial handles GET /purchases/financial — returns a financial summary of all purchases.
 func GetPurchaseFinancial(w http.ResponseWriter, r *http.Request) {
 	if !requirePurchasePermission(w, r, "financeiro", "diretoria_financeira", "compras") {
 		return
@@ -323,6 +337,7 @@ func GetPurchaseFinancial(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(items)
 }
 
+// GetNotifications handles GET /notifications — returns purchase-related notifications for the current user.
 func GetNotifications(w http.ResponseWriter, r *http.Request) {
 	userID, _, role := middleware.GetUserFromRequest(r)
 	permissions := middleware.GetPermissionsFromRequest(r)
@@ -338,6 +353,7 @@ func GetNotifications(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(items)
 }
 
+// ReadNotification handles PUT /notifications/{id}/read — marks a notification as read.
 func ReadNotification(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
 	if err != nil {

@@ -9,6 +9,8 @@ import (
 	"donapresentes/services"
 )
 
+// AuthMiddleware validates JWT tokens from the Authorization header or access_token
+// cookie and injects user_id, username, role, and permissions into the request context.
 func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +69,8 @@ func AuthMiddleware(authService *services.AuthService) func(http.Handler) http.H
 	}
 }
 
+// AdminOnlyMiddleware rejects requests whose context role is not "admin",
+// returning a 403 Forbidden error.
 func AdminOnlyMiddleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -83,6 +87,8 @@ func AdminOnlyMiddleware() func(http.Handler) http.Handler {
 	}
 }
 
+// GetUserFromRequest extracts user_id, username, and role from the request
+// context injected by AuthMiddleware.
 func GetUserFromRequest(r *http.Request) (userID int, username string, role string) {
 
 	if userIDVal := r.Context().Value("user_id"); userIDVal != nil {
@@ -98,6 +104,8 @@ func GetUserFromRequest(r *http.Request) (userID int, username string, role stri
 	return
 }
 
+// HasPermission checks whether the request context carries a specific permission
+// string. Admin users always have all permissions.
 func HasPermission(r *http.Request, permission string) bool {
 	_, _, role := GetUserFromRequest(r)
 	if role == "admin" {
@@ -115,6 +123,8 @@ func HasPermission(r *http.Request, permission string) bool {
 	return false
 }
 
+// GetPermissionsFromRequest returns a copy of the permissions slice stored in the
+// request context.
 func GetPermissionsFromRequest(r *http.Request) []string {
 	if permsVal := r.Context().Value("permissions"); permsVal != nil {
 		if perms, ok := permsVal.([]string); ok {

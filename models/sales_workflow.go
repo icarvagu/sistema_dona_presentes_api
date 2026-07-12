@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// QuoteFeedbackEvent records a scheduled feedback interaction for a quotation.
 type QuoteFeedbackEvent struct {
 	ID          int64      `json:"id"`
 	QuoteID     int        `json:"quote_id"`
@@ -14,6 +15,7 @@ type QuoteFeedbackEvent struct {
 	CreatedAt   time.Time  `json:"created_at"`
 }
 
+// ItemLayoutVersion tracks a versioned layout file attached to a sale or quote item.
 type ItemLayoutVersion struct {
 	ID             int64           `json:"id"`
 	EntityType     string          `json:"entity_type"`
@@ -30,6 +32,7 @@ type ItemLayoutVersion struct {
 	CreatedAt      time.Time       `json:"created_at"`
 }
 
+// FinancialAnalysisInput carries the result of a financial review for a sale or quote.
 type FinancialAnalysisInput struct {
 	Status        string   `json:"status"`
 	Tags          []string `json:"tags"`
@@ -37,17 +40,20 @@ type FinancialAnalysisInput struct {
 	AttachmentURL string   `json:"attachment_url"`
 }
 
+// SalePendingInput records a pending task or blocker on a sale.
 type SalePendingInput struct {
 	Sector      string `json:"sector"`
 	Description string `json:"description"`
 	Blocking    bool   `json:"blocking"`
 }
 
+// EngravingApprovalInput captures the approval/rejection response for an engraving proof.
 type EngravingApprovalInput struct {
 	Response    string `json:"response"`
 	Observation string `json:"observation"`
 }
 
+// QuoteConversionInput maps withdrawal dates when converting a quote into a sale.
 type QuoteConversionInput struct {
 	WithdrawalDates map[string]*time.Time `json:"withdrawal_dates"`
 }

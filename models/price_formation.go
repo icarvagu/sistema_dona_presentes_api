@@ -1,5 +1,6 @@
 package models
 
+// FinancialReportItem represents a single row in a product margin/cost financial report.
 type FinancialReportItem struct {
 	ProductID        int     `json:"product_id"`
 	ProductName      string  `json:"product_name"`

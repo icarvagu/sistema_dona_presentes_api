@@ -10,6 +10,9 @@ import (
 	"donapresentes/repositories"
 )
 
+// QuoteService manages quotation operations including CRUD, validation,
+// and customer feedback tracking. It enforces that all referenced sellers,
+// customers, and products exist before creating or updating a quote.
 type QuoteService struct {
 	quoteRepo    *repositories.QuoteRepository
 	userRepo     *repositories.UserRepository
@@ -18,6 +21,7 @@ type QuoteService struct {
 	auditService *AuditService
 }
 
+// NewQuoteService creates a QuoteService with the required repositories and audit trail.
 func NewQuoteService(quoteRepo *repositories.QuoteRepository, userRepo *repositories.UserRepository, productRepo *repositories.ProductRepository, customerRepo *repositories.CustomerRepository, auditService *AuditService) *QuoteService {
 	return &QuoteService{
 		quoteRepo:    quoteRepo,
@@ -28,18 +32,24 @@ func NewQuoteService(quoteRepo *repositories.QuoteRepository, userRepo *reposito
 	}
 }
 
+// GetAll returns all quotes.
 func (s *QuoteService) GetAll() ([]models.Quote, error) {
 	return s.quoteRepo.GetAll()
 }
 
+// GetBySellerID returns all quotes for a given seller.
 func (s *QuoteService) GetBySellerID(sellerID int) ([]models.Quote, error) {
 	return s.quoteRepo.GetBySellerID(sellerID)
 }
 
+// GetByID returns a single quote by its ID.
 func (s *QuoteService) GetByID(id int) (*models.Quote, error) {
 	return s.quoteRepo.GetByID(id)
 }
 
+// ValidateQuote enforces that a quote has a seller, customer, responsible name,
+// valid until date, and at least one item. All referenced entities must exist.
+// Each item must have a valid product, positive quantity, and positive unit price.
 func (s *QuoteService) ValidateQuote(input *models.QuoteInput) error {
 	if input.SellerID == 0 {
 		return apperrors.NewMissingFieldError("seller_id")
@@ -95,6 +105,7 @@ func (s *QuoteService) ValidateQuote(input *models.QuoteInput) error {
 	return nil
 }
 
+// Create registers a new quote after validation.
 func (s *QuoteService) Create(input *models.QuoteInput) (*models.Quote, error) {
 	if err := s.ValidateQuote(input); err != nil {
 		return nil, err
@@ -106,6 +117,8 @@ func (s *QuoteService) Create(input *models.QuoteInput) (*models.Quote, error) {
 	return quote, err
 }
 
+// Update modifies an existing quote by ID after validation.
+// Returns ErrQuoteNotFound if the quote does not exist.
 func (s *QuoteService) Update(id int, input *models.QuoteInput) (*models.Quote, error) {
 	_, err := s.quoteRepo.GetByID(id)
 	if err != nil {
@@ -124,6 +137,7 @@ func (s *QuoteService) Update(id int, input *models.QuoteInput) (*models.Quote, 
 	return quote, err
 }
 
+// UpdateFeedback records a customer feedback datetime and observation on a quote.
 func (s *QuoteService) UpdateFeedback(id int, feedbackDatetime *time.Time, feedbackObservation string) (*models.Quote, error) {
 	if _, err := s.quoteRepo.GetByID(id); err != nil {
 		if err == sql.ErrNoRows {
@@ -141,6 +155,7 @@ func (s *QuoteService) UpdateFeedback(id int, feedbackDatetime *time.Time, feedb
 	return updated, err
 }
 
+// Delete removes a quote by its ID.
 func (s *QuoteService) Delete(id int) error {
 	err := s.quoteRepo.Delete(id)
 	if err == nil {

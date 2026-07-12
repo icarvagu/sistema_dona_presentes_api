@@ -8,6 +8,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// RegisterQuotesRoutes registers all quote-related HTTP endpoints on the given router.
+// Routes: GET /quotes (list), POST /quotes (create), GET /quotes/{id}, PUT /quotes/{id},
+// DELETE /quotes/{id}, GET /quotes/{id}/pdf, PATCH /quotes/{id}/feedback.
 func RegisterQuotesRoutes(r *mux.Router) {
 	r.HandleFunc("/quotes", controllers.GetQuotes).Methods(http.MethodGet)
 	r.HandleFunc("/quotes/{id}", controllers.GetQuote).Methods(http.MethodGet)

@@ -12,9 +12,13 @@ import (
 	"donapresentes/services"
 )
 
+// authService provides authentication operations (login, token refresh, password reset).
 var authService *services.AuthService
+
+// auditService provides audit logging for all controllers.
 var auditService *services.AuditService
 
+// InitAuthService initializes the auth and audit services with the required repositories.
 func InitAuthService() {
 	userRepo := repositories.NewUserRepository(config.DB)
 	refreshRepo := repositories.NewRefreshTokenRepository(config.DB)
@@ -54,6 +58,7 @@ func getClientIP(r *http.Request) string {
 	return r.RemoteAddr
 }
 
+// Login handles POST /auth/login — authenticates a user and returns a JWT access token + refresh token.
 func Login(w http.ResponseWriter, r *http.Request) {
 	var input models.LoginInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -83,6 +88,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// RefreshToken handles POST /auth/refresh — exchanges a refresh token for a new access token.
 func RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var input models.RefreshRequest
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -112,6 +118,7 @@ func RefreshToken(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// Logout handles POST /auth/logout — invalidates the user session and clears the auth cookie.
 func Logout(w http.ResponseWriter, r *http.Request) {
 	userID, _, _ := middleware.GetUserFromRequest(r)
 
@@ -125,6 +132,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// GetCurrentUser handles GET /auth/me — returns the profile of the currently authenticated user.
 func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	userID, _, _ := middleware.GetUserFromRequest(r)
 
@@ -142,6 +150,7 @@ func GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// ForgotPassword handles POST /auth/forgot-password — initiates a password reset flow and returns a reset token.
 func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var input models.ForgotPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -164,6 +173,7 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
 
+// ResetPassword handles POST /auth/reset-password — resets the user password using a valid reset token.
 func ResetPassword(w http.ResponseWriter, r *http.Request) {
 	var input models.ResetPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {

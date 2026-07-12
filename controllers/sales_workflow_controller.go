@@ -17,8 +17,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// salesWorkflowService provides operations for the sales workflow (quote-to-sale conversion, feedback, layouts, receipts, pending events).
 var salesWorkflowService *services.SalesWorkflowService
 
+// InitSalesWorkflowService initializes the sales workflow service with the required repository.
 func InitSalesWorkflowService() {
 	salesWorkflowService = services.NewSalesWorkflowService(repositories.NewSalesWorkflowRepository(config.DB), auditService)
 }
@@ -64,6 +66,7 @@ func canManageSalePending(r *http.Request) bool {
 		middleware.HasPermission(r, "arte_final")
 }
 
+// AddQuoteFeedbackEvent handles POST /quotes/{id}/feedback-events — adds a feedback event to a quote.
 func AddQuoteFeedbackEvent(w http.ResponseWriter, r *http.Request) {
 	id, err := workflowID(r, "id")
 	if err != nil {
@@ -90,6 +93,7 @@ func AddQuoteFeedbackEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, event)
 }
+// GetQuoteFeedbackEvents handles GET /quotes/{id}/feedback-events — returns all feedback events for a quote.
 func GetQuoteFeedbackEvents(w http.ResponseWriter, r *http.Request) {
 	id, err := workflowID(r, "id")
 	if err != nil {
@@ -108,6 +112,7 @@ func GetQuoteFeedbackEvents(w http.ResponseWriter, r *http.Request) {
 	workflowJSON(w, http.StatusOK, events)
 }
 
+// CreateItemLayout handles POST /item-layouts/{entity}/{itemId} — creates a layout for a quote or sale item.
 func CreateItemLayout(w http.ResponseWriter, r *http.Request) {
 	id, err := workflowID(r, "itemId")
 	if err != nil {
@@ -134,6 +139,7 @@ func CreateItemLayout(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, layout)
 }
+// ApproveItemLayout handles PATCH /item-layouts/{id}/approval — approves or rejects an item layout.
 func ApproveItemLayout(w http.ResponseWriter, r *http.Request) {
 	if !middleware.HasPermission(r, "arte_final") && !middleware.HasPermission(r, "vendas:aprovar_layout") {
 		workflowForbidden(w)
@@ -160,6 +166,7 @@ func ApproveItemLayout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// ConvertQuoteToSale handles POST /quotes/{id}/convert — converts a quote into a sale.
 func ConvertQuoteToSale(w http.ResponseWriter, r *http.Request) {
 	id, err := workflowID(r, "id")
 	if err != nil {
@@ -184,6 +191,7 @@ func ConvertQuoteToSale(w http.ResponseWriter, r *http.Request) {
 	workflowJSON(w, http.StatusOK, map[string]int{"sale_id": saleID})
 }
 
+// UpsertSaleFinancialAnalysis handles PUT /sales/{id}/financial-analysis — creates or updates the financial analysis for a sale.
 func UpsertSaleFinancialAnalysis(w http.ResponseWriter, r *http.Request) {
 	if !middleware.HasPermission(r, "financeiro") && !middleware.HasPermission(r, "diretoria_financeira") {
 		workflowForbidden(w)
@@ -206,6 +214,7 @@ func UpsertSaleFinancialAnalysis(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// AddSaleReceipt handles POST /sales/{id}/receipts — adds a receipt file to a sale.
 func AddSaleReceipt(w http.ResponseWriter, r *http.Request) {
 	saleID, err := workflowID(r, "id")
 	if err != nil {
@@ -231,6 +240,7 @@ func AddSaleReceipt(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, map[string]int64{"id": id})
 }
+// ValidateSaleReceipt handles PATCH /sales/receipts/{id}/validation — validates or rejects a sale receipt (financeiro/diretoria_financeira only).
 func ValidateSaleReceipt(w http.ResponseWriter, r *http.Request) {
 	if !middleware.HasPermission(r, "financeiro") && !middleware.HasPermission(r, "diretoria_financeira") {
 		workflowForbidden(w)
@@ -257,6 +267,7 @@ func ValidateSaleReceipt(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// AddSalePending handles POST /sales/{id}/pending-events — adds a pending event to a sale.
 func AddSalePending(w http.ResponseWriter, r *http.Request) {
 	saleID, err := workflowID(r, "id")
 	if err != nil {
@@ -280,6 +291,7 @@ func AddSalePending(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, map[string]int64{"id": id})
 }
+// ResolveSalePending handles PATCH /sales/pending-events/{id}/resolve — resolves a pending event on a sale.
 func ResolveSalePending(w http.ResponseWriter, r *http.Request) {
 	id, err := workflowInt64ID(r, "id")
 	if err != nil {
@@ -306,6 +318,7 @@ func ResolveSalePending(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// SetQuoteImportant handles PATCH /quotes/{id}/important — marks or unmarks a quote as important.
 func SetQuoteImportant(w http.ResponseWriter, r *http.Request) {
 	id, err := workflowID(r, "id")
 	if err != nil {
@@ -330,6 +343,7 @@ func SetQuoteImportant(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// GetSaleWorkflow handles GET /sales/{id}/workflow — returns the full workflow data for a sale.
 func GetSaleWorkflow(w http.ResponseWriter, r *http.Request) {
 	id, err := workflowID(r, "id")
 	if err != nil {
@@ -348,6 +362,7 @@ func GetSaleWorkflow(w http.ResponseWriter, r *http.Request) {
 	workflowJSON(w, http.StatusOK, data)
 }
 
+// AddEngravingApproval handles POST /sale-items/{itemId}/engraving-approvals — adds an engraving approval request for a sale item.
 func AddEngravingApproval(w http.ResponseWriter, r *http.Request) {
 	itemID, err := workflowID(r, "itemId")
 	if err != nil {
@@ -371,6 +386,7 @@ func AddEngravingApproval(w http.ResponseWriter, r *http.Request) {
 	}
 	workflowJSON(w, http.StatusCreated, map[string]int64{"id": id})
 }
+// RecordEngravingApproval handles PATCH /engraving-approvals/{id}/record — records the communication channel used for an engraving approval.
 func RecordEngravingApproval(w http.ResponseWriter, r *http.Request) {
 	if !middleware.HasPermission(r, "compras") {
 		workflowForbidden(w)
@@ -396,6 +412,7 @@ func RecordEngravingApproval(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// SellerApproveSale handles PATCH /sales/{id}/seller-approval — allows the seller to approve their own sale.
 func SellerApproveSale(w http.ResponseWriter, r *http.Request) {
 	saleID, err := workflowID(r, "id")
 	if err != nil {
@@ -418,6 +435,7 @@ func SellerApproveSale(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+// GetSalesWorkflowDashboard handles GET /sales-workflow/dashboard — returns aggregated workflow dashboard data for the current user.
 func GetSalesWorkflowDashboard(w http.ResponseWriter, r *http.Request) {
 	user, _, _ := middleware.GetUserFromRequest(r)
 	canSeeAll := middleware.HasPermission(r, "vendas:ver_todos") || middleware.HasPermission(r, "arte_final") ||

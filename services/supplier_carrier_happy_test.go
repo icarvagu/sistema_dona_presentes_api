@@ -95,7 +95,7 @@ func (m *mockCarrierRepo) Delete(id int) error {
 
 func TestSupplierCreateValid(t *testing.T) {
 	mock := &mockSupplierRepo{}
-	s := NewSupplierService(mock)
+	s := NewSupplierService(mock, nil)
 	email := "contato@fornecedor.com"
 
 	err := s.Create(&models.Supplier{Name: "Fornecedor Ltda", Email: &email})
@@ -106,7 +106,7 @@ func TestSupplierCreateValid(t *testing.T) {
 
 func TestSupplierCreateMissingName(t *testing.T) {
 	mock := &mockSupplierRepo{}
-	s := NewSupplierService(mock)
+	s := NewSupplierService(mock, nil)
 
 	err := s.Create(&models.Supplier{Name: ""})
 	if err == nil {
@@ -119,7 +119,7 @@ func TestSupplierCreateMissingName(t *testing.T) {
 
 func TestSupplierCreateInvalidEmail(t *testing.T) {
 	mock := &mockSupplierRepo{}
-	s := NewSupplierService(mock)
+	s := NewSupplierService(mock, nil)
 	email := "invalido"
 
 	err := s.Create(&models.Supplier{Name: "Teste", Email: &email})
@@ -135,7 +135,7 @@ func TestSupplierGetAll(t *testing.T) {
 			{ID: 2, Name: "Fornecedor B"},
 		},
 	}
-	s := NewSupplierService(mock)
+	s := NewSupplierService(mock, nil)
 	list, err := s.GetAll()
 	if err != nil {
 		t.Fatalf("erro ao listar: %v", err)
@@ -151,7 +151,7 @@ func TestSupplierGetByID(t *testing.T) {
 			{ID: 10, Name: "Fornecedor X"},
 		},
 	}
-	s := NewSupplierService(mock)
+	s := NewSupplierService(mock, nil)
 	supplier, err := s.GetByID(10)
 	if err != nil {
 		t.Fatalf("erro ao buscar: %v", err)
@@ -163,7 +163,7 @@ func TestSupplierGetByID(t *testing.T) {
 
 func TestSupplierGetByIDNotFound(t *testing.T) {
 	mock := &mockSupplierRepo{}
-	s := NewSupplierService(mock)
+	s := NewSupplierService(mock, nil)
 	_, err := s.GetByID(999)
 	if err == nil {
 		t.Fatal("esperava erro para ID inexistente")
@@ -176,7 +176,7 @@ func TestSupplierUpdate(t *testing.T) {
 			{ID: 1, Name: "Original"},
 		},
 	}
-	s := NewSupplierService(mock)
+	s := NewSupplierService(mock, nil)
 	email := "novo@email.com"
 
 	err := s.Update(1, &models.Supplier{Name: "Atualizado", Email: &email})
@@ -191,7 +191,7 @@ func TestSupplierDelete(t *testing.T) {
 			{ID: 1, Name: "Fornecedor"},
 		},
 	}
-	s := NewSupplierService(mock)
+	s := NewSupplierService(mock, nil)
 
 	err := s.Delete(1)
 	if err != nil {
@@ -204,7 +204,7 @@ func TestSupplierDelete(t *testing.T) {
 
 func TestSupplierDeleteNotFound(t *testing.T) {
 	mock := &mockSupplierRepo{}
-	s := NewSupplierService(mock)
+	s := NewSupplierService(mock, nil)
 
 	err := s.Delete(999)
 	if err == nil {
@@ -214,7 +214,7 @@ func TestSupplierDeleteNotFound(t *testing.T) {
 
 func TestSupplierUpdateNotFound(t *testing.T) {
 	mock := &mockSupplierRepo{}
-	s := NewSupplierService(mock)
+	s := NewSupplierService(mock, nil)
 	err := s.Update(999, &models.Supplier{Name: "Teste"})
 	if err == nil {
 		t.Fatal("esperava erro para ID inexistente no update")
@@ -225,12 +225,13 @@ func TestSupplierUpdateNotFound(t *testing.T) {
 
 func TestCarrierCreateValid(t *testing.T) {
 	mock := &mockCarrierRepo{}
-	s := NewCarrierService(mock)
+	s := NewCarrierService(mock, nil)
 
+	email := "logistica@transp.com"
 	err := s.Create(&models.Carrier{
 		Name:         "Transportadora Teste",
 		CarrierType:  "Pessoa Jurídica",
-		Email:        "logistica@transp.com",
+		Email:        &email,
 	})
 	if err != nil {
 		t.Fatalf("erro ao criar transportadora valida: %v", err)
@@ -239,7 +240,7 @@ func TestCarrierCreateValid(t *testing.T) {
 
 func TestCarrierCreateMissingName(t *testing.T) {
 	mock := &mockCarrierRepo{}
-	s := NewCarrierService(mock)
+	s := NewCarrierService(mock, nil)
 
 	err := s.Create(&models.Carrier{CarrierType: "Pessoa Jurídica"})
 	if err == nil {
@@ -249,7 +250,7 @@ func TestCarrierCreateMissingName(t *testing.T) {
 
 func TestCarrierCreateMissingType(t *testing.T) {
 	mock := &mockCarrierRepo{}
-	s := NewCarrierService(mock)
+	s := NewCarrierService(mock, nil)
 
 	err := s.Create(&models.Carrier{Name: "Teste"})
 	if err == nil {
@@ -259,7 +260,7 @@ func TestCarrierCreateMissingType(t *testing.T) {
 
 func TestCarrierCreateInvalidType(t *testing.T) {
 	mock := &mockCarrierRepo{}
-	s := NewCarrierService(mock)
+	s := NewCarrierService(mock, nil)
 
 	err := s.Create(&models.Carrier{Name: "Teste", CarrierType: "Tipo Invalido"})
 	if err == nil {
@@ -274,7 +275,7 @@ func TestCarrierGetAll(t *testing.T) {
 			{ID: 2, Name: "Transp B"},
 		},
 	}
-	s := NewCarrierService(mock)
+	s := NewCarrierService(mock, nil)
 	list, err := s.GetAll()
 	if err != nil {
 		t.Fatalf("erro ao listar: %v", err)
@@ -290,7 +291,7 @@ func TestCarrierGetByID(t *testing.T) {
 			{ID: 5, Name: "Transp X"},
 		},
 	}
-	s := NewCarrierService(mock)
+	s := NewCarrierService(mock, nil)
 	c, err := s.GetByID(5)
 	if err != nil {
 		t.Fatalf("erro ao buscar: %v", err)
@@ -302,7 +303,7 @@ func TestCarrierGetByID(t *testing.T) {
 
 func TestCarrierGetByIDNotFound(t *testing.T) {
 	mock := &mockCarrierRepo{}
-	s := NewCarrierService(mock)
+	s := NewCarrierService(mock, nil)
 	_, err := s.GetByID(999)
 	if err == nil {
 		t.Fatal("esperava erro para ID inexistente")
@@ -315,7 +316,7 @@ func TestCarrierUpdate(t *testing.T) {
 			{ID: 1, Name: "Original", CarrierType: "Pessoa Jurídica"},
 		},
 	}
-	s := NewCarrierService(mock)
+	s := NewCarrierService(mock, nil)
 	err := s.Update(1, &models.Carrier{Name: "Atualizada", CarrierType: "Pessoa Física"})
 	if err != nil {
 		t.Fatalf("erro ao atualizar: %v", err)
@@ -328,7 +329,7 @@ func TestCarrierDelete(t *testing.T) {
 			{ID: 1, Name: "Transp", CarrierType: "Pessoa Jurídica"},
 		},
 	}
-	s := NewCarrierService(mock)
+	s := NewCarrierService(mock, nil)
 	err := s.Delete(1)
 	if err != nil {
 		t.Fatalf("erro ao deletar: %v", err)

@@ -8,6 +8,10 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// RegisterProductsRoutes registers all product-related HTTP endpoints on the given router.
+// Routes: GET /products (list), POST /products (create), GET /products/{id}, PUT /products/{id},
+// DELETE /products/{id}, GET /products/pending, GET /products/financial-report, GET /products/groups,
+// POST /products/approve-all, POST /products/{id}/approve, PATCH /products/{id}/last-cost.
 func RegisterProductsRoutes(r *mux.Router) {
 	r.HandleFunc("/products/pending", controllers.GetPendingProducts).Methods(http.MethodGet)
 	r.HandleFunc("/products/financial-report", controllers.GetProductsFinancialReport).Methods(http.MethodGet)

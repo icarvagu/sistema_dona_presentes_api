@@ -15,6 +15,8 @@ import (
 
 var errorLogRepo *repositories.ErrorLogRepository
 
+// InitErrorLogRepo injects the error log repository so that middleware can persist
+// 5xx errors and panics to the database.
 func InitErrorLogRepo(repo *repositories.ErrorLogRepository) {
 	errorLogRepo = repo
 }
@@ -56,6 +58,8 @@ func safeErrorMessage(err error) string {
 	return "Erro interno do servidor"
 }
 
+// ErrorHandler writes a JSON error response to the client, extracting code and
+// details from *errors.AppError when available.
 func ErrorHandler(w http.ResponseWriter, err error, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -77,6 +81,8 @@ func ErrorHandler(w http.ResponseWriter, err error, statusCode int) {
 	json.NewEncoder(w).Encode(response)
 }
 
+// ErrorHandlerWithRequest writes a JSON error response and, for 5xx errors,
+// persists an error log record using the configured ErrorLogRepository.
 func ErrorHandlerWithRequest(w http.ResponseWriter, r *http.Request, err error, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -115,6 +121,8 @@ func ErrorHandlerWithRequest(w http.ResponseWriter, r *http.Request, err error, 
 	json.NewEncoder(w).Encode(response)
 }
 
+// LoggingMiddleware logs every request with its method, path, status code,
+// duration, and remote address.
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
@@ -126,6 +134,8 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// RecoveryMiddleware catches panics in the HTTP handler chain, logs them, and
+// returns a 500 Internal Server Error response.
 func RecoveryMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
@@ -161,6 +171,8 @@ func RecoveryMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// NormalizePathMiddleware collapses consecutive slashes in the URL path to
+// prevent double-slash 404 mismatches.
 func NormalizePathMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -173,6 +185,8 @@ func NormalizePathMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// CORSMiddleware sets CORS headers for cross-origin requests, matching the
+// request Origin against a configurable allowlist.
 func CORSMiddleware(next http.Handler) http.Handler {
 	allowedOrigins := getAllowedOrigins()
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

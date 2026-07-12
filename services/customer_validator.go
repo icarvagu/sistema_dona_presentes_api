@@ -5,6 +5,8 @@ import (
 	"regexp"
 )
 
+// ValidateEmail checks that the email address matches a standard pattern
+// (local@domain.tld). Empty emails are allowed (returns nil).
 func ValidateEmail(email string) error {
 	if email == "" {
 		return nil
@@ -16,6 +18,8 @@ func ValidateEmail(email string) error {
 	return nil
 }
 
+// ValidateCPF checks that the CPF string contains exactly 11 digits after
+// stripping non-digit characters. Empty CPFs are allowed (returns nil).
 func ValidateCPF(cpf string) error {
 	if cpf == "" {
 		return nil
@@ -27,6 +31,8 @@ func ValidateCPF(cpf string) error {
 	return nil
 }
 
+// ValidateCNPJ checks that the CNPJ string contains exactly 14 digits after
+// stripping non-digit characters. Empty CNPJs are allowed (returns nil).
 func ValidateCNPJ(cnpj string) error {
 	if cnpj == "" {
 		return nil

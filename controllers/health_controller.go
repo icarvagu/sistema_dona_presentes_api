@@ -15,6 +15,7 @@ type HealthResponse struct {
 	Version   string `json:"version"`
 }
 
+// HealthCheck handles GET /health — returns the health status of the API and its database connection.
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	dbStatus := "ok"
 	if config.DB == nil {
