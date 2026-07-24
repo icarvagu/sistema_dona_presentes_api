@@ -13,7 +13,7 @@ impl SyncService {
         let mut errors = 0;
 
         for p in &products {
-            if p.codigo_xbz.is_empty() || p.nome.is_empty() {
+            if should_skip_product(&p.codigo_xbz, &p.nome) {
                 continue;
             }
             let result = sqlx::query(
@@ -51,6 +51,41 @@ impl SyncService {
             }
         }
 
-        Ok(format!("XBZ sync: {imported} updated, {errors} errors"))
+        Ok(format_sync_summary(imported, errors))
+    }
+}
+
+fn should_skip_product(codigo_xbz: &str, nome: &str) -> bool {
+    codigo_xbz.trim().is_empty() || nome.trim().is_empty()
+}
+
+fn format_sync_summary(imported: i32, errors: i32) -> String {
+    format!("XBZ sync: {imported} updated, {errors} errors")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{format_sync_summary, should_skip_product};
+
+    #[test]
+    fn should_skip_product_when_code_missing() {
+        assert!(should_skip_product("", "Nome"));
+        assert!(should_skip_product("   ", "Nome"));
+    }
+
+    #[test]
+    fn should_skip_product_when_name_missing() {
+        assert!(should_skip_product("DN1", ""));
+        assert!(should_skip_product("DN1", "   "));
+    }
+
+    #[test]
+    fn should_not_skip_valid_product() {
+        assert!(!should_skip_product("DN1", "Caneca"));
+    }
+
+    #[test]
+    fn format_sync_summary_is_stable() {
+        assert_eq!(format_sync_summary(12, 3), "XBZ sync: 12 updated, 3 errors");
     }
 }

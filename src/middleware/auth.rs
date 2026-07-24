@@ -124,3 +124,53 @@ fn extract_token<B>(req: &Request<B>) -> Option<String> {
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{has_permission, require_user, require_user_id, UserContext};
+    use axum::{body::Body, http::Request};
+
+    fn request_with_user(role: &str, permissions: &[&str]) -> Request<Body> {
+        let mut req = Request::builder().uri("/").body(Body::empty()).unwrap();
+        req.extensions_mut().insert(UserContext {
+            user_id: 10,
+            username: "tester".into(),
+            role: role.into(),
+            permissions: permissions.iter().map(|p| p.to_string()).collect(),
+        });
+        req
+    }
+
+    #[test]
+    fn require_user_returns_context() {
+        let req = request_with_user("standard", &["clientes"]);
+        let user = require_user(&req).unwrap();
+        assert_eq!(user.user_id, 10);
+        assert_eq!(user.username, "tester");
+    }
+
+    #[test]
+    fn require_user_id_returns_id() {
+        let req = request_with_user("standard", &[]);
+        assert_eq!(require_user_id(&req).unwrap(), 10);
+    }
+
+    #[test]
+    fn has_permission_respects_admin_bypass() {
+        let req = request_with_user("admin", &[]);
+        assert!(has_permission(&req, "clientes"));
+    }
+
+    #[test]
+    fn has_permission_checks_permission_list() {
+        let req = request_with_user("standard", &["clientes", "vendas"]);
+        assert!(has_permission(&req, "clientes"));
+        assert!(!has_permission(&req, "producao"));
+    }
+
+    #[test]
+    fn require_user_without_context_errors() {
+        let req = Request::builder().uri("/").body(Body::empty()).unwrap();
+        assert!(require_user(&req).is_err());
+    }
+}

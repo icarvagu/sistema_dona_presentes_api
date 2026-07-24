@@ -1,6 +1,8 @@
 use axum::{
     body::Body,
+    body::to_bytes,
     http::{Method, Request, StatusCode},
+    response::IntoResponse,
     Router,
 };
 use serde_json::json;
@@ -125,6 +127,46 @@ async fn test_admin_endpoint_blocked_for_standard() {
 }
 
 #[tokio::test]
+async fn test_admin_endpoint_allows_admin_token() {
+    let app = test_app("postgres:///nonexistent");
+    let token = auth_header("admin", 1);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/products-xbz/sync")
+                .method(Method::POST)
+                .header("Authorization", token)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_ne!(response.status(), StatusCode::FORBIDDEN);
+    assert_ne!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_invalid_token_returns_unauthorized() {
+    let app = test_app("postgres:///nonexistent");
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/users")
+                .method(Method::GET)
+                .header("Authorization", "Bearer invalid-token")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
 async fn test_auth_login_missing_fields() {
     let app = test_app("postgres:///nonexistent");
 
@@ -141,6 +183,104 @@ async fn test_auth_login_missing_fields() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+}
+
+#[tokio::test]
+async fn test_products_pending_alias_requires_auth_not_404() {
+    let app = test_app("postgres:///nonexistent");
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/products/pending")
+                .method(Method::GET)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_dashboard_seller_route_exists() {
+    let app = test_app("postgres:///nonexistent");
+    let token = auth_header("admin", 1);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/dashboard/seller/1")
+                .method(Method::GET)
+                .header("Authorization", token)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_ne!(response.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_dashboard_root_route_exists() {
+    let app = test_app("postgres:///nonexistent");
+    let token = auth_header("admin", 1);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/dashboard")
+                .method(Method::GET)
+                .header("Authorization", token)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_ne!(response.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_products_search_route_exists() {
+    let app = test_app("postgres:///nonexistent");
+    let token = auth_header("admin", 1);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/products/search?q=abc")
+                .method(Method::GET)
+                .header("Authorization", token)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_ne!(response.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_products_by_group_route_exists() {
+    let app = test_app("postgres:///nonexistent");
+    let token = auth_header("admin", 1);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/products/by-group/Brindes")
+                .method(Method::GET)
+                .header("Authorization", token)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_ne!(response.status(), StatusCode::NOT_FOUND);
 }
 
 // --- Unit Tests ---
@@ -208,6 +348,22 @@ async fn test_app_error_bad_request() {
 async fn test_app_error_conflict() {
     let err = AppError::conflict("Duplicado");
     assert_eq!(err.code, StatusCode::CONFLICT);
+}
+
+#[tokio::test]
+async fn test_app_error_into_response_contains_details() {
+    let response = AppError::bad_request("Campo obrigatório")
+        .with_details("username")
+        .into_response();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(payload["error"], "Campo obrigatório");
+    assert_eq!(payload["details"], "username");
+    assert_eq!(payload["code"], 400);
 }
 
 #[tokio::test]
@@ -286,6 +442,20 @@ async fn test_claims_encode_decode() {
     assert_eq!(decoded.claims.user_id, 99);
     assert_eq!(decoded.claims.role, "standard");
     assert_eq!(decoded.claims.permissions, vec!["sales"]);
+}
+
+#[tokio::test]
+async fn test_claims_exp_is_in_future() {
+    let now = chrono::Utc::now().timestamp() as usize;
+    let claims = donnapresentes::middleware::auth::Claims::new(
+        7,
+        "futureuser".into(),
+        "admin".into(),
+        vec![],
+    );
+
+    assert!(claims.exp > now);
+    assert!(claims.exp - claims.iat <= 900);
 }
 
 #[tokio::test]

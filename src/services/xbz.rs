@@ -69,9 +69,50 @@ impl XBZService {
             .await
             .map_err(|e| crate::error::AppError::internal(e.to_string()))?;
 
-        let products: Vec<XBZProduct> = serde_json::from_str(&body)
-            .map_err(|e| crate::error::AppError::internal(format!("XBZ parse: {e}")))?;
+        let products = parse_products(&body)?;
 
         Ok(products)
+    }
+}
+
+fn parse_products(body: &str) -> Result<Vec<XBZProduct>, crate::error::AppError> {
+    serde_json::from_str(body)
+        .map_err(|e| crate::error::AppError::internal(format!("XBZ parse: {e}")))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_products;
+
+    #[test]
+    fn parse_products_reads_valid_payload() {
+        let body = r#"[
+          {
+            "IdProduto": 10,
+            "CodigoXbz": "DN100",
+            "CodigoAmigavel": "ABC",
+            "Nome": "Caneca",
+            "Descricao": "Caneca branca",
+            "ImageLink": "http://img",
+            "WebTipo": "Brindes",
+            "QuantidadeDisponivel": 15,
+            "Ncm": "123",
+            "PrecoVenda": 12.5,
+            "CorWebPrincipal": "Branco"
+          }
+        ]"#;
+
+        let products = parse_products(body).unwrap();
+        assert_eq!(products.len(), 1);
+        assert_eq!(products[0].id_produto, 10);
+        assert_eq!(products[0].codigo_xbz, "DN100");
+        assert_eq!(products[0].nome, "Caneca");
+        assert_eq!(products[0].preco_venda, Some(12.5));
+    }
+
+    #[test]
+    fn parse_products_rejects_invalid_json() {
+        let err = parse_products("{ nope }").unwrap_err();
+        assert!(err.message.contains("XBZ parse"));
     }
 }

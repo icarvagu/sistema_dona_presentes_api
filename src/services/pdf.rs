@@ -142,3 +142,27 @@ fn generate_simple_pdf(_title: &str, content: &str) -> Result<Vec<u8>, AppError>
 
     Ok(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::generate_simple_pdf;
+
+    #[test]
+    fn generate_simple_pdf_returns_valid_markers() {
+        let pdf = generate_simple_pdf("Teste", "linha 1\nlinha 2").unwrap();
+        let text = String::from_utf8_lossy(&pdf);
+
+        assert!(text.starts_with("%PDF-1.4"));
+        assert!(text.contains("xref\n0 "));
+        assert!(text.contains("trailer\n<< /Size "));
+        assert!(text.ends_with("%%EOF\n"));
+    }
+
+    #[test]
+    fn generate_simple_pdf_escapes_special_characters() {
+        let pdf = generate_simple_pdf("Teste", "(abc) \\ value").unwrap();
+        let text = String::from_utf8_lossy(&pdf);
+
+        assert!(text.contains("\\(abc\\) \\\\ value"));
+    }
+}
