@@ -1,43 +1,16 @@
-# ---------------------
-# 1️⃣ Etapa de Build
-# ---------------------
-FROM golang:1.24-alpine AS builder
-
-RUN apk add --no-cache git ca-certificates
-
+FROM rust:1.85-slim-bookworm AS builder
 WORKDIR /app
-
-COPY go.mod go.sum ./
-RUN go mod download
-
+COPY Cargo.toml Cargo.lock* ./
+RUN mkdir src && echo 'fn main() {}' > src/main.rs
+RUN cargo build --release || true
 COPY . .
+RUN cargo build --release
 
-RUN go test ./...
-
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
-
-# ---------------------
-# 2️⃣ Etapa Final (com Chromium para PDF)
-# ---------------------
 FROM debian:bookworm-slim
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    chromium \
-    fonts-liberation \
-    && rm -rf /var/lib/apt/lists/*
-
-# Chromium sem sandbox (necessário em container)
-ENV CHROME_BIN=/usr/bin/chromium
-ENV CHROMEDP_SKIP_CHROMIUM_DOWNLOAD=1
-ENV CHROMEDP_HEADLESS=1
-
-WORKDIR /root/
-
-COPY --from=builder /app/main .
-COPY --from=builder /app/db ./db
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates libpq5 && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/target/release/donnapresentes .
+COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/templates ./templates
-
 EXPOSE 8080
-
-CMD ["./main"]
+CMD ["./donnapresentes"]
