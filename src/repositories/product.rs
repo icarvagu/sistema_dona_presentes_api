@@ -193,9 +193,9 @@ pub async fn approve(pool: &sqlx::PgPool, id: i32) -> Result<(), AppError> {
 
 pub async fn get_financial_report(pool: &sqlx::PgPool) -> Result<Vec<FinancialReportItem>, AppError> {
     sqlx::query_as::<_, FinancialReportItem>(
-        "SELECT id as product_id, product_name, internal_code, kit_type, cost_price,
-                selling_price, (selling_price - cost_price) as margin_value,
-                CASE WHEN cost_price > 0 THEN ((selling_price - cost_price) / cost_price * 100.0) ELSE 0 END as margin_percent,
+        "SELECT id as product_id, product_name, internal_code, kit_type, cost_price::float8,
+                selling_price::float8, (selling_price::float8 - cost_price::float8) as margin_value,
+                CASE WHEN cost_price::float8 > 0 THEN ((selling_price::float8 - cost_price::float8) / cost_price::float8 * 100.0) ELSE 0 END as margin_percent,
                 moves_stock, enabled_for_invoice
          FROM products ORDER BY product_name",
     )
@@ -243,11 +243,11 @@ const PRODUCT_SELECT: &str = "
     SELECT p.id, p.product_name, p.internal_code, p.supplier_code, p.supplier_id,
            p.product_group, p.description, p.photos, p.ncm, p.material_origin,
            p.stock, p.supplier_stock, p.moves_stock, p.enabled_for_invoice,
-           p.cost_price, p.selling_price, p.kit_type, p.is_composition,
+           p.cost_price::float8, p.selling_price::float8, p.kit_type, p.is_composition,
            p.source, p.imported_at, p.last_synced_at, p.color, p.origin,
-           p.pending_approval, p.last_cost, p.last_cost_date,
+           p.pending_approval, p.last_cost::float8, p.last_cost_date,
            p.last_cost_qty1, p.last_cost_qty2, p.last_cost_qty3,
-           p.last_cost_val1, p.last_cost_val2, p.last_cost_val3, p.last_cost_user,
+           p.last_cost_val1::float8, p.last_cost_val2::float8, p.last_cost_val3::float8, p.last_cost_user,
            p.created_at, p.updated_at
     FROM products p";
 
@@ -255,11 +255,11 @@ const RETURN_COLS: &str = "
     p.id, p.product_name, p.internal_code, p.supplier_code, p.supplier_id,
     p.product_group, p.description, p.photos, p.ncm, p.material_origin,
     p.stock, p.supplier_stock, p.moves_stock, p.enabled_for_invoice,
-    p.cost_price, p.selling_price, p.kit_type, p.is_composition,
+    p.cost_price::float8, p.selling_price::float8, p.kit_type, p.is_composition,
     p.source, p.imported_at, p.last_synced_at, p.color, p.origin,
-    p.pending_approval, p.last_cost, p.last_cost_date,
+    p.pending_approval, p.last_cost::float8, p.last_cost_date,
     p.last_cost_qty1, p.last_cost_qty2, p.last_cost_qty3,
-    p.last_cost_val1, p.last_cost_val2, p.last_cost_val3, p.last_cost_user,
+    p.last_cost_val1::float8, p.last_cost_val2::float8, p.last_cost_val3::float8, p.last_cost_user,
     p.created_at, p.updated_at";
 
 async fn get_items_bulk(pool: &sqlx::PgPool) -> Result<std::collections::HashMap<i32, Vec<ProductItem>>, AppError> {

@@ -1,4 +1,3 @@
-use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -25,10 +24,10 @@ pub struct User {
     pub notes: Option<String>,
     #[serde(skip_serializing)]
     pub failed_login_attempts: i32,
-    pub locked_until: Option<NaiveDateTime>,
+    pub locked_until: Option<chrono::DateTime<chrono::Utc>>,
     pub must_change_password: bool,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -97,8 +96,8 @@ pub struct RefreshToken {
     pub user_id: i32,
     pub token_hash: String,
     pub revoked: bool,
-    pub expires_at: NaiveDateTime,
-    pub created_at: NaiveDateTime,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, sqlx::FromRow)]
@@ -107,6 +106,6 @@ pub struct PasswordResetToken {
     pub user_id: i32,
     pub token_hash: String,
     pub used: bool,
-    pub expires_at: NaiveDateTime,
-    pub created_at: NaiveDateTime,
+    pub expires_at: chrono::DateTime<chrono::Utc>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }

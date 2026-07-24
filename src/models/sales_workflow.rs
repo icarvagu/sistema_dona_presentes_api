@@ -9,7 +9,7 @@ pub struct QuoteFeedbackEvent {
     pub scheduled_at: Option<NaiveDateTime>,
     pub observation: Option<String>,
     pub created_by: i32,
-    pub created_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -26,7 +26,7 @@ pub struct ItemLayoutVersion {
     pub approved_by: Option<i32>,
     pub approved_at: Option<NaiveDateTime>,
     pub created_by: i32,
-    pub created_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Deserialize)]

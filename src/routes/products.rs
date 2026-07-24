@@ -19,6 +19,7 @@ pub fn router() -> Router<AppState> {
         )
         .route("/products/groups", get(handlers::product::groups))
         .route("/products/pending-approval", get(handlers::product::pending_approval))
+        .route("/products/pending", get(handlers::product::pending_approval))
         .route("/products/{id}/approve", post(handlers::product::approve))
         .route("/products/financial-report", get(handlers::product::financial_report))
         .route("/products/{id}/last-cost", put(handlers::product::update_last_cost))

@@ -152,7 +152,7 @@ pub async fn dashboard(
         .fetch_one(&state.db).await.map_err(|e| AppError::internal(e.to_string()))?;
 
     let pending_events: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM sale_pending_events WHERE resolved = false"
+        "SELECT COUNT(*) FROM sale_pending_events WHERE resolved_at IS NULL"
     ).fetch_one(&state.db).await.map_err(|e| AppError::internal(e.to_string()))?;
 
     Ok(ok_response(serde_json::json!({
@@ -275,7 +275,7 @@ pub async fn resolve_pending(
     Path(event_id): Path<i64>,
 ) -> Result<impl axum::response::IntoResponse, AppError> {
     sqlx::query(
-        "UPDATE sale_pending_events SET resolved = true, resolved_by = $1, resolved_at = NOW() WHERE id = $2"
+        "UPDATE sale_pending_events SET resolved_by = $1, resolved_at = NOW() WHERE id = $2"
     )
     .bind(user.user_id).bind(event_id)
     .execute(&state.db).await

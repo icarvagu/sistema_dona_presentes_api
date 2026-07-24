@@ -10,5 +10,5 @@ pub struct Notification {
     pub notification_type: String,
     pub message: String,
     pub read_at: Option<NaiveDateTime>,
-    pub created_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }

@@ -1,4 +1,5 @@
 use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -10,14 +11,14 @@ pub struct Sale {
     pub payment_method: Option<String>,
     pub installments: Option<i32>,
     pub payment_term_days: Option<i32>,
-    pub first_installment_start: Option<NaiveDateTime>,
+    pub first_installment_start: Option<DateTime<Utc>>,
     pub installment_dates: Option<Value>,
     pub status: String,
     pub is_event: bool,
     pub delivery_address: Option<String>,
-    pub delivery_date: Option<NaiveDateTime>,
-    pub departure_date: Option<NaiveDateTime>,
-    pub arrival_date: Option<NaiveDateTime>,
+    pub delivery_date: Option<DateTime<Utc>>,
+    pub departure_date: Option<DateTime<Utc>>,
+    pub arrival_date: Option<DateTime<Utc>>,
     pub priority: Option<String>,
     pub care_of: Option<String>,
     pub invoice_email: Option<String>,
@@ -34,8 +35,8 @@ pub struct Sale {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     #[sqlx(skip)]
     pub carriers: Vec<super::Carrier>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -46,11 +47,9 @@ pub struct SaleItem {
     pub quantity: i32,
     pub unit_price: f64,
     pub total_price: f64,
-    pub discount: f64,
-    pub price_formation: Option<Value>,
     pub engravings: Option<Value>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Deserialize)]

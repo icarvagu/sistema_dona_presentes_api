@@ -42,8 +42,8 @@ pub struct Quote {
     pub freight_volumes: Option<Value>,
     pub freight_valor_nota: Option<f64>,
     pub freight_peso_real: Option<f64>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -89,8 +89,8 @@ pub struct QuoteItem {
     pub engravings: Option<Value>,
     pub has_price_formation: bool,
     pub discount: f64,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Deserialize)]

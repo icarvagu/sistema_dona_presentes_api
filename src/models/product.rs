@@ -40,8 +40,8 @@ pub struct Product {
     pub last_cost_val2: Option<f64>,
     pub last_cost_val3: Option<f64>,
     pub last_cost_user: Option<String>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Deserialize)]

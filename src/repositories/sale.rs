@@ -17,8 +17,8 @@ pub async fn get_by_id(pool: &sqlx::PgPool, id: i32) -> Result<Sale, AppError> {
         .map_err(|e| AppError::internal(e.to_string()))?
         .ok_or_else(|| AppError::not_found("Venda"))?;
     sale.items = sqlx::query_as::<_, SaleItem>(
-        "SELECT id, sale_id, product_id, quantity, unit_price, total_price,
-                discount, price_formation, engravings, created_at, updated_at
+        "SELECT id, sale_id, product_id, quantity, unit_price::float8, total_price::float8,
+                engravings, created_at, updated_at
          FROM sale_items WHERE sale_id = $1 ORDER BY id",
     )
     .bind(id)
@@ -32,7 +32,7 @@ pub async fn get_by_id(pool: &sqlx::PgPool, id: i32) -> Result<Sale, AppError> {
 pub async fn create(pool: &sqlx::PgPool, input: &SaleInput) -> Result<Sale, AppError> {
     let mut tx = pool.begin().await.map_err(|e| AppError::internal(e.to_string()))?;
 
-    let total: f64 = input.items.iter().map(|i| i.unit_price * i.quantity as f64 * (1.0 - i.discount.unwrap_or(0.0))).sum();
+    let total: f64 = input.items.iter().map(|i| i.unit_price * i.quantity as f64).sum();
 
     let sale = sqlx::query_as::<_, Sale>(
         "INSERT INTO sales (seller_id, customer_id, payment_method, installments,
@@ -47,7 +47,7 @@ pub async fn create(pool: &sqlx::PgPool, input: &SaleInput) -> Result<Sale, AppE
                    status, is_event, delivery_address, delivery_date, departure_date,
                    arrival_date, priority, care_of, invoice_email, financial_email,
                    purchase_order, external_notes, internal_notes, layout_urls,
-                   total_value, created_at, updated_at",
+                   total_value::float8, created_at, updated_at",
     )
     .bind(input.seller_id).bind(input.customer_id)
     .bind(&input.payment_method).bind(input.installments)
@@ -67,14 +67,14 @@ pub async fn create(pool: &sqlx::PgPool, input: &SaleInput) -> Result<Sale, AppE
     .map_err(|e| AppError::internal(e.to_string()))?;
 
     for item in &input.items {
-        let iprice = item.unit_price * item.quantity as f64 * (1.0 - item.discount.unwrap_or(0.0));
+        let iprice = item.unit_price * item.quantity as f64;
         sqlx::query(
             "INSERT INTO sale_items (sale_id, product_id, quantity, unit_price,
-                    total_price, discount, engravings)
-             VALUES ($1,$2,$3,$4,$5,$6,$7)",
+                    total_price, engravings)
+             VALUES ($1,$2,$3,$4,$5,$6)",
         )
         .bind(sale.id).bind(item.product_id).bind(item.quantity)
-        .bind(item.unit_price).bind(iprice).bind(item.discount.unwrap_or(0.0))
+        .bind(item.unit_price).bind(iprice)
         .bind(&item.engravings)
         .execute(&mut *tx).await
         .map_err(|e| AppError::internal(e.to_string()))?;
@@ -93,7 +93,7 @@ pub async fn create(pool: &sqlx::PgPool, input: &SaleInput) -> Result<Sale, AppE
 pub async fn update(pool: &sqlx::PgPool, id: i32, input: &SaleInput) -> Result<Sale, AppError> {
     let mut tx = pool.begin().await.map_err(|e| AppError::internal(e.to_string()))?;
 
-    let total: f64 = input.items.iter().map(|i| i.unit_price * i.quantity as f64 * (1.0 - i.discount.unwrap_or(0.0))).sum();
+    let total: f64 = input.items.iter().map(|i| i.unit_price * i.quantity as f64).sum();
 
     sqlx::query(
         "UPDATE sales SET seller_id=$1, customer_id=$2, payment_method=$3,
@@ -128,14 +128,14 @@ pub async fn update(pool: &sqlx::PgPool, id: i32, input: &SaleInput) -> Result<S
         .execute(&mut *tx).await.map_err(|e| AppError::internal(e.to_string()))?;
 
     for item in &input.items {
-        let iprice = item.unit_price * item.quantity as f64 * (1.0 - item.discount.unwrap_or(0.0));
+        let iprice = item.unit_price * item.quantity as f64;
         sqlx::query(
             "INSERT INTO sale_items (sale_id, product_id, quantity, unit_price,
-                    total_price, discount, engravings)
-             VALUES ($1,$2,$3,$4,$5,$6,$7)",
+                    total_price, engravings)
+             VALUES ($1,$2,$3,$4,$5,$6)",
         )
         .bind(id).bind(item.product_id).bind(item.quantity)
-        .bind(item.unit_price).bind(iprice).bind(item.discount.unwrap_or(0.0))
+        .bind(item.unit_price).bind(iprice)
         .bind(&item.engravings)
         .execute(&mut *tx).await
         .map_err(|e| AppError::internal(e.to_string()))?;
@@ -171,7 +171,7 @@ const SALE_SELECT_ALL: &str = "
            s.status, s.is_event, s.delivery_address, s.delivery_date,
            s.departure_date, s.arrival_date, s.priority, s.care_of,
            s.invoice_email, s.financial_email, s.purchase_order,
-           s.external_notes, s.internal_notes, s.layout_urls, s.total_value,
+            s.external_notes, s.internal_notes, s.layout_urls, s.total_value::float8,
            s.created_at, s.updated_at
     FROM sales s";
 
@@ -179,8 +179,8 @@ async fn attach_items_bulk(pool: &sqlx::PgPool, mut sales: Vec<Sale>) -> Result<
     let ids: Vec<i32> = sales.iter().map(|s| s.id).collect();
     if ids.is_empty() { return Ok(sales); }
     let items = sqlx::query_as::<_, SaleItem>(
-        "SELECT id, sale_id, product_id, quantity, unit_price, total_price,
-                discount, price_formation, engravings, created_at, updated_at
+        "SELECT id, sale_id, product_id, quantity, unit_price::float8, total_price::float8,
+                engravings, created_at, updated_at
          FROM sale_items WHERE sale_id = ANY($1) ORDER BY id")
     .bind(&ids).fetch_all(pool).await
     .map_err(|e| AppError::internal(e.to_string()))?;

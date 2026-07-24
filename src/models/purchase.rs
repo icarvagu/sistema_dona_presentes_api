@@ -42,8 +42,8 @@ pub struct PurchaseOrder {
     pub commercial_notes: Option<String>,
     pub purchase_notes: Option<String>,
     pub production_released_at: Option<NaiveDateTime>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     #[sqlx(skip)]
@@ -74,7 +74,7 @@ pub struct PurchaseAttachment {
     pub file_name: String,
     pub url: String,
     pub uploaded_by: Option<i32>,
-    pub created_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -106,7 +106,7 @@ pub struct PurchasePayment {
     pub approved_by: Option<i32>,
     pub requested_at: NaiveDateTime,
     pub approved_at: Option<NaiveDateTime>,
-    pub updated_at: NaiveDateTime,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
@@ -124,8 +124,8 @@ pub struct PurchaseIssue {
     pub status: String,
     pub opened_by: Option<i32>,
     pub resolved_by: Option<i32>,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
     pub resolved_at: Option<NaiveDateTime>,
 }
 
@@ -139,7 +139,7 @@ pub struct PurchaseHistory {
     pub details: Option<String>,
     pub user_id: Option<i32>,
     pub user_name: String,
-    pub created_at: NaiveDateTime,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Debug, Deserialize)]

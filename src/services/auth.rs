@@ -36,7 +36,7 @@ impl AuthService {
         let user = user.ok_or_else(|| AppError::validation("Usuário ou senha inválidos"))?;
 
         if let Some(locked_until) = user.locked_until {
-            if Utc::now().naive_utc() < locked_until {
+            if Utc::now() < locked_until {
                 return Err(AppError::validation(
                     "Conta temporariamente bloqueada por muitas tentativas. Tente novamente mais tarde",
                 ));
@@ -46,7 +46,7 @@ impl AuthService {
         if !bcrypt::verify(&input.password, &user.password_hash).unwrap_or(false) {
             let new_attempts = user.failed_login_attempts + 1;
             let lock_until = if new_attempts >= 5 {
-                Some(Utc::now().naive_utc() + chrono::Duration::minutes(15))
+                Some(Utc::now() + chrono::Duration::minutes(15))
             } else {
                 None
             };
@@ -103,7 +103,7 @@ impl AuthService {
         let token = hex::encode(random_bytes);
 
         let token_hash = hex::encode(Sha256::digest(token.as_bytes()));
-        let expires_at = Utc::now().naive_utc() + chrono::Duration::days(7);
+        let expires_at = Utc::now() + chrono::Duration::days(7);
 
         sqlx::query(
             "INSERT INTO refresh_tokens (user_id, token_hash, revoked, expires_at)
@@ -136,7 +136,7 @@ impl AuthService {
         .map_err(|e| AppError::internal(e.to_string()))?
         .ok_or_else(|| AppError::unauthorized("Refresh token inválido ou expirado"))?;
 
-        if rt.revoked || Utc::now().naive_utc() > rt.expires_at {
+        if rt.revoked || Utc::now() > rt.expires_at {
             return Err(AppError::unauthorized("Refresh token inválido ou expirado"));
         }
 
@@ -160,7 +160,7 @@ impl AuthService {
         .ok_or_else(|| AppError::unauthorized("Usuário não encontrado"))?;
 
         if let Some(locked) = user.locked_until {
-            if Utc::now().naive_utc() < locked {
+            if Utc::now() < locked {
                 return Err(AppError::validation("Conta temporariamente bloqueada"));
             }
         }
@@ -235,7 +235,7 @@ impl AuthService {
         let random_bytes: [u8; 32] = rand::thread_rng().gen();
         let token = hex::encode(random_bytes);
         let token_hash = hex::encode(Sha256::digest(token.as_bytes()));
-        let expires_at = Utc::now().naive_utc() + chrono::Duration::hours(1);
+        let expires_at = Utc::now() + chrono::Duration::hours(1);
 
         sqlx::query(
             "INSERT INTO password_reset_tokens (user_id, token_hash, used, expires_at)
@@ -271,7 +271,7 @@ impl AuthService {
         .map_err(|e| AppError::internal(e.to_string()))?
         .ok_or_else(|| AppError::validation("Token de reset inválido ou expirado"))?;
 
-        if prt.used || Utc::now().naive_utc() > prt.expires_at {
+        if prt.used || Utc::now() > prt.expires_at {
             return Err(AppError::validation("Token de reset inválido ou expirado"));
         }
 
