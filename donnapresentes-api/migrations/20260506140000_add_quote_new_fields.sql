@@ -1,0 +1,25 @@
+-- +goose Up
+ALTER TABLE quotes
+  ADD COLUMN IF NOT EXISTS quote_date       DATE,
+  ADD COLUMN IF NOT EXISTS care_of          TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS sales_channel    TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS observations     TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS payment_method   TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS carrier_id       INTEGER,
+  ADD COLUMN IF NOT EXISTS freight_value    NUMERIC(12,2) NOT NULL DEFAULT 0;
+
+ALTER TABLE quote_items
+  ADD COLUMN IF NOT EXISTS discount NUMERIC(12,2) NOT NULL DEFAULT 0;
+
+-- +goose Down
+ALTER TABLE quotes
+  DROP COLUMN IF EXISTS quote_date,
+  DROP COLUMN IF EXISTS care_of,
+  DROP COLUMN IF EXISTS sales_channel,
+  DROP COLUMN IF EXISTS observations,
+  DROP COLUMN IF EXISTS payment_method,
+  DROP COLUMN IF EXISTS carrier_id,
+  DROP COLUMN IF EXISTS freight_value;
+
+ALTER TABLE quote_items
+  DROP COLUMN IF EXISTS discount;

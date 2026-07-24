@@ -1,0 +1,14 @@
+pub mod auth;
+pub mod user;
+pub mod customer;
+pub mod supplier;
+pub mod carrier;
+pub mod product;
+pub mod quote;
+pub mod sale;
+pub mod purchase;
+pub mod production;
+pub mod art_final;
+pub mod dashboard;
+pub mod sales_workflow;
+pub mod xbz;
