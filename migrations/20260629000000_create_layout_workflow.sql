@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 CREATE TABLE layout_requests (
     id BIGSERIAL PRIMARY KEY,
     source_type VARCHAR(20) NOT NULL CHECK (source_type IN ('quote','sale')),
@@ -131,19 +129,4 @@ SELECT r.id request_id,i.id request_item_id,r.title,r.status request_status,i.st
 FROM layout_requests r JOIN layout_request_items i ON i.request_id=r.id
 LEFT JOIN layout_corel_jobs c ON c.request_item_id=i.id
 LEFT JOIN layout_engraving_jobs e ON e.request_item_id=i.id;
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-DROP VIEW IF EXISTS art_final_layout_agenda;
-ALTER TABLE sale_items DROP COLUMN IF EXISTS product_received_by,DROP COLUMN IF EXISTS product_received_at;
-DROP TABLE IF EXISTS layout_job_versions;
-ALTER TABLE art_final_tasks DROP COLUMN IF EXISTS format,DROP COLUMN IF EXISTS channel,DROP COLUMN IF EXISTS assigned_to,DROP COLUMN IF EXISTS due_at;
-ALTER TABLE art_final_stories DROP COLUMN IF EXISTS updated_by,DROP COLUMN IF EXISTS expires_at,DROP COLUMN IF EXISTS published_at,DROP COLUMN IF EXISTS observation,DROP COLUMN IF EXISTS lifecycle_status;
-DROP TABLE IF EXISTS layout_engraving_jobs;
-DROP TABLE IF EXISTS layout_corel_jobs;
-ALTER TABLE item_layout_versions DROP COLUMN IF EXISTS request_item_id;
-DROP TABLE IF EXISTS layout_request_groups;
-DROP TABLE IF EXISTS layout_request_items;
-DROP TABLE IF EXISTS layout_requests;
--- +goose StatementEnd

@@ -1,4 +1,3 @@
--- +goose Up
 ALTER TABLE purchase_orders
     ADD COLUMN IF NOT EXISTS status_updated_at TIMESTAMPTZ;
 
@@ -14,5 +13,3 @@ ALTER TABLE purchase_orders
     ALTER COLUMN status_updated_at SET NOT NULL,
     ALTER COLUMN status_updated_at SET DEFAULT NOW();
 
--- +goose Down
-ALTER TABLE purchase_orders DROP COLUMN IF EXISTS status_updated_at;

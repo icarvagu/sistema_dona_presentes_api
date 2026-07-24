@@ -1,4 +1,3 @@
--- +goose Up
 CREATE TABLE carriers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -14,5 +13,3 @@ CREATE TABLE carriers (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- +goose Down
-DROP TABLE IF EXISTS carriers;

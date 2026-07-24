@@ -1,4 +1,3 @@
--- +goose Up
 ALTER TABLE products
   ADD COLUMN IF NOT EXISTS last_cost        NUMERIC(10,2) NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS last_cost_date   DATE,
@@ -7,11 +6,3 @@ ALTER TABLE products
   ADD COLUMN IF NOT EXISTS last_cost_qty3   INT NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS last_cost_user   VARCHAR(255) NOT NULL DEFAULT '';
 
--- +goose Down
-ALTER TABLE products
-  DROP COLUMN IF EXISTS last_cost,
-  DROP COLUMN IF EXISTS last_cost_date,
-  DROP COLUMN IF EXISTS last_cost_qty1,
-  DROP COLUMN IF EXISTS last_cost_qty2,
-  DROP COLUMN IF EXISTS last_cost_qty3,
-  DROP COLUMN IF EXISTS last_cost_user;

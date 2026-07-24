@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 ALTER TABLE products
   ADD COLUMN IF NOT EXISTS kit_type TEXT NOT NULL DEFAULT 'none';
 
@@ -26,12 +24,4 @@ CREATE TABLE IF NOT EXISTS product_price_formations (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
 );
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-DROP TABLE IF EXISTS product_price_formations;
-
-ALTER TABLE products DROP CONSTRAINT IF EXISTS products_kit_type_check;
-ALTER TABLE products DROP COLUMN IF EXISTS kit_type;
--- +goose StatementEnd

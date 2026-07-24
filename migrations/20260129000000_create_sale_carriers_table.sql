@@ -1,4 +1,3 @@
--- +goose Up
 -- Tabela de junção para relacionamento many-to-many entre sales e carriers
 CREATE TABLE IF NOT EXISTS sale_carriers (
     id SERIAL PRIMARY KEY,
@@ -11,7 +10,3 @@ CREATE TABLE IF NOT EXISTS sale_carriers (
 CREATE INDEX idx_sale_carriers_sale_id ON sale_carriers(sale_id);
 CREATE INDEX idx_sale_carriers_carrier_id ON sale_carriers(carrier_id);
 
--- +goose Down
-DROP INDEX IF EXISTS idx_sale_carriers_carrier_id;
-DROP INDEX IF EXISTS idx_sale_carriers_sale_id;
-DROP TABLE IF EXISTS sale_carriers;

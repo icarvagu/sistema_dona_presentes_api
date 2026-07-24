@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 CREATE TABLE products (
     id SERIAL PRIMARY KEY,
     product_name TEXT NOT NULL,
@@ -20,9 +18,4 @@ CREATE TABLE products (
 );
 
 CREATE INDEX idx_products_supplier_id ON products(supplier_id);
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-DROP TABLE IF EXISTS products CASCADE;
--- +goose StatementEnd

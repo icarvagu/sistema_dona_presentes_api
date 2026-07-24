@@ -1,4 +1,3 @@
--- +goose Up
 UPDATE purchase_orders po
 SET general_number = po.sale_id::text,
     has_engraving = EXISTS (
@@ -15,5 +14,3 @@ SET general_number = po.sale_id::text,
     ),
     updated_at = NOW();
 
--- +goose Down
--- A numeração compartilhada entre Venda e Compra é definitiva e não deve ser revertida.

@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 CREATE TABLE production_orders (
     id BIGSERIAL PRIMARY KEY,
     purchase_id INTEGER NOT NULL UNIQUE REFERENCES purchase_orders(id) ON DELETE RESTRICT,
@@ -171,10 +169,4 @@ INSERT INTO production_order_items(production_order_id,sale_item_id,product_id,e
 SELECT po.id,si.id,si.product_id,si.quantity,COALESCE(si.engravings,'[]'::jsonb)<>'[]'::jsonb
 FROM production_orders po JOIN sale_items si ON si.sale_id=po.sale_id
 ON CONFLICT (sale_item_id) DO NOTHING;
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-ALTER TABLE notifications DROP COLUMN IF EXISTS production_order_id;
-DROP TABLE IF EXISTS production_history,production_supply_movements,production_supplies,production_shipments,production_fiscal_documents,production_volumes,production_engraving_events,production_occurrences,production_receipt_items,production_receipts,production_order_items,production_orders;
--- +goose StatementEnd

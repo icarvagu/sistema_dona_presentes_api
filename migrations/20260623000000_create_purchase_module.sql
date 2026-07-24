@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 CREATE TABLE purchase_orders (
     id SERIAL PRIMARY KEY,
     sale_id INTEGER NOT NULL UNIQUE REFERENCES sales(id) ON DELETE CASCADE,
@@ -143,15 +141,4 @@ JOIN products p ON p.id = si.product_id
 WHERE s.status IN ('Pendente de Compra', 'Aprovado pelo Cliente')
 GROUP BY s.id
 ON CONFLICT (sale_id) DO NOTHING;
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-DROP TABLE IF EXISTS notifications;
-DROP TABLE IF EXISTS purchase_history;
-DROP TABLE IF EXISTS purchase_issues;
-DROP TABLE IF EXISTS purchase_payments;
-DROP TABLE IF EXISTS purchase_emails;
-DROP TABLE IF EXISTS purchase_attachments;
-DROP TABLE IF EXISTS purchase_orders;
--- +goose StatementEnd

@@ -1,4 +1,3 @@
--- +goose Up
 CREATE TABLE IF NOT EXISTS request_logs (
     id BIGSERIAL PRIMARY KEY,
     request_id VARCHAR(32) NOT NULL,
@@ -18,5 +17,3 @@ CREATE INDEX IF NOT EXISTS idx_request_logs_request_id ON request_logs(request_i
 CREATE INDEX IF NOT EXISTS idx_request_logs_status ON request_logs(status);
 CREATE INDEX IF NOT EXISTS idx_request_logs_slow ON request_logs(slow) WHERE slow = TRUE;
 
--- +goose Down
-DROP TABLE IF EXISTS request_logs;

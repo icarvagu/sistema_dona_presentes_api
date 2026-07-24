@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 -- Seed para testar o PDF: fornecedor, produto, cliente e venda
 
 -- Fornecedor
@@ -32,14 +30,4 @@ VALUES (1, 1, 'PIX', 1, 0, '2026-03-20'::timestamp, 47.98);
 -- Itens da venda
 INSERT INTO sale_items (sale_id, product_id, quantity, unit_price, total_price)
 VALUES (1, 1, 2, 23.99, 47.98);
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-DELETE FROM sale_items WHERE sale_id = 1;
-DELETE FROM sales WHERE id = 1;
-DELETE FROM customer_addresses WHERE customer_id IN (1, 2);
-DELETE FROM customers WHERE id IN (1, 2);
-DELETE FROM products WHERE internal_code = 'DN1961';
-DELETE FROM suppliers WHERE name = 'Fornecedor Teste Ltda';
--- +goose StatementEnd

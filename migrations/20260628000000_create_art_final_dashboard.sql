@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 CREATE TABLE art_final_tasks (
     id BIGSERIAL PRIMARY KEY,
     panel VARCHAR(20) NOT NULL CHECK (panel IN ('pending', 'media')),
@@ -49,11 +47,4 @@ CREATE TABLE art_final_audit_log (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX ix_art_final_audit_entity ON art_final_audit_log(entity_type, entity_id, created_at DESC);
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-DROP TABLE IF EXISTS art_final_audit_log;
-DROP TABLE IF EXISTS art_final_stories;
-DROP TABLE IF EXISTS art_final_tasks;
--- +goose StatementEnd

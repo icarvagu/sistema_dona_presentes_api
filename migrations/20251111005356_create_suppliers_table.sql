@@ -1,4 +1,3 @@
--- +goose Up
 CREATE TABLE suppliers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
@@ -19,5 +18,3 @@ CREATE UNIQUE INDEX idx_suppliers_cnpj_unique
 ON suppliers (cnpj)
 WHERE cnpj IS NOT NULL;
 
--- +goose Down
-DROP TABLE IF EXISTS suppliers;

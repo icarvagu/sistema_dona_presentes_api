@@ -1,4 +1,3 @@
--- +goose Up
 -- Add price formation fields to quote_items
 ALTER TABLE quote_items
   ADD COLUMN IF NOT EXISTS dn_code VARCHAR(100) DEFAULT '',

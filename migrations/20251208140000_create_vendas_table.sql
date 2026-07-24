@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 CREATE TABLE sales (
     id SERIAL PRIMARY KEY,
     seller_id INTEGER NOT NULL,
@@ -37,10 +35,4 @@ CREATE TABLE sale_items (
 CREATE INDEX idx_sales_seller_id ON sales(seller_id);
 CREATE INDEX idx_sale_items_sale_id ON sale_items(sale_id);
 CREATE INDEX idx_sale_items_product_id ON sale_items(product_id);
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-DROP TABLE IF EXISTS sale_items CASCADE;
-DROP TABLE IF EXISTS sales CASCADE;
--- +goose StatementEnd

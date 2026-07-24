@@ -1,4 +1,3 @@
--- +goose Up
 CREATE TABLE employees (
     id SERIAL PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
@@ -15,5 +14,3 @@ CREATE TABLE employees (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- +goose Down
-DROP TABLE IF EXISTS employees;

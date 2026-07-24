@@ -1,4 +1,3 @@
--- +goose Up
 -- Todos os produtos atuais devem passar pela análise de impostos e autorização.
 UPDATE products
 SET pending_approval = TRUE,
@@ -8,5 +7,3 @@ SET pending_approval = TRUE,
 -- Novos registros também aguardam autorização por padrão.
 ALTER TABLE products ALTER COLUMN pending_approval SET DEFAULT TRUE;
 
--- +goose Down
-ALTER TABLE products ALTER COLUMN pending_approval SET DEFAULT FALSE;

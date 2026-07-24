@@ -1,11 +1,5 @@
--- +goose Up
 ALTER TABLE sales ADD COLUMN IF NOT EXISTS delivery_date DATE;
 ALTER TABLE sales ADD COLUMN IF NOT EXISTS departure_date DATE;
 ALTER TABLE sales ADD COLUMN IF NOT EXISTS arrival_date DATE;
 ALTER TABLE sales ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'normal';
 
--- +goose Down
-ALTER TABLE sales DROP COLUMN IF EXISTS delivery_date;
-ALTER TABLE sales DROP COLUMN IF EXISTS departure_date;
-ALTER TABLE sales DROP COLUMN IF EXISTS arrival_date;
-ALTER TABLE sales DROP COLUMN IF EXISTS priority;

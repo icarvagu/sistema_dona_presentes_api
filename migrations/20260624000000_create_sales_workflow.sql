@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 ALTER TABLE quotes
   ADD COLUMN IF NOT EXISTS important BOOLEAN NOT NULL DEFAULT FALSE,
   ADD COLUMN IF NOT EXISTS converted_sale_id INTEGER NULL;
@@ -149,27 +147,4 @@ SELECT q.id, q.feedback_datetime, q.feedback_observation, q.seller_id, COALESCE(
 FROM quotes q
 WHERE (q.feedback_datetime IS NOT NULL OR q.feedback_observation <> '')
   AND NOT EXISTS (SELECT 1 FROM quote_feedback_events e WHERE e.quote_id = q.id);
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-DROP TABLE IF EXISTS seller_monthly_targets;
-DROP TABLE IF EXISTS engraving_approvals;
-DROP TABLE IF EXISTS sale_pending_events;
-DROP TABLE IF EXISTS sale_payment_receipts;
-DROP TABLE IF EXISTS layout_approval_events;
-DROP TABLE IF EXISTS financial_analysis_events;
-DROP TABLE IF EXISTS financial_analyses;
-DROP TABLE IF EXISTS item_layout_versions;
-DROP TABLE IF EXISTS quote_feedback_events;
-ALTER TABLE sale_items DROP CONSTRAINT IF EXISTS fk_sale_items_quote_item_id;
-ALTER TABLE sales DROP CONSTRAINT IF EXISTS fk_sales_seller_approved_by;
-ALTER TABLE sales DROP CONSTRAINT IF EXISTS fk_sales_quote_id;
-ALTER TABLE quotes DROP CONSTRAINT IF EXISTS fk_quotes_converted_sale_id;
-ALTER TABLE sale_items DROP COLUMN IF EXISTS engraving_withdrawal_date, DROP COLUMN IF EXISTS personalization_type, DROP COLUMN IF EXISTS quote_item_id;
-DROP INDEX IF EXISTS ix_sale_items_quote_item_id;
-DROP INDEX IF EXISTS ix_quotes_converted_sale_id;
-DROP INDEX IF EXISTS ux_sales_quote_id;
-ALTER TABLE sales DROP COLUMN IF EXISTS released_to_purchases_at, DROP COLUMN IF EXISTS seller_approved_by, DROP COLUMN IF EXISTS seller_approved_at, DROP COLUMN IF EXISTS quote_id;
-ALTER TABLE quotes DROP COLUMN IF EXISTS converted_sale_id, DROP COLUMN IF EXISTS important;
--- +goose StatementEnd

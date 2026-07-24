@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 CREATE TABLE customers (
     id SERIAL PRIMARY KEY,
     customer_type VARCHAR(20) NOT NULL CHECK (customer_type IN ('PF', 'PJ')),
@@ -47,11 +45,4 @@ CREATE INDEX idx_customers_type ON customers(customer_type);
 CREATE INDEX idx_customers_status ON customers(status);
 CREATE INDEX idx_customer_addresses_customer_id ON customer_addresses(customer_id);
 CREATE INDEX idx_additional_contacts_customer_id ON additional_contacts(customer_id);
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-DROP TABLE IF EXISTS additional_contacts CASCADE;
-DROP TABLE IF EXISTS customer_addresses CASCADE;
-DROP TABLE IF EXISTS customers CASCADE;
--- +goose StatementEnd

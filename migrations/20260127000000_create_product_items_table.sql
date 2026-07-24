@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 CREATE TABLE product_items (
     id SERIAL PRIMARY KEY,
     product_parent_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -12,9 +10,4 @@ CREATE TABLE product_items (
 
 CREATE INDEX idx_product_items_product_parent_id ON product_items(product_parent_id);
 CREATE INDEX idx_product_items_product_id ON product_items(product_id);
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-DROP TABLE IF EXISTS product_items CASCADE;
--- +goose StatementEnd

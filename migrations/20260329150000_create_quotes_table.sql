@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS quotes (
     id SERIAL PRIMARY KEY,
     quote_number TEXT NOT NULL DEFAULT '',
@@ -34,10 +32,4 @@ CREATE INDEX IF NOT EXISTS idx_quotes_seller_id ON quotes(seller_id);
 CREATE INDEX IF NOT EXISTS idx_quotes_customer_id ON quotes(customer_id);
 CREATE INDEX IF NOT EXISTS idx_quote_items_quote_id ON quote_items(quote_id);
 CREATE INDEX IF NOT EXISTS idx_quote_items_product_id ON quote_items(product_id);
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-DROP TABLE IF EXISTS quote_items CASCADE;
-DROP TABLE IF EXISTS quotes CASCADE;
--- +goose StatementEnd

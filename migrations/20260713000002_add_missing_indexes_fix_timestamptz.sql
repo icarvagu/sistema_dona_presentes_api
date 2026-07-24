@@ -1,5 +1,3 @@
--- +goose Up
--- +goose StatementBegin
 
 -- ============================================================
 -- Missing indexes (critical for query performance)
@@ -43,30 +41,4 @@ ALTER TABLE product_items
     ALTER COLUMN created_at TYPE TIMESTAMPTZ,
     ALTER COLUMN updated_at TYPE TIMESTAMPTZ;
 
--- +goose StatementEnd
 
--- +goose Down
--- +goose StatementBegin
-
-DROP INDEX IF EXISTS idx_carriers_name;
-DROP INDEX IF EXISTS idx_carriers_cnpj;
-DROP INDEX IF EXISTS idx_purchase_attachments_purchase;
-DROP INDEX IF EXISTS idx_purchase_emails_purchase;
-DROP INDEX IF EXISTS idx_sale_payment_receipts_sale;
-DROP INDEX IF EXISTS idx_financial_analysis_events_sale;
-DROP INDEX IF EXISTS idx_layout_approval_events_version;
-DROP INDEX IF EXISTS idx_quotes_carrier;
-
-ALTER TABLE suppliers
-    ALTER COLUMN created_at TYPE TIMESTAMP,
-    ALTER COLUMN updated_at TYPE TIMESTAMP;
-
-ALTER TABLE users
-    ALTER COLUMN created_at TYPE TIMESTAMP,
-    ALTER COLUMN updated_at TYPE TIMESTAMP;
-
-ALTER TABLE product_items
-    ALTER COLUMN created_at TYPE TIMESTAMP,
-    ALTER COLUMN updated_at TYPE TIMESTAMP;
-
--- +goose StatementEnd
