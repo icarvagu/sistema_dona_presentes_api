@@ -16,6 +16,8 @@ pub struct ProductQuery {
     pub filter: Option<String>,
     pub page: Option<i32>,
     pub limit: Option<i32>,
+    pub group: Option<String>,
+    pub only_new: Option<bool>,
 }
 
 pub async fn list(
@@ -26,7 +28,15 @@ pub async fn list(
     let page = query.page.unwrap_or(1);
     let limit = query.limit.unwrap_or(20);
     let filter = query.filter.unwrap_or_default();
-    let result = repositories::product::get_paginated(&state.db, &filter, page, limit).await?;
+    let result = repositories::product::get_paginated(
+        &state.db,
+        &filter,
+        query.group.as_deref(),
+        query.only_new.unwrap_or(false),
+        page,
+        limit,
+    )
+    .await?;
     Ok(ok_response(result))
 }
 

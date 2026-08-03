@@ -1,5 +1,6 @@
 use crate::error::AppError;
 use crate::models::{FinancialReportItem, PaginatedProductResponse, Product, ProductInput, ProductItem};
+use sqlx::{Postgres, QueryBuilder};
 
 pub async fn get_all(pool: &sqlx::PgPool) -> Result<Vec<Product>, AppError> {
     let products = sqlx::query_as::<_, Product>(PRODUCT_SELECT)
@@ -24,38 +25,34 @@ pub async fn get_by_id(pool: &sqlx::PgPool, id: i32) -> Result<Product, AppError
 pub async fn get_paginated(
     pool: &sqlx::PgPool,
     filter: &str,
+    group: Option<&str>,
+    only_new: bool,
     page: i32,
     limit: i32,
 ) -> Result<PaginatedProductResponse, AppError> {
     let offset = (page - 1) * limit;
-    let total: i64 = sqlx::query_scalar(&format!(
-        "SELECT COUNT(*) FROM products p WHERE {filter_like}",
-        filter_like = if filter.is_empty() { "TRUE" } else { "p.product_name ILIKE $1 OR p.internal_code ILIKE $1" }
-    ))
-    .bind(if filter.is_empty() { String::new() } else { format!("%{filter}%") })
-    .fetch_one(pool)
-    .await
-    .map_err(|e| AppError::internal(e.to_string()))?;
 
-    let data = if filter.is_empty() {
-        sqlx::query_as::<_, Product>(&format!(
-            "{PRODUCT_SELECT} ORDER BY p.id LIMIT $1 OFFSET $2"
-        ))
-        .bind(limit as i64)
-        .bind(offset as i64)
+    let mut count_query = QueryBuilder::<Postgres>::new("SELECT COUNT(*) FROM products p");
+    push_product_filters(&mut count_query, filter, group, only_new);
+    let total: i64 = count_query
+        .build_query_scalar()
+        .fetch_one(pool)
+        .await
+        .map_err(|e| AppError::internal(e.to_string()))?;
+
+    let mut data_query = QueryBuilder::<Postgres>::new(PRODUCT_SELECT);
+    push_product_filters(&mut data_query, filter, group, only_new);
+    data_query
+        .push(" ORDER BY p.id LIMIT ")
+        .push_bind(limit as i64)
+        .push(" OFFSET ")
+        .push_bind(offset as i64);
+
+    let data = data_query
+        .build_query_as::<Product>()
         .fetch_all(pool)
         .await
-    } else {
-        sqlx::query_as::<_, Product>(&format!(
-            "{PRODUCT_SELECT} WHERE p.product_name ILIKE $1 OR p.internal_code ILIKE $1 ORDER BY p.id LIMIT $2 OFFSET $3"
-        ))
-        .bind(format!("%{filter}%"))
-        .bind(limit as i64)
-        .bind(offset as i64)
-        .fetch_all(pool)
-        .await
-    }
-    .map_err(|e| AppError::internal(e.to_string()))?;
+        .map_err(|e| AppError::internal(e.to_string()))?;
 
     let items = get_items_bulk(pool).await?;
     let data = attach_items(data, items);
@@ -67,6 +64,47 @@ pub async fn get_paginated(
         limit,
         total_pages: ((total + limit as i64 - 1) / limit as i64) as i32,
     })
+}
+
+fn push_product_filters(
+    query: &mut QueryBuilder<'_, Postgres>,
+    filter: &str,
+    group: Option<&str>,
+    only_new: bool,
+) {
+    let mut has_filter = false;
+    let mut push_conjunction = |query: &mut QueryBuilder<'_, Postgres>| {
+        if has_filter {
+            query.push(" AND ");
+        } else {
+            query.push(" WHERE ");
+            has_filter = true;
+        }
+    };
+
+    if !filter.trim().is_empty() {
+        let filter_like = format!("%{}%", filter.trim());
+        push_conjunction(query);
+        query
+            .push("(")
+            .push("p.product_name ILIKE ")
+            .push_bind(filter_like.clone())
+            .push(" OR p.internal_code ILIKE ")
+            .push_bind(filter_like.clone())
+            .push(" OR p.supplier_code ILIKE ")
+            .push_bind(filter_like)
+            .push(")");
+    }
+
+    if let Some(group) = group.filter(|value| !value.trim().is_empty()) {
+        push_conjunction(query);
+        query.push("p.product_group = ").push_bind(group.trim().to_string());
+    }
+
+    if only_new {
+        push_conjunction(query);
+        query.push("p.created_at >= now() - interval '30 days'");
+    }
 }
 
 pub async fn create(pool: &sqlx::PgPool, input: &ProductInput) -> Result<Product, AppError> {
