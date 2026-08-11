@@ -11,3 +11,4 @@ pub mod art_final;
 pub mod dashboard;
 pub mod audit;
 pub mod refresh_token;
+pub mod workflow_alert;

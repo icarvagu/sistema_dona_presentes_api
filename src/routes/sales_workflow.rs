@@ -1,5 +1,5 @@
 use axum::{
-    routing::{get, patch, post, put},
+    routing::{delete, get, patch, post, put},
     Router,
 };
 
@@ -8,6 +8,10 @@ use crate::{handlers, AppState};
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/sales-workflow/dashboard", get(handlers::sales_workflow::dashboard))
+        .route("/sales-workflow/alerts", get(handlers::sales_workflow::list_workflow_alerts)
+               .post(handlers::sales_workflow::create_workflow_alert))
+        .route("/sales-workflow/alerts/{id}", delete(handlers::sales_workflow::delete_workflow_alert))
+        .route("/sales-workflow/alerts/{id}/resolve", patch(handlers::sales_workflow::resolve_workflow_alert))
         .route("/quotes/{id}/feedback-events", get(handlers::sales_workflow::get_quote_feedback_events)
                .post(handlers::sales_workflow::add_quote_feedback_event))
         .route("/quotes/{id}/convert", post(handlers::sales_workflow::convert_quote_to_sale))

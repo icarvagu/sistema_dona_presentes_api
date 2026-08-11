@@ -204,6 +204,24 @@ async fn test_products_pending_alias_requires_auth_not_404() {
 }
 
 #[tokio::test]
+async fn test_sales_workflow_alerts_requires_auth_not_404() {
+    let app = test_app("postgres:///nonexistent");
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/sales-workflow/alerts")
+                .method(Method::GET)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
 async fn test_dashboard_seller_route_exists() {
     let app = test_app("postgres:///nonexistent");
     let token = auth_header("admin", 1);

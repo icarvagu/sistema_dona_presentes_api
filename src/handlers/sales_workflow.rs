@@ -2,15 +2,84 @@ use axum::{
     extract::{Path, State},
     Extension, Json,
 };
+use chrono::Utc;
 
 use crate::error::AppError;
 use crate::middleware::auth::UserContext;
 use crate::models::{
     EngravingApprovalInput, FinancialAnalysisInput, QuoteConversionInput,
-    QuoteFeedbackEvent, SalePendingInput,
+    QuoteFeedbackEvent, SalePendingInput, WorkflowAlertInput,
 };
-use crate::response::{created_response, ok_response};
+use crate::repositories;
+use crate::response::{created_response, no_content, ok_response};
 use crate::AppState;
+
+fn validate_workflow_alert(input: &WorkflowAlertInput) -> Result<WorkflowAlertInput, AppError> {
+    let title = input.title.trim();
+    let description = input.description.trim();
+
+    if title.is_empty() {
+        return Err(AppError::missing_field(&["title"]));
+    }
+    if description.is_empty() {
+        return Err(AppError::missing_field(&["description"]));
+    }
+    if input.sale_id.is_some() && input.quote_id.is_some() {
+        return Err(AppError::bad_request(
+            "O alerta pode ser associado a um pedido ou a um orçamento, nunca aos dois ao mesmo tempo",
+        ));
+    }
+    if input.scheduled_at <= Utc::now() {
+        return Err(AppError::invalid_field(
+            "scheduled_at",
+            "deve estar em uma data futura",
+        ));
+    }
+
+    Ok(WorkflowAlertInput {
+        sale_id: input.sale_id,
+        quote_id: input.quote_id,
+        title: title.to_string(),
+        description: description.to_string(),
+        scheduled_at: input.scheduled_at,
+    })
+}
+
+pub async fn list_workflow_alerts(
+    State(state): State<AppState>,
+    user: Extension<UserContext>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    let alerts = repositories::workflow_alert::list_by_user(&state.db, user.user_id).await?;
+    Ok(ok_response(alerts))
+}
+
+pub async fn create_workflow_alert(
+    State(state): State<AppState>,
+    user: Extension<UserContext>,
+    Json(input): Json<WorkflowAlertInput>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    let sanitized = validate_workflow_alert(&input)?;
+    let alert = repositories::workflow_alert::create(&state.db, user.user_id, &sanitized).await?;
+    Ok(created_response(alert))
+}
+
+pub async fn resolve_workflow_alert(
+    State(state): State<AppState>,
+    user: Extension<UserContext>,
+    Path(alert_id): Path<i64>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    let alert = repositories::workflow_alert::resolve(&state.db, user.user_id, alert_id).await?;
+    Ok(ok_response(alert))
+}
+
+pub async fn delete_workflow_alert(
+    State(state): State<AppState>,
+    user: Extension<UserContext>,
+    Path(alert_id): Path<i64>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    repositories::workflow_alert::delete(&state.db, user.user_id, alert_id).await?;
+    Ok(no_content())
+}
 
 // --- Quotes ---
 

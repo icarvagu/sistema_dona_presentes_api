@@ -54,3 +54,27 @@ pub struct EngravingApprovalInput {
 pub struct QuoteConversionInput {
     pub withdrawal_dates: std::collections::HashMap<String, Option<NaiveDateTime>>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct WorkflowAlert {
+    pub id: i64,
+    pub user_id: i32,
+    pub sale_id: Option<i32>,
+    pub quote_id: Option<i32>,
+    pub title: String,
+    pub description: String,
+    pub scheduled_at: chrono::DateTime<chrono::Utc>,
+    pub status: String,
+    pub resolved_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct WorkflowAlertInput {
+    pub sale_id: Option<i32>,
+    pub quote_id: Option<i32>,
+    pub title: String,
+    pub description: String,
+    pub scheduled_at: chrono::DateTime<chrono::Utc>,
+}
