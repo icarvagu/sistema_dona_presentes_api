@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -44,6 +44,8 @@ pub struct PurchaseOrder {
     pub production_released_at: Option<NaiveDateTime>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
+    #[serde(default)]
+    pub sale: Option<Value>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     #[sqlx(skip)]
@@ -143,6 +145,12 @@ pub struct PurchaseHistory {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct PurchaseReleaseInput {
+    pub is_sample: Option<bool>,
+    pub sample_has_engraving: Option<bool>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct PurchaseUpdateInput {
     pub buyer_id: Option<i32>,
     pub material_supplier_id: Option<i32>,
@@ -178,6 +186,19 @@ pub struct PurchaseActionInput {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct PurchaseBatchInput {
+    pub purchase_ids: Vec<i32>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PurchaseBatchResult {
+    pub batch_id: i32,
+    pub supplier_id: Option<i32>,
+    pub purchase_ids: Vec<i32>,
+    pub items: Value,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct PurchasePaymentInput {
     pub cost_type: String,
     pub supplier_id: Option<i32>,
@@ -203,4 +224,57 @@ pub struct PurchaseIssueInput {
 pub struct PurchaseIssueUpdateInput {
     pub status: String,
     pub solution: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct PurchaseRequest {
+    pub id: i32,
+    pub request_type: String,
+    pub product: String,
+    pub product_link: String,
+    pub supplier: String,
+    pub quantity: Option<f64>,
+    pub description: String,
+    pub attachments: Option<Value>,
+    pub status: String,
+    pub requested_by: Option<i32>,
+    pub requester_name: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub items: Option<Value>,
+    pub total_value: Option<f64>,
+    pub freight_value: Option<f64>,
+    pub payment_method: String,
+    pub delivery_date: Option<NaiveDate>,
+    pub receiver_name: String,
+    pub receiver_phone: String,
+    pub buyer_message: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PurchaseRequestInput {
+    pub request_type: String,
+    pub product: String,
+    pub product_link: Option<String>,
+    pub supplier: Option<String>,
+    pub quantity: Option<f64>,
+    pub description: Option<String>,
+    pub attachments: Option<Vec<Value>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PurchaseRequestUpdateInput {
+    pub product: Option<String>,
+    pub supplier: Option<String>,
+    pub quantity: Option<f64>,
+    pub description: Option<String>,
+    pub items: Option<Value>,
+    pub total_value: Option<f64>,
+    pub freight_value: Option<f64>,
+    pub payment_method: Option<String>,
+    pub delivery_date: Option<String>,
+    pub receiver_name: Option<String>,
+    pub receiver_phone: Option<String>,
+    pub status: Option<String>,
+    pub buyer_message: Option<String>,
 }

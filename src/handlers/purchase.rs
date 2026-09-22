@@ -7,7 +7,9 @@ use crate::error::AppError;
 use crate::middleware::auth::UserContext;
 use crate::models::{
     PurchaseActionInput, PurchaseIssueInput, PurchaseIssueUpdateInput,
-    PurchasePaymentInput, PurchaseUpdateInput,
+    PurchasePaymentInput, PurchaseReleaseInput, PurchaseUpdateInput, PurchaseRequestInput,
+    PurchaseBatchInput,
+    PurchaseRequestUpdateInput,
 };
 use crate::repositories;
 use crate::response::{created_response, ok_response};
@@ -21,6 +23,30 @@ pub async fn list(
 ) -> Result<impl axum::response::IntoResponse, AppError> {
     let orders = repositories::purchase::get_all(&state.db).await?;
     Ok(ok_response(orders))
+}
+
+pub async fn list_requests(
+    State(state): State<AppState>,
+    _user: Extension<UserContext>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    Ok(ok_response(repositories::purchase::get_requests(&state.db).await?))
+}
+
+pub async fn create_request(
+    State(state): State<AppState>,
+    user: Extension<UserContext>,
+    Json(input): Json<PurchaseRequestInput>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    Ok(created_response(repositories::purchase::create_request(&state.db, &input, user.user_id).await?))
+}
+
+pub async fn update_request(
+    State(state): State<AppState>,
+    _user: Extension<UserContext>,
+    Path(id): Path<i32>,
+    Json(input): Json<PurchaseRequestUpdateInput>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    Ok(ok_response(repositories::purchase::update_request(&state.db, id, &input).await?))
 }
 
 pub async fn get_by_id(
@@ -54,9 +80,18 @@ pub async fn release_sale(
     State(state): State<AppState>,
     _user: Extension<UserContext>,
     Path(sale_id): Path<i32>,
+    Json(input): Json<PurchaseReleaseInput>,
 ) -> Result<impl axum::response::IntoResponse, AppError> {
-    let order = repositories::purchase::release_sale_to_purchases(&state.db, sale_id).await?;
+    let order = repositories::purchase::release_sale_to_purchases(&state.db, sale_id, &input).await?;
     Ok(created_response(order))
+}
+
+pub async fn create_batch(
+    State(state): State<AppState>,
+    user: Extension<UserContext>,
+    Json(input): Json<PurchaseBatchInput>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    Ok(created_response(repositories::purchase::create_purchase_batches(&state.db, &input, user.user_id).await?))
 }
 
 // --- Actions ---

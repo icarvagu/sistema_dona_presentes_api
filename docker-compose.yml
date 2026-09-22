@@ -19,8 +19,6 @@ services:
     ports:
       - "8080:8080"
     restart: on-failure
-    volumes:
-      - .:/app
     depends_on:
       - postgres
     networks:
@@ -29,6 +27,7 @@ services:
       - .env
     environment:
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
+      - SKIP_MIGRATIONS=${SKIP_MIGRATIONS:-true}
 
 volumes:
   database_postgres:

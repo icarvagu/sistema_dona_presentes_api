@@ -36,9 +36,13 @@ async fn main() {
         .await
         .expect("Failed to connect to database");
 
-    db::run_migrations(&pool)
-        .await
-        .expect("Failed to run migrations");
+    if std::env::var("SKIP_MIGRATIONS").unwrap_or_default() == "true" {
+        tracing::info!("Skipping database migrations");
+    } else {
+        db::run_migrations(&pool)
+            .await
+            .expect("Failed to run migrations");
+    }
 
     tracing::info!("Database connected and migrated successfully");
 
