@@ -1,5 +1,5 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     Extension, Json,
 };
 
@@ -64,6 +64,82 @@ pub async fn get_financial(
 ) -> Result<impl axum::response::IntoResponse, AppError> {
     let items = repositories::purchase::get_financial_summary(&state.db).await?;
     Ok(ok_response(items))
+}
+
+pub async fn get_financial_overview(
+    State(state): State<AppState>,
+    _user: Extension<UserContext>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    let overview = repositories::purchase::get_financial_overview(&state.db).await?;
+    Ok(ok_response(overview))
+}
+
+pub async fn get_client_notes(
+    State(state): State<AppState>,
+    _user: Extension<UserContext>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    let data = repositories::purchase::get_client_notes(&state.db).await?;
+    Ok(ok_response(data))
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ClientNoteStatusInput {
+    pub status: String,
+    pub sent_email: Option<String>,
+}
+
+pub async fn update_client_note_status(
+    State(state): State<AppState>,
+    user: Extension<UserContext>,
+    Path(sale_id): Path<i32>,
+    Json(input): Json<ClientNoteStatusInput>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    if !matches!(input.status.as_str(), "financeiro" | "adm" | "enviadas") {
+        return Err(AppError::validation("Status inválido para nota ao cliente."));
+    }
+    let data = repositories::purchase::update_client_note_status(
+        &state.db, sale_id, &input.status, input.sent_email.as_deref().unwrap_or(""), user.user_id,
+    ).await?;
+    Ok(ok_response(data))
+}
+
+#[derive(Debug, serde::Deserialize, Default)]
+pub struct IcmsCreditQuery {
+    pub month: Option<String>,
+}
+
+pub async fn get_icms_credit(
+    State(state): State<AppState>,
+    _user: Extension<UserContext>,
+    Query(query): Query<IcmsCreditQuery>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    let data = repositories::purchase::get_icms_credit(&state.db, query.month.as_deref()).await?;
+    Ok(ok_response(data))
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct IcmsEntryInput {
+    pub purchase_id: Option<i32>,
+    pub production_order_id: Option<i64>,
+    pub supplier_id: Option<i32>,
+    pub invoice_number: String,
+    #[serde(default)]
+    pub invoice_key: String,
+    pub issued_at: chrono::NaiveDateTime,
+    pub tax_base: f64,
+    pub aliquota: f64,
+    pub icms_value: f64,
+    #[serde(default)]
+    pub xml_url: String,
+}
+
+pub async fn create_icms_entry(
+    State(state): State<AppState>,
+    user: Extension<UserContext>,
+    Json(input): Json<IcmsEntryInput>,
+) -> Result<impl axum::response::IntoResponse, AppError> {
+    let data = repositories::purchase::create_icms_entry(&state.db, &input, user.user_id).await?;
+    Ok(created_response(data))
 }
 
 pub async fn update(

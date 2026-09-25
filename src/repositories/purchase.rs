@@ -1,5 +1,6 @@
 use serde::Serialize;
 use serde_json::Value;
+use sqlx::types::Json;
 
 use crate::error::AppError;
 use crate::models::{
@@ -237,6 +238,585 @@ pub async fn get_financial_summary(pool: &sqlx::PgPool) -> Result<Vec<PurchaseFi
     .fetch_all(pool)
     .await
     .map_err(|e| AppError::internal(e.to_string()))
+}
+
+pub async fn get_financial_overview(pool: &sqlx::PgPool) -> Result<Value, AppError> {
+    let overview = sqlx::query_scalar::<_, Json<Value>>(
+        r#"
+        WITH purchase_payment_costs AS (
+            SELECT
+                pp.id,
+                pp.purchase_id,
+                pp.cost_type,
+                pp.amount::float8 AS amount,
+                pp.method,
+                pp.status,
+                pp.requested_at,
+                pp.approved_at,
+                po.general_number,
+                COALESCE(sup.name, '') AS supplier_name,
+                COALESCE(c.name, '') AS customer_name,
+                CASE
+                    WHEN pp.status IN ('Pago', 'Pagamento Registrado', 'Aprovado') THEN TRUE
+                    ELSE FALSE
+                END AS paid,
+                'Pagamento solicitado'::text AS source_note
+            FROM purchase_payments pp
+            JOIN purchase_orders po ON po.id = pp.purchase_id
+            JOIN sales sl ON sl.id = po.sale_id
+            LEFT JOIN customers c ON c.id = sl.customer_id
+            LEFT JOIN suppliers sup ON sup.id = pp.supplier_id
+        ),
+        purchase_order_costs AS (
+            SELECT
+                po.id AS purchase_id,
+                costs.cost_key,
+                costs.cost_type,
+                costs.group_key,
+                costs.amount::float8 AS amount,
+                COALESCE(NULLIF(po.payment_method, ''), 'sem forma definida') AS method,
+                po.created_at,
+                COALESCE(costs.deadline::timestamptz, po.created_at + INTERVAL '30 days') AS due_at,
+                po.general_number,
+                COALESCE(sup.name, '') AS supplier_name,
+                COALESCE(c.name, '') AS customer_name
+            FROM purchase_orders po
+            JOIN sales sl ON sl.id = po.sale_id
+            LEFT JOIN customers c ON c.id = sl.customer_id
+            CROSS JOIN LATERAL (
+                VALUES
+                    ('material', 'Material previsto da compra', 'cmv', po.material_total_cost, po.material_supplier_id, po.material_deadline),
+                    ('gravacao', 'Gravação prevista da compra', 'gravacoes', po.engraving_cost, po.engraving_supplier_id, po.engraving_deadline),
+                    ('frete', 'Frete do fornecedor previsto', 'transporte', po.freight_cost, po.material_supplier_id, po.material_deadline),
+                    ('outros', 'Outros custos previstos', 'variaveis', po.other_cost, po.material_supplier_id, po.material_deadline)
+            ) AS costs(cost_key, cost_type, group_key, amount, supplier_id, deadline)
+            LEFT JOIN suppliers sup ON sup.id = costs.supplier_id
+            WHERE COALESCE(costs.amount, 0) > 0
+              AND NOT EXISTS (
+                  SELECT 1 FROM purchase_payments pp
+                  WHERE pp.purchase_id = po.id
+                    AND (
+                        (costs.cost_key = 'material' AND lower(pp.cost_type) NOT LIKE '%grav%' AND lower(pp.cost_type) NOT LIKE '%frete%' AND lower(pp.cost_type) NOT LIKE '%transport%' AND lower(pp.cost_type) NOT LIKE '%outro%')
+                        OR (costs.cost_key = 'gravacao' AND lower(pp.cost_type) LIKE '%grav%')
+                        OR (costs.cost_key = 'frete' AND (lower(pp.cost_type) LIKE '%frete%' OR lower(pp.cost_type) LIKE '%transport%'))
+                        OR (costs.cost_key = 'outros' AND lower(pp.cost_type) LIKE '%outro%')
+                    )
+              )
+        ),
+        sales_costs AS (
+            SELECT
+                s.id AS sale_id,
+                (
+                    COALESCE(SUM(pp.amount), 0)
+                    + COALESCE(MAX(po.material_total_cost), 0)
+                    + COALESCE(MAX(po.engraving_cost), 0)
+                    + COALESCE(MAX(po.freight_cost), 0)
+                    + COALESCE(MAX(po.other_cost), 0)
+                )::float8 AS expected_costs
+            FROM sales s
+            LEFT JOIN purchase_orders po ON po.sale_id = s.id
+            LEFT JOIN purchase_payments pp ON pp.purchase_id = po.id
+            GROUP BY s.id
+        ),
+        sale_receipt_status AS (
+            SELECT
+                s.id AS sale_id,
+                COUNT(spr.id)::int AS receipt_count,
+                COUNT(*) FILTER (WHERE spr.status = 'validated')::int AS validated_count,
+                COUNT(*) FILTER (WHERE spr.status = 'pending')::int AS pending_count,
+                COUNT(*) FILTER (WHERE spr.status = 'rejected')::int AS rejected_count,
+                MAX(spr.validated_at) AS validated_at,
+                MAX(spr.created_at) AS last_receipt_at
+            FROM sales s
+            LEFT JOIN sale_payment_receipts spr ON spr.sale_id = s.id
+            GROUP BY s.id
+        ),
+        movements AS (
+            SELECT
+                ('purchase-payment-' || p.id)::text AS id,
+                p.id::bigint AS sort_id,
+                ('LC-' || LPAD(p.id::text, 5, '0'))::text AS num,
+                CASE
+                    WHEN p.paid = FALSE THEN 'fornecedores-prazo'
+                    WHEN lower(p.cost_type) LIKE '%grav%' OR lower(p.cost_type) LIKE '%embal%' THEN 'gravacoes'
+                    WHEN lower(p.cost_type) LIKE '%frete%' OR lower(p.cost_type) LIKE '%transport%' THEN 'transporte'
+                    WHEN lower(p.cost_type) LIKE '%comiss%' THEN 'comissoes'
+                    ELSE 'cmv'
+                END AS grupo,
+                'saida'::text AS tipo,
+                to_char(date_trunc('month', COALESCE(p.approved_at, p.requested_at)), 'YYYY-MM') AS mes,
+                to_char(COALESCE(p.approved_at, p.requested_at) AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data,
+                to_char(COALESCE(p.approved_at, p.requested_at) AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI') AS hora,
+                (p.cost_type || ' · ' || p.general_number)::text AS descricao,
+                COALESCE(NULLIF(p.supplier_name, ''), p.customer_name, 'Fornecedor não informado') AS parte,
+                p.general_number AS pedido,
+                p.method AS forma,
+                to_char((p.requested_at + INTERVAL '30 days') AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS vencimento,
+                NULL::text AS quantidade,
+                p.amount AS valor,
+                p.paid AS pago,
+                'Financeiro'::text AS lancado_por,
+                'purchase_payment'::text AS origem_tipo,
+                p.id::bigint AS origem_id,
+                (NOT p.paid)::boolean AS acionavel,
+                p.source_note AS informe,
+                jsonb_build_object() AS venda
+            FROM purchase_payment_costs p
+
+            UNION ALL
+
+            SELECT
+                ('purchase-cost-' || p.purchase_id || '-' || p.cost_key)::text AS id,
+                (p.purchase_id::bigint * 10)::bigint AS sort_id,
+                ('PC-' || LPAD(p.purchase_id::text, 5, '0'))::text AS num,
+                p.group_key AS grupo,
+                'saida'::text AS tipo,
+                to_char(date_trunc('month', p.due_at), 'YYYY-MM') AS mes,
+                to_char(p.created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data,
+                to_char(p.created_at AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI') AS hora,
+                (p.cost_type || ' · ' || p.general_number)::text AS descricao,
+                COALESCE(NULLIF(p.supplier_name, ''), p.customer_name, 'Fornecedor não informado') AS parte,
+                p.general_number AS pedido,
+                p.method AS forma,
+                to_char(p.due_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS vencimento,
+                NULL::text AS quantidade,
+                p.amount AS valor,
+                FALSE AS pago,
+                'Compras'::text AS lancado_por,
+                'purchase_order_cost'::text AS origem_tipo,
+                p.purchase_id::bigint AS origem_id,
+                FALSE AS acionavel,
+                'Custo existe na ordem de compra, mas ainda não há solicitação de pagamento lançada.'::text AS informe,
+                jsonb_build_object() AS venda
+            FROM purchase_order_costs p
+
+            UNION ALL
+
+            SELECT
+                ('sale-' || s.id)::text AS id,
+                s.id::bigint AS sort_id,
+                ('RV-' || LPAD(s.id::text, 5, '0'))::text AS num,
+                CASE
+                    WHEN EXISTS (
+                        SELECT 1 FROM sale_payment_receipts spr
+                        WHERE spr.sale_id = s.id AND spr.status = 'validated'
+                    ) THEN 'venda-mes'
+                    ELSE 'venda-prox'
+                END AS grupo,
+                'entrada'::text AS tipo,
+                to_char(date_trunc('month', s.created_at), 'YYYY-MM') AS mes,
+                to_char(s.created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY') AS data,
+                to_char(s.created_at AT TIME ZONE 'America/Sao_Paulo', 'HH24:MI') AS hora,
+                ('Venda ' || COALESCE(po.general_number, s.id::text))::text AS descricao,
+                COALESCE(c.name, 'Cliente não informado') AS parte,
+                COALESCE(po.general_number, s.id::text) AS pedido,
+                COALESCE(s.payment_method, '') AS forma,
+                CASE
+                    WHEN s.first_installment_start IS NULL THEN ''
+                    ELSE to_char(s.first_installment_start AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY')
+                END AS vencimento,
+                NULL::text AS quantidade,
+                COALESCE(s.total_value, 0)::float8 AS valor,
+                EXISTS (
+                    SELECT 1 FROM sale_payment_receipts spr
+                    WHERE spr.sale_id = s.id AND spr.status = 'validated'
+                ) AS pago,
+                'Sistema'::text AS lancado_por,
+                'sale'::text AS origem_tipo,
+                s.id::bigint AS origem_id,
+                FALSE AS acionavel,
+                CASE
+                    WHEN COALESCE(rs.validated_count, 0) > 0 THEN 'Recebimento validado pelo financeiro.'
+                    WHEN COALESCE(rs.pending_count, 0) > 0 THEN 'Comprovante enviado pelo cliente, aguardando validação.'
+                    WHEN COALESCE(rs.rejected_count, 0) > 0 THEN 'Último comprovante rejeitado; venda segue a receber.'
+                    ELSE 'Venda sem comprovante validado; permanece em a receber.'
+                END AS informe,
+                jsonb_build_object(
+                    'client', COALESCE(c.name, ''),
+                    'seller', COALESCE(u.full_name, ''),
+                    'profit', COALESCE(s.total_value, 0)::float8 - COALESCE(sc.expected_costs, 0),
+                    'margin', CASE WHEN COALESCE(s.total_value, 0) > 0 THEN (COALESCE(s.total_value, 0)::float8 - COALESCE(sc.expected_costs, 0)) / COALESCE(s.total_value, 0)::float8 ELSE 0 END,
+                    'freight_paid', COALESCE(po.freight_cost, 0)::float8,
+                    'freight_charged', 0,
+                    'logistics', 0,
+                    'loss', 0,
+                    'advertising', 0,
+                    'labor', 0,
+                    'receipt_count', COALESCE(rs.receipt_count, 0),
+                    'validated_receipts', COALESCE(rs.validated_count, 0),
+                    'pending_receipts', COALESCE(rs.pending_count, 0),
+                    'rejected_receipts', COALESCE(rs.rejected_count, 0),
+                    'financial_status', COALESCE(fa.status, '')
+                ) AS venda
+            FROM sales s
+            LEFT JOIN customers c ON c.id = s.customer_id
+            LEFT JOIN users u ON u.id = s.seller_id
+            LEFT JOIN purchase_orders po ON po.sale_id = s.id
+            LEFT JOIN sales_costs sc ON sc.sale_id = s.id
+            LEFT JOIN sale_receipt_status rs ON rs.sale_id = s.id
+            LEFT JOIN financial_analyses fa ON fa.sale_id = s.id
+            WHERE COALESCE(s.total_value, 0) > 0
+        ),
+        month_list AS (
+            SELECT DISTINCT mes FROM movements
+        ),
+        insights AS (
+            SELECT jsonb_build_object(
+                'open_payables_count', COUNT(*) FILTER (WHERE tipo = 'saida' AND pago = FALSE),
+                'open_payables_value', COALESCE(SUM(valor) FILTER (WHERE tipo = 'saida' AND pago = FALSE), 0),
+                'open_receivables_count', COUNT(*) FILTER (WHERE tipo = 'entrada' AND pago = FALSE),
+                'open_receivables_value', COALESCE(SUM(valor) FILTER (WHERE tipo = 'entrada' AND pago = FALSE), 0),
+                'paid_movements_count', COUNT(*) FILTER (WHERE pago = TRUE),
+                'paid_movements_value', COALESCE(SUM(valor) FILTER (WHERE pago = TRUE), 0),
+                'costs_without_payment_request_count', COUNT(*) FILTER (WHERE origem_tipo = 'purchase_order_cost'),
+                'costs_without_payment_request_value', COALESCE(SUM(valor) FILTER (WHERE origem_tipo = 'purchase_order_cost'), 0),
+                'sales_waiting_receipt_count', COUNT(*) FILTER (WHERE origem_tipo = 'sale' AND pago = FALSE),
+                'sales_waiting_receipt_value', COALESCE(SUM(valor) FILTER (WHERE origem_tipo = 'sale' AND pago = FALSE), 0)
+            ) AS data
+            FROM movements
+        ),
+        financial_orders AS (
+            SELECT
+                s.id AS sale_id,
+                po.id AS purchase_id,
+                COALESCE(po.general_number, s.id::text) AS order_number,
+                COALESCE(c.name, 'Cliente não informado') AS customer_name,
+                COALESCE(seller.full_name, 'Vendedor não informado') AS seller_name,
+                COALESCE(buyer.full_name, '') AS buyer_name,
+                COALESCE(s.status, '') AS sale_status,
+                COALESCE(po.status, 'Sem compra liberada') AS purchase_status,
+                to_char(s.created_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS created_at_br,
+                to_char(po.production_released_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') AS production_released_at_br,
+                COALESCE(s.total_value, 0)::float8 AS sale_value,
+                CASE
+                    WHEN COALESCE(payments.total, 0) > 0 THEN COALESCE(payments.total, 0)::float8
+                    ELSE (
+                        COALESCE(po.material_total_cost, 0)
+                        + COALESCE(po.engraving_cost, 0)
+                        + COALESCE(po.freight_cost, 0)
+                        + COALESCE(po.other_cost, 0)
+                    )::float8
+                END AS expected_cost,
+                COALESCE(payments.paid_total, 0)::float8 AS paid_cost,
+                COALESCE(payments.pending_total, 0)::float8 AS pending_cost,
+                COALESCE(payments.total_count, 0)::int AS payments_count,
+                COALESCE(payments.pending_count, 0)::int AS pending_payments_count,
+                COALESCE(receipts.receipt_count, 0)::int AS receipt_count,
+                COALESCE(receipts.validated_count, 0)::int AS validated_receipts,
+                COALESCE(receipts.pending_count, 0)::int AS pending_receipts,
+                COALESCE(items.items_count, 0)::int AS items_count,
+                COALESCE(items.items_json, '[]'::jsonb) AS items_json,
+                COALESCE(payments.payments_json, '[]'::jsonb) AS payments_json,
+                CASE
+                    WHEN po.id IS NULL THEN 'Venda registrada, mas ainda não foi liberada para Compras.'
+                    WHEN COALESCE(payments.total_count, 0) = 0
+                         AND (
+                            COALESCE(po.material_total_cost, 0)
+                            + COALESCE(po.engraving_cost, 0)
+                            + COALESCE(po.freight_cost, 0)
+                            + COALESCE(po.other_cost, 0)
+                         ) > 0 THEN 'Compra possui custo previsto, mas não há solicitação de pagamento.'
+                    WHEN COALESCE(payments.pending_count, 0) > 0 THEN 'Há pagamento de fornecedor pendente de baixa.'
+                    WHEN COALESCE(receipts.validated_count, 0) = 0 THEN 'Venda ainda sem recebimento validado.'
+                    ELSE 'Pedido com informações financeiras conciliadas pelo backend.'
+                END AS report
+            FROM sales s
+            LEFT JOIN purchase_orders po ON po.sale_id = s.id
+            LEFT JOIN customers c ON c.id = s.customer_id
+            LEFT JOIN users seller ON seller.id = s.seller_id
+            LEFT JOIN users buyer ON buyer.id = po.buyer_id
+            LEFT JOIN LATERAL (
+                SELECT
+                    COUNT(*) AS total_count,
+                    COUNT(*) FILTER (WHERE pp.status NOT IN ('Pago', 'Pagamento Registrado', 'Aprovado')) AS pending_count,
+                    COALESCE(SUM(pp.amount), 0) AS total,
+                    COALESCE(SUM(pp.amount) FILTER (WHERE pp.status IN ('Pago', 'Pagamento Registrado', 'Aprovado')), 0) AS paid_total,
+                    COALESCE(SUM(pp.amount) FILTER (WHERE pp.status NOT IN ('Pago', 'Pagamento Registrado', 'Aprovado')), 0) AS pending_total,
+                    jsonb_agg(jsonb_build_object(
+                        'id', pp.id,
+                        'cost_type', pp.cost_type,
+                        'supplier', COALESCE(sup.name, ''),
+                        'amount', pp.amount::float8,
+                        'method', pp.method,
+                        'status', pp.status,
+                        'requested_at', to_char(pp.requested_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI'),
+                        'approved_at', CASE WHEN pp.approved_at IS NULL THEN '' ELSE to_char(pp.approved_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI') END
+                    ) ORDER BY pp.id) AS payments_json
+                FROM purchase_payments pp
+                LEFT JOIN suppliers sup ON sup.id = pp.supplier_id
+                WHERE pp.purchase_id = po.id
+            ) payments ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT
+                    COUNT(*) AS receipt_count,
+                    COUNT(*) FILTER (WHERE spr.status = 'validated') AS validated_count,
+                    COUNT(*) FILTER (WHERE spr.status = 'pending') AS pending_count
+                FROM sale_payment_receipts spr
+                WHERE spr.sale_id = s.id
+            ) receipts ON TRUE
+            LEFT JOIN LATERAL (
+                SELECT
+                    COUNT(*) AS items_count,
+                    jsonb_agg(jsonb_build_object(
+                        'product', COALESCE(p.product_name, 'Item sem cadastro'),
+                        'quantity', si.quantity,
+                        'unit_price', si.unit_price::float8,
+                        'total_price', si.total_price::float8,
+                        'estimated_cost', (si.quantity * COALESCE(p.cost_price, 0))::float8,
+                        'supplier_id', p.supplier_id
+                    ) ORDER BY si.id) AS items_json
+                FROM sale_items si
+                LEFT JOIN products p ON p.id = si.product_id
+                WHERE si.sale_id = s.id
+            ) items ON TRUE
+            WHERE COALESCE(s.total_value, 0) > 0
+        )
+        SELECT jsonb_build_object(
+            'generated_at', NOW(),
+            'opening_balances', jsonb_build_object(),
+            'insights', COALESCE((SELECT data FROM insights), jsonb_build_object()),
+            'orders', COALESCE((
+                SELECT jsonb_agg(jsonb_build_object(
+                    'sale_id', sale_id,
+                    'purchase_id', purchase_id,
+                    'order_number', order_number,
+                    'customer', customer_name,
+                    'seller', seller_name,
+                    'buyer', buyer_name,
+                    'sale_status', sale_status,
+                    'purchase_status', purchase_status,
+                    'created_at', created_at_br,
+                    'production_released_at', COALESCE(production_released_at_br, ''),
+                    'sale_value', sale_value,
+                    'expected_cost', expected_cost,
+                    'paid_cost', paid_cost,
+                    'pending_cost', pending_cost,
+                    'open_cost', GREATEST(expected_cost - paid_cost, 0),
+                    'profit', sale_value - expected_cost,
+                    'margin', CASE WHEN sale_value > 0 THEN (sale_value - expected_cost) / sale_value ELSE 0 END,
+                    'payments_count', payments_count,
+                    'pending_payments_count', pending_payments_count,
+                    'receipt_count', receipt_count,
+                    'validated_receipts', validated_receipts,
+                    'pending_receipts', pending_receipts,
+                    'items_count', items_count,
+                    'items', items_json,
+                    'payments', payments_json,
+                    'report', report
+                ) ORDER BY sale_id DESC)
+                FROM financial_orders
+            ), '[]'::jsonb),
+            'months', COALESCE((SELECT jsonb_agg(mes ORDER BY mes DESC) FROM month_list), '[]'::jsonb),
+            'movements', COALESCE((
+                SELECT jsonb_agg(jsonb_build_object(
+                    'id', id,
+                    'num', num,
+                    'group', grupo,
+                    'type', tipo,
+                    'month', mes,
+                    'date', data,
+                    'time', hora,
+                    'description', descricao,
+                    'party', parte,
+                    'order', pedido,
+                    'form', forma,
+                    'due_date', vencimento,
+                    'quantity', quantidade,
+                    'value', valor,
+                    'paid', pago,
+                    'launched_by', lancado_por,
+                    'source_type', origem_tipo,
+                    'source_id', origem_id,
+                    'actionable', acionavel,
+                    'report', informe,
+                    'sale', venda
+                ) ORDER BY mes DESC, data, hora, sort_id)
+                FROM movements
+            ), '[]'::jsonb)
+        ) AS overview
+        "#
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| AppError::internal(e.to_string()))?;
+
+    Ok(overview.0)
+}
+
+pub async fn get_client_notes(pool: &sqlx::PgPool) -> Result<Value, AppError> {
+    let data = sqlx::query_scalar::<_, Json<Value>>(
+        r#"
+        WITH eligible AS (
+            SELECT s.id AS sale_id,
+                   COALESCE(po.general_number, 'PED-' || LPAD(s.id::text, 6, '0')) AS order_number,
+                   COALESCE(c.name, 'Cliente não informado') AS customer,
+                   COALESCE(s.total_value, 0)::float8 AS sale_value,
+                   COALESCE(s.invoice_email, NULLIF(c.email, ''), '') AS invoice_email,
+                   COALESCE(s.financial_email, NULLIF(c.contact_financial_email, ''), NULLIF(c.email, ''), '') AS financial_email,
+                   COALESCE(s.status, '') AS sale_status,
+                   COALESCE(po.status, 'Sem compra liberada') AS purchase_status,
+                   COALESCE(seller.full_name, 'Vendedor não informado') AS seller,
+                   COALESCE(c.cnpj, c.cpf, '') AS document,
+                   COALESCE(w.status, 'financeiro') AS workflow_status,
+                   COALESCE(w.sent_email, '') AS sent_email,
+                   w.sent_at,
+                   COALESCE(fiscal.documents, '[]'::jsonb) AS documents
+            FROM sales s
+            LEFT JOIN purchase_orders po ON po.sale_id = s.id
+            LEFT JOIN production_orders prod ON prod.sale_id = s.id
+            LEFT JOIN customers c ON c.id = s.customer_id
+            LEFT JOIN users seller ON seller.id = s.seller_id
+            LEFT JOIN client_note_workflows w ON w.sale_id = s.id
+            LEFT JOIN LATERAL (
+                SELECT jsonb_agg(jsonb_build_object(
+                    'id', pfd.id,
+                    'type', pfd.document_type,
+                    'number', pfd.document_number,
+                    'access_key', pfd.access_key,
+                    'file_url', pfd.file_url,
+                    'issued_at', COALESCE(to_char(pfd.issued_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY'), '')
+                ) ORDER BY pfd.issued_at DESC NULLS LAST, pfd.id DESC) AS documents
+                FROM production_fiscal_documents pfd
+                WHERE pfd.production_order_id = prod.id
+            ) fiscal ON TRUE
+            WHERE COALESCE(s.total_value, 0) > 0
+              AND (prod.id IS NOT NULL OR po.production_released_at IS NOT NULL)
+        )
+        SELECT jsonb_build_object(
+            'generated_at', NOW(),
+            'orders', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+                'sale_id', sale_id,
+                'order_number', order_number,
+                'customer', customer,
+                'sale_value', sale_value,
+                'invoice_email', invoice_email,
+                'financial_email', financial_email,
+                'sale_status', sale_status,
+                'purchase_status', purchase_status,
+                'seller', seller,
+                'document', document,
+                'status', workflow_status,
+                'sent_email', sent_email,
+                'sent_at', COALESCE(to_char(sent_at AT TIME ZONE 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI'), ''),
+                'documents', documents,
+                'report', CASE
+                    WHEN jsonb_array_length(documents) > 0 THEN 'Documento fiscal disponível no backend.'
+                    WHEN workflow_status = 'financeiro' THEN 'Pedido liberado para produção, aguardando anexação da nota fiscal.'
+                    WHEN workflow_status = 'adm' THEN 'Conferido pelo Financeiro; aguardando envio ao cliente.'
+                    ELSE 'Nota encaminhada ao cliente, sem documento fiscal anexado.'
+                END
+            ) ORDER BY sale_id DESC) FROM eligible), '[]'::jsonb)
+        )"#
+    ).fetch_one(pool).await.map_err(|e| AppError::internal(e.to_string()))?;
+    Ok(data.0)
+}
+
+pub async fn update_client_note_status(
+    pool: &sqlx::PgPool,
+    sale_id: i32,
+    status: &str,
+    sent_email: &str,
+    user_id: i32,
+) -> Result<Value, AppError> {
+    let row = sqlx::query_scalar::<_, Json<Value>>(
+        "INSERT INTO client_note_workflows (sale_id, status, sent_email, sent_at, updated_by)
+         VALUES ($1, $2, $3, CASE WHEN $2 = 'enviadas' THEN NOW() ELSE NULL END, $4)
+         ON CONFLICT (sale_id) DO UPDATE SET status = EXCLUDED.status,
+             sent_email = EXCLUDED.sent_email,
+             sent_at = CASE WHEN EXCLUDED.status = 'enviadas' THEN NOW() ELSE NULL END,
+             updated_by = EXCLUDED.updated_by, updated_at = NOW()
+         RETURNING jsonb_build_object('sale_id', sale_id, 'status', status, 'sent_email', sent_email)"
+    ).bind(sale_id).bind(status).bind(sent_email).bind(user_id)
+    .fetch_optional(pool).await.map_err(|e| AppError::internal(e.to_string()))?
+    .ok_or_else(|| AppError::not_found("Venda"))?;
+    Ok(row.0)
+}
+
+pub async fn get_icms_credit(pool: &sqlx::PgPool, month: Option<&str>) -> Result<Value, AppError> {
+    let month = month.filter(|value| value.len() == 7 && value.as_bytes().get(4) == Some(&b'-'));
+    let data = sqlx::query_scalar::<_, Json<Value>>(
+        r#"
+        WITH entries AS (
+            SELECT e.id, e.invoice_number, e.invoice_key,
+                   to_char(e.issued_at AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM-DD') AS issued_date,
+                   to_char(e.issued_at AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') AS issued_month,
+                   e.tax_base::float8 AS tax_base, e.aliquota::float8 AS aliquota,
+                   e.icms_value::float8 AS icms_value, e.xml_url,
+                   COALESCE(sup.name, 'Fornecedor não informado') AS supplier,
+                   COALESCE(po.general_number, '') AS purchase_number,
+                   COALESCE(pfd.document_number, e.invoice_number) AS fiscal_number,
+                   p.name AS parameter_name,
+                   p.credit_percent::float8 AS credit_percent,
+                   CASE WHEN p.id IS NULL THEN 0::float8 ELSE (e.icms_value * p.credit_percent / 100)::float8 END AS credit_value,
+                   CASE
+                       WHEN p.id IS NULL THEN 'Alíquota sem parâmetro ativo; crédito precisa de revisão fiscal.'
+                       WHEN p.credit_percent = 0 THEN 'Parâmetro ativo, mas esta operação não gera crédito.'
+                       ELSE 'Crédito calculado com base no valor de ICMS informado na nota.'
+                   END AS report
+            FROM financial_icms_entries e
+            LEFT JOIN suppliers sup ON sup.id = e.supplier_id
+            LEFT JOIN purchase_orders po ON po.id = e.purchase_id
+            LEFT JOIN financial_icms_parameters p ON p.active = TRUE AND abs(p.aliquota - e.aliquota) < 0.0001
+            LEFT JOIN production_orders prod ON prod.id = e.production_order_id
+            LEFT JOIN LATERAL (
+                SELECT document_number
+                FROM production_fiscal_documents
+                WHERE production_order_id = prod.id
+                  AND document_number = e.invoice_number
+                ORDER BY id DESC LIMIT 1
+            ) pfd ON TRUE
+            WHERE ($1::text IS NULL OR to_char(e.issued_at AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') = $1)
+        ),
+        months AS (
+            SELECT DISTINCT to_char(issued_at AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM') AS issued_month
+            FROM financial_icms_entries
+            ORDER BY issued_month DESC
+        )
+        SELECT jsonb_build_object(
+            'generated_at', NOW(),
+            'selected_month', COALESCE($1, to_char(NOW() AT TIME ZONE 'America/Sao_Paulo', 'YYYY-MM')),
+            'months', COALESCE((SELECT jsonb_agg(issued_month ORDER BY issued_month DESC) FROM months), '[]'::jsonb),
+            'parameters', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+                'id', id, 'name', name, 'aliquota', aliquota::float8,
+                'credit_percent', credit_percent::float8, 'description', description,
+                'active', active
+            ) ORDER BY aliquota DESC) FROM financial_icms_parameters WHERE active = TRUE), '[]'::jsonb),
+            'summary', jsonb_build_object(
+                'notes_count', (SELECT COUNT(*) FROM entries),
+                'notes_with_credit_count', (SELECT COUNT(*) FROM entries WHERE credit_value > 0),
+                'icms_total', COALESCE((SELECT SUM(icms_value) FROM entries), 0),
+                'credit_total', COALESCE((SELECT SUM(credit_value) FROM entries), 0),
+                'without_parameter_count', (SELECT COUNT(*) FROM entries WHERE parameter_name IS NULL)
+            ),
+            'entries', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+                'id', id, 'invoice_number', fiscal_number, 'issued_date', issued_date,
+                'supplier', supplier, 'purchase_number', purchase_number,
+                'tax_base', tax_base, 'aliquota', aliquota, 'icms_value', icms_value,
+                'parameter_name', COALESCE(parameter_name, ''), 'credit_percent', COALESCE(credit_percent, 0),
+                'credit_value', credit_value, 'xml_url', xml_url, 'report', report
+            ) ORDER BY issued_date DESC, id DESC) FROM entries), '[]'::jsonb)
+        )"#
+    ).bind(month).fetch_one(pool).await.map_err(|e| AppError::internal(e.to_string()))?;
+    Ok(data.0)
+}
+
+pub async fn create_icms_entry(
+    pool: &sqlx::PgPool,
+    input: &crate::handlers::purchase::IcmsEntryInput,
+    user_id: i32,
+) -> Result<Value, AppError> {
+    let row = sqlx::query_scalar::<_, Json<Value>>(
+        "INSERT INTO financial_icms_entries
+            (purchase_id, production_order_id, supplier_id, invoice_number, invoice_key,
+             issued_at, tax_base, aliquota, icms_value, xml_url, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         RETURNING jsonb_build_object('id', id, 'invoice_number', invoice_number, 'issued_at', issued_at)"
+    ).bind(input.purchase_id).bind(input.production_order_id).bind(input.supplier_id)
+    .bind(&input.invoice_number).bind(&input.invoice_key).bind(input.issued_at)
+    .bind(input.tax_base).bind(input.aliquota).bind(input.icms_value)
+    .bind(&input.xml_url).bind(user_id)
+    .fetch_one(pool).await.map_err(|e| AppError::internal(e.to_string()))?;
+    Ok(row.0)
 }
 
 pub async fn release_sale_to_purchases(
