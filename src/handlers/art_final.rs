@@ -50,19 +50,34 @@ pub async fn list_tasks(
     State(state): State<AppState>,
     _user: Extension<UserContext>,
 ) -> Result<impl axum::response::IntoResponse, AppError> {
-    let rows = sqlx::query("SELECT * FROM art_final_tasks ORDER BY id DESC")
+    let rows = sqlx::query_scalar::<_, sqlx::types::Json<serde_json::Value>>(
+        "SELECT jsonb_build_object(
+            'id', id,
+            'panel', panel,
+            'category', category,
+            'title', title,
+            'description', description,
+            'sale_id', sale_id,
+            'purchase_id', purchase_id,
+            'due_date', due_date,
+            'due_at', due_at,
+            'assigned_to', assigned_to,
+            'channel', channel,
+            'format', format,
+            'priority', priority,
+            'tags', to_jsonb(tags),
+            'attachment_url', attachment_url,
+            'status', status,
+            'created_at', created_at,
+            'updated_at', updated_at
+        )
+        FROM art_final_tasks
+        ORDER BY id DESC"
+    )
         .fetch_all(&state.db).await
         .map_err(|e| AppError::internal(e.to_string()))?;
 
-    let tasks: Vec<serde_json::Value> = rows.iter().map(|r| {
-        let mut map = serde_json::Map::new();
-        for col in r.columns() {
-            let name = col.name().to_string();
-            let val: Option<String> = r.try_get(name.as_str()).unwrap_or(None);
-            map.insert(name, serde_json::Value::String(val.unwrap_or_default()));
-        }
-        serde_json::Value::Object(map)
-    }).collect();
+    let tasks: Vec<serde_json::Value> = rows.into_iter().map(|row| row.0).collect();
 
     Ok(ok_response(tasks))
 }
@@ -95,11 +110,14 @@ pub async fn update_task(
 ) -> Result<impl axum::response::IntoResponse, AppError> {
     sqlx::query(
         "UPDATE art_final_tasks SET category=$1, title=$2, description=$3, assigned_to=$4,
-                priority=$5, status=$6, updated_at=NOW() WHERE id=$7"
+                priority=$5, status=$6, due_at=$7, channel=$8, format=$9, tags=$10,
+                attachment_url=$11, panel=COALESCE($12, panel), updated_at=NOW() WHERE id=$13"
     )
     .bind(&input.category).bind(&input.title).bind(&input.description)
     .bind(input.assigned_to).bind(input.priority.unwrap_or(0))
-    .bind(input.status.as_deref().unwrap_or("backlog")).bind(id)
+    .bind(input.status.as_deref().unwrap_or("backlog")).bind(input.due_at)
+    .bind(&input.channel).bind(&input.format).bind(&input.tags)
+    .bind(&input.attachment_url).bind(&input.panel).bind(id)
     .execute(&state.db).await
     .map_err(|e| AppError::internal(e.to_string()))?;
     Ok(ok_response(serde_json::json!({"message": "Tarefa atualizada"})))
